@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Tiles Inventory Management System',
   description: 'Complete inventory management solution for tiles showroom',
+  icons: {
+    icon: '/HOT LOGO TRANSPARENT.PNG',
+  },
 }
 
 export default function RootLayout({

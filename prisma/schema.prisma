@@ -21,14 +21,15 @@ model User {
 }
 
 model Brand {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  description String?
-  contactInfo String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  products    Product[]
+  id             String          @id @default(cuid())
+  name           String          @unique
+  description    String?
+  contactInfo    String?
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  products       Product[]
+  purchaseOrders PurchaseOrder[]
 
   @@map("brands")
 }
@@ -87,14 +88,15 @@ model Product {
 }
 
 model Location {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  address   String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String         @id @default(cuid())
+  name          String         @unique
+  address       String?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   
-  batches   Batch[]
+  batches       Batch[]
+  purchaseItems PurchaseItem[]
 
   @@map("locations")
 }

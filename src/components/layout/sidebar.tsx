@@ -12,12 +12,15 @@ import {
   FileText,
   MapPin,
   Layers,
-  Palette
+  Palette,
+  X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 interface SidebarProps {
   isOpen: boolean
+  onClose: () => void
 }
 
 const navigation = [
@@ -33,34 +36,47 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
-export default function Sidebar({ isOpen }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
 
   return (
-    <aside className={cn(
-      "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-all duration-300 z-30",
-      isOpen ? "w-64" : "w-16"
-    )}>
-      <nav className="p-4 space-y-2">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                isActive 
-                  ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700" 
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-              )}
-            >
-              <item.icon className="h-5 w-5 flex-shrink-0" />
-              {isOpen && <span>{item.name}</span>}
-            </Link>
-          )
-        })}
-      </nav>
-    </aside>
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+          onClick={onClose}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <aside className={cn(
+        "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transition-all duration-300 z-50",
+        "md:z-30",
+        isOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full md:w-16 md:translate-x-0"
+      )}>
+        <nav className="p-4 space-y-2">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => onClose()}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  isActive 
+                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700" 
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                )}
+              >
+                <item.icon className="h-5 w-5 flex-shrink-0" />
+                <span className={cn(isOpen ? "block" : "hidden md:hidden")}>{item.name}</span>
+              </Link>
+            )
+          })}
+        </nav>
+      </aside>
+    </>
   )
 }

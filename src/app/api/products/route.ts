@@ -63,9 +63,9 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where }),
     ])
 
-    const productsWithStock = products.map(product => ({
+    const productsWithStock = products.map((product: any) => ({
       ...product,
-      totalStock: product.batches.reduce((sum, batch) => sum + batch.quantity, 0),
+      totalStock: product.batches.reduce((sum: number, batch: any) => sum + batch.quantity, 0),
     }))
 
     return NextResponse.json({

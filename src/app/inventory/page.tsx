@@ -358,7 +358,7 @@ export default function InventoryPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">All stock levels</SelectItem>
-                    <SelectItem value="low">Low Stock (< 10)</SelectItem>
+                    <SelectItem value="low">Low Stock (&lt; 10)</SelectItem>
                     <SelectItem value="out">Out of Stock</SelectItem>
                   </SelectContent>
                 </Select>
