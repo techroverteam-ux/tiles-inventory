@@ -53,8 +53,7 @@ export default function Layout({ children }: LayoutProps) {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <Image src="/HOT LOGO TRANSPARENT.PNG" alt="Logo" width={40} height={40} className="object-contain" />
-          <h1 className="text-base md:text-xl font-semibold text-gray-900 hidden sm:block">Tiles Inventory</h1>
+          <Image src="/HOT LOGO TRANSPARENT.PNG" alt="Logo" width={60} height={60} className="object-contain" />
         </div>
 
         <div className="hidden lg:flex items-center gap-4 flex-1 max-w-md mx-8">
