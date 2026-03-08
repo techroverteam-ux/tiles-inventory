@@ -13,6 +13,7 @@ import {
   MapPin,
   Layers,
   Palette,
+  Ruler,
   X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -32,6 +33,7 @@ const navigation = [
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Brands', href: '/brands', icon: Users },
   { name: 'Categories', href: '/categories', icon: Palette },
+  { name: 'Sizes', href: '/sizes', icon: Ruler },
   { name: 'Locations', href: '/locations', icon: MapPin },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]

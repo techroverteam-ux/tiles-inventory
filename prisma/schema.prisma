@@ -22,7 +22,7 @@ model User {
 
 model Brand {
   id             String          @id @default(cuid())
-  name           String          @unique
+  name           String
   description    String?
   contactInfo    String?
   isActive       Boolean         @default(true)
@@ -36,7 +36,7 @@ model Brand {
 
 model Category {
   id          String    @id @default(cuid())
-  name        String    @unique
+  name        String
   description String?
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
@@ -48,7 +48,7 @@ model Category {
 
 model FinishType {
   id          String    @id @default(cuid())
-  name        String    @unique
+  name        String
   description String?
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
@@ -61,7 +61,7 @@ model FinishType {
 model Product {
   id            String        @id @default(cuid())
   name          String
-  code          String        @unique
+  code          String
   description   String?
   brandId       String
   categoryId    String
@@ -89,7 +89,7 @@ model Product {
 
 model Location {
   id            String         @id @default(cuid())
-  name          String         @unique
+  name          String
   address       String?
   isActive      Boolean        @default(true)
   createdAt     DateTime       @default(now())

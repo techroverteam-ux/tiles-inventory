@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
     const location = await prisma.location.create({
       data: {
         name: data.name,
-        address: data.address,
       },
     })
 

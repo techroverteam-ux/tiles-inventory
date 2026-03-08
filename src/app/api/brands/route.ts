@@ -63,8 +63,6 @@ export async function POST(request: NextRequest) {
     const brand = await prisma.brand.create({
       data: {
         name: data.name,
-        description: data.description,
-        contactInfo: data.contactInfo,
       },
     })
 
