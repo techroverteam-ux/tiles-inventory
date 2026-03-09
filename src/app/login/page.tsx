@@ -32,7 +32,8 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
-        router.push('/dashboard')
+        // Force a page reload to ensure middleware picks up the new cookie
+        window.location.href = '/dashboard'
       } else {
         const errorData = await response.json()
         setError(errorData.error || 'Login failed')
