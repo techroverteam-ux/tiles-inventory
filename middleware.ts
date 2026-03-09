@@ -11,6 +11,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Redirect root to dashboard
+  if (request.nextUrl.pathname === '/') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
   // Check if user is authenticated
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url))
