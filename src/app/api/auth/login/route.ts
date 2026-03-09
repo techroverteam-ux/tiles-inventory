@@ -69,15 +69,17 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Login error:', error)
     
-    // Return detailed error in development, generic in production
-    const isDevelopment = process.env.NODE_ENV === 'development'
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     const errorStack = error instanceof Error ? error.stack : undefined
     
+    // Log to Vercel console for debugging
+    console.log('Detailed error:', { errorMessage, errorStack, env: process.env.NODE_ENV })
+    
     return NextResponse.json(
       { 
-        error: isDevelopment ? `Login failed: ${errorMessage}` : 'Internal server error',
-        details: isDevelopment ? errorStack : undefined
+        error: `Login failed: ${errorMessage}`,
+        details: errorStack,
+        env: process.env.NODE_ENV
       },
       { status: 500 }
     )
