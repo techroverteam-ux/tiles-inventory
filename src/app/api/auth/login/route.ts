@@ -71,11 +71,13 @@ export async function POST(request: NextRequest) {
     
     // Return detailed error in development, generic in production
     const isDevelopment = process.env.NODE_ENV === 'development'
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : undefined
     
     return NextResponse.json(
       { 
-        error: isDevelopment ? `Login failed: ${error.message}` : 'Internal server error',
-        details: isDevelopment ? error.stack : undefined
+        error: isDevelopment ? `Login failed: ${errorMessage}` : 'Internal server error',
+        details: isDevelopment ? errorStack : undefined
       },
       { status: 500 }
     )
