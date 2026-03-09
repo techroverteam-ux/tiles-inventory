@@ -48,6 +48,9 @@ export async function POST(request: NextRequest) {
       { expiresIn: '24h' }
     )
 
+    console.log('Generated token:', token.substring(0, 50) + '...')
+    console.log('JWT Secret used:', process.env.JWT_SECRET ? 'ENV_VAR' : 'FALLBACK')
+
     const response = NextResponse.json({
       message: 'Login successful',
       user: {

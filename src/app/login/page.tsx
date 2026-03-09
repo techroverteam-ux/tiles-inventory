@@ -32,6 +32,8 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
+        // Store user data in localStorage for client-side auth
+        localStorage.setItem('user', JSON.stringify(data.user))
         // Force a page reload to ensure middleware picks up the new cookie
         window.location.href = '/dashboard'
       } else {
