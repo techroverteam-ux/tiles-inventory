@@ -48,18 +48,18 @@ export default function LandingPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#F6F1EC]">
+    <div className="min-h-screen bg-[#F6F1EC] dark:bg-gray-900">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-[#E9DED2]">
+      <nav className="fixed top-0 w-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md z-50 border-b border-[#E9DED2] dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-serif font-bold text-[#4A3A32]">
+            <h1 className="text-2xl font-serif font-bold text-[#4A3A32] dark:text-gray-100">
               TilesPro
             </h1>
             
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#collections" className="text-[#4A3A32] hover:text-[#C89A63] font-medium">Collections</a>
-              <a href="#showroom" className="text-[#4A3A32] hover:text-[#C89A63] font-medium">Showroom</a>
+              <a href="#collections" className="text-[#4A3A32] dark:text-gray-300 hover:text-[#C89A63] dark:hover:text-[#C89A63] font-medium">Collections</a>
+              <a href="#showroom" className="text-[#4A3A32] dark:text-gray-300 hover:text-[#C89A63] dark:hover:text-[#C89A63] font-medium">Showroom</a>
               <Link href="/login">
                 <Button className="bg-[#C89A63] hover:bg-[#B8895A] text-white px-6">
                   Manage Inventory
@@ -292,7 +292,7 @@ export default function LandingPage() {
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 TilesPro. All rights reserved.</p>
+            <p>&copy; 2026 TilesPro. All rights reserved.</p>
           </div>
         </div>
       </footer>

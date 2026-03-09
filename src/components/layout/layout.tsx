@@ -124,7 +124,7 @@ export default function Layout({ children }: LayoutProps) {
 
           {/* Footer - Hidden on mobile */}
           <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 md:px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400 hidden md:block">
-            © 2024 Tiles Inventory Management System. All rights reserved.
+            © 2026 Tiles Inventory Management System. All rights reserved.
           </footer>
         </div>
         </NotificationProvider>
