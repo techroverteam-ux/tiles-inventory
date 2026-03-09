@@ -23,20 +23,20 @@ async function main() {
   // Create sample brands
   const brands = await Promise.all([
     prisma.brand.upsert({
-      where: { id: 'kajaria-id' },
+      where: { id: '507f1f77bcf86cd799439011' },
       update: {},
       create: {
-        id: 'kajaria-id',
+        id: '507f1f77bcf86cd799439011',
         name: 'Kajaria',
         description: 'Leading tiles manufacturer',
         contactInfo: 'contact@kajaria.com',
       },
     }),
     prisma.brand.upsert({
-      where: { id: 'somany-id' },
+      where: { id: '507f1f77bcf86cd799439012' },
       update: {},
       create: {
-        id: 'somany-id',
+        id: '507f1f77bcf86cd799439012',
         name: 'Somany',
         description: 'Premium ceramic tiles',
         contactInfo: 'info@somany.com',
@@ -47,19 +47,19 @@ async function main() {
   // Create sample categories
   const categories = await Promise.all([
     prisma.category.upsert({
-      where: { id: 'floor-tiles-id' },
+      where: { id: '507f1f77bcf86cd799439013' },
       update: {},
       create: {
-        id: 'floor-tiles-id',
+        id: '507f1f77bcf86cd799439013',
         name: 'Floor Tiles',
         description: 'Tiles for flooring applications',
       },
     }),
     prisma.category.upsert({
-      where: { id: 'wall-tiles-id' },
+      where: { id: '507f1f77bcf86cd799439014' },
       update: {},
       create: {
-        id: 'wall-tiles-id',
+        id: '507f1f77bcf86cd799439014',
         name: 'Wall Tiles',
         description: 'Tiles for wall applications',
       },
@@ -69,19 +69,19 @@ async function main() {
   // Create sample finish types
   const finishTypes = await Promise.all([
     prisma.finishType.upsert({
-      where: { id: 'glossy-id' },
+      where: { id: '507f1f77bcf86cd799439015' },
       update: {},
       create: {
-        id: 'glossy-id',
+        id: '507f1f77bcf86cd799439015',
         name: 'Glossy',
         description: 'High gloss finish',
       },
     }),
     prisma.finishType.upsert({
-      where: { id: 'matt-id' },
+      where: { id: '507f1f77bcf86cd799439016' },
       update: {},
       create: {
-        id: 'matt-id',
+        id: '507f1f77bcf86cd799439016',
         name: 'Matt',
         description: 'Matte finish',
       },
@@ -90,10 +90,10 @@ async function main() {
 
   // Create sample location
   const location = await prisma.location.upsert({
-    where: { id: 'main-warehouse-id' },
+    where: { id: '507f1f77bcf86cd799439017' },
     update: {},
     create: {
-      id: 'main-warehouse-id',
+      id: '507f1f77bcf86cd799439017',
       name: 'Main Warehouse',
       address: '123 Industrial Area, City',
     },
