@@ -27,30 +27,60 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json()
+    const formData = await request.formData()
+    const name = formData.get('name') as string
+    const code = formData.get('code') as string
+    const sizeId = formData.get('sizeId') as string
+    const categoryId = formData.get('categoryId') as string
+    const brandId = formData.get('brandId') as string
+    const locationId = formData.get('locationId') as string
+    const batchName = formData.get('batchName') as string
+    const stock = formData.get('stock') as string
+    const image = formData.get('image') as File
     
+    let imageUrl = null
+    if (image) {
+      // Save image to public folder
+      const bytes = await image.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      const fileName = `${Date.now()}-${image.name}`
+      const fs = require('fs')
+      const path = require('path')
+      const uploadPath = path.join(process.cwd(), 'public', 'uploads', fileName)
+      
+      // Create uploads directory if it doesn't exist
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true })
+      }
+      
+      fs.writeFileSync(uploadPath, buffer)
+      imageUrl = `/uploads/${fileName}`
+    }
+
     const product = await prisma.product.create({
       data: {
-        name: data.name,
-        code: data.code,
-        brandId: data.brandId,
-        categoryId: data.categoryId,
-        finishTypeId: data.sizeId,
+        name,
+        code,
+        brandId,
+        categoryId,
+        finishTypeId: sizeId,
         length: 12,
         width: 12,
         sqftPerBox: 1,
-        pcsPerBox: parseInt(data.stock),
+        pcsPerBox: parseInt(stock),
+        imageUrl
       },
     })
 
     // Create batch with location
-    if (data.locationId && data.batchName) {
+    if (locationId && batchName) {
       await prisma.batch.create({
         data: {
           productId: product.id,
-          locationId: data.locationId,
-          batchNumber: `${data.batchName}-${Date.now()}`,
-          quantity: parseInt(data.stock),
+          locationId,
+          batchNumber: `${batchName}-${Date.now()}`,
+          quantity: parseInt(stock),
           purchasePrice: 0,
           sellingPrice: 0,
         },

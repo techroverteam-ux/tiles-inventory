@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Plus, Search, Edit, Trash2, Building } from 'lucide-react'
+import { useToast } from '@/contexts/ToastContext'
 
 interface Brand {
   id: string
@@ -27,6 +28,7 @@ export default function BrandsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
   const [formData, setFormData] = useState({ name: '' })
+  const { showToast } = useToast()
 
   useEffect(() => {
     fetchBrands()
@@ -40,6 +42,7 @@ export default function BrandsPage() {
       setBrands(data.brands || [])
     } catch (error) {
       console.error('Error fetching brands:', error)
+      showToast('Failed to load brands', 'error')
     } finally {
       setLoading(false)
     }
@@ -62,9 +65,13 @@ export default function BrandsPage() {
         setIsDialogOpen(false)
         setEditingBrand(null)
         setFormData({ name: '' })
+        showToast(editingBrand ? 'Brand updated successfully!' : 'Brand created successfully!', 'success')
+      } else {
+        showToast('Error saving brand. Please try again.', 'error')
       }
     } catch (error) {
       console.error('Error saving brand:', error)
+      showToast('Error saving brand. Please try again.', 'error')
     }
   }
 
@@ -80,9 +87,13 @@ export default function BrandsPage() {
         const response = await fetch(`/api/brands/${id}`, { method: 'DELETE' })
         if (response.ok) {
           fetchBrands()
+          showToast('Brand deleted successfully!', 'success')
+        } else {
+          showToast('Error deleting brand. Please try again.', 'error')
         }
       } catch (error) {
         console.error('Error deleting brand:', error)
+        showToast('Error deleting brand. Please try again.', 'error')
       }
     }
   }
@@ -97,7 +108,7 @@ export default function BrandsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Brands</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Brands</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => {
@@ -108,9 +119,9 @@ export default function BrandsPage() {
               Add Brand
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-white dark:bg-gray-800">
             <DialogHeader>
-              <DialogTitle>{editingBrand ? 'Edit Brand' : 'Add Brand'}</DialogTitle>
+              <DialogTitle className="text-gray-900 dark:text-gray-100">{editingBrand ? 'Edit Brand' : 'Add Brand'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
@@ -134,40 +145,40 @@ export default function BrandsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Building className="h-5 w-5 text-blue-600" />
+              <Building className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <div>
-                <div className="text-2xl font-bold">{filteredBrands.length}</div>
-                <p className="text-sm text-gray-600">Total Brands</p>
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{filteredBrands.length}</div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Brands</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
               {filteredBrands.length}
             </div>
-            <p className="text-sm text-gray-600">Active Brands</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Active Brands</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {brands.reduce((total, brand) => total + (brand._count?.products || 0), 0)}
             </div>
-            <p className="text-sm text-gray-600">Total Products</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Total Products</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Search */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardContent className="p-4">
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
             <Input
               placeholder="Search brands..."
               value={search}
@@ -186,10 +197,10 @@ export default function BrandsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBrands.map((brand) => (
-            <Card key={brand.id} className="hover:shadow-lg transition-shadow">
+            <Card key={brand.id} className="hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{brand.name}</CardTitle>
+                  <CardTitle className="text-lg text-gray-900 dark:text-gray-100">{brand.name}</CardTitle>
                   <Badge variant={brand.isActive ? "default" : "secondary"}>
                     {brand.isActive ? "Active" : "Inactive"}
                   </Badge>
@@ -198,23 +209,23 @@ export default function BrandsPage() {
               <CardContent>
                 <div className="space-y-3">
                   {brand.description && (
-                    <p className="text-sm text-gray-600">{brand.description}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{brand.description}</p>
                   )}
                   
                   {brand.contactInfo && (
-                    <p className="text-sm text-blue-600">{brand.contactInfo}</p>
+                    <p className="text-sm text-blue-600 dark:text-blue-400">{brand.contactInfo}</p>
                   )}
                   
-                  <div className="flex items-center justify-between pt-3 border-t">
-                    <div className="text-sm text-gray-500">
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       {brand._count?.products || 0} products
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(brand)}>
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleDelete(brand.id)}>
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                       </Button>
                     </div>
                   </div>
@@ -226,11 +237,11 @@ export default function BrandsPage() {
       )}
 
       {filteredBrands.length === 0 && !loading && (
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-8 text-center">
-            <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No brands found</h3>
-            <p className="text-gray-500 mb-4">
+            <Building className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No brands found</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
               {search ? 'Try adjusting your search terms.' : 'Get started by adding your first brand.'}
             </p>
             <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setIsDialogOpen(true)}>

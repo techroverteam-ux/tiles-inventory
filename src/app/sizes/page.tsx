@@ -60,9 +60,13 @@ export default function SizesPage() {
         setIsDialogOpen(false)
         setEditingSize(null)
         setFormData({ name: '' })
+        alert(editingSize ? 'Size updated successfully!' : 'Size created successfully!')
+      } else {
+        alert('Error saving size. Please try again.')
       }
     } catch (error) {
       console.error('Error saving size:', error)
+      alert('Error saving size. Please try again.')
     }
   }
 
@@ -78,9 +82,13 @@ export default function SizesPage() {
         const response = await fetch(`/api/sizes/${id}`, { method: 'DELETE' })
         if (response.ok) {
           fetchSizes()
+          alert('Size deleted successfully!')
+        } else {
+          alert('Error deleting size. Please try again.')
         }
       } catch (error) {
         console.error('Error deleting size:', error)
+        alert('Error deleting size. Please try again.')
       }
     }
   }
@@ -92,7 +100,7 @@ export default function SizesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Sizes</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Sizes</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => {
@@ -103,9 +111,9 @@ export default function SizesPage() {
               Add Size
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-white dark:bg-gray-800">
             <DialogHeader>
-              <DialogTitle>{editingSize ? 'Edit Size' : 'Add Size'}</DialogTitle>
+              <DialogTitle className="text-gray-900 dark:text-gray-100">{editingSize ? 'Edit Size' : 'Add Size'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
@@ -128,39 +136,39 @@ export default function SizesPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Ruler className="h-5 w-5 text-blue-600" />
+              <Ruler className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <div>
-                <div className="text-2xl font-bold">{sizes.length}</div>
-                <p className="text-sm text-gray-600">Total Sizes</p>
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{sizes.length}</div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Sizes</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
               {sizes.filter(s => s.isActive).length}
             </div>
-            <p className="text-sm text-gray-600">Active Sizes</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Active Sizes</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {sizes.reduce((total, size) => total + (size._count?.products || 0), 0)}
             </div>
-            <p className="text-sm text-gray-600">Total Products</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Total Products</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardContent className="p-4">
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
             <Input
               placeholder="Search sizes..."
               value={search}
@@ -178,26 +186,26 @@ export default function SizesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredSizes.map((size) => (
-            <Card key={size.id} className="hover:shadow-lg transition-shadow">
+            <Card key={size.id} className="hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{size.name}</CardTitle>
+                  <CardTitle className="text-lg text-gray-900 dark:text-gray-100">{size.name}</CardTitle>
                   <Badge variant={size.isActive ? "default" : "secondary"}>
                     {size.isActive ? "Active" : "Inactive"}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between pt-3 border-t">
-                  <div className="text-sm text-gray-500">
+                <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
                     {size._count?.products || 0} products
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(size)}>
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleDelete(size.id)}>
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                     </Button>
                   </div>
                 </div>
@@ -208,11 +216,11 @@ export default function SizesPage() {
       )}
 
       {filteredSizes.length === 0 && !loading && (
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-8 text-center">
-            <Ruler className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No sizes found</h3>
-            <p className="text-gray-500 mb-4">
+            <Ruler className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No sizes found</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
               {search ? 'Try adjusting your search terms.' : 'Get started by adding your first size.'}
             </p>
             <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setIsDialogOpen(true)}>

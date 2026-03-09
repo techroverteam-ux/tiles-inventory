@@ -146,16 +146,16 @@ export default function PurchaseOrdersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Purchase Orders</h1>
-          <p className="text-gray-600 mt-1">Manage your purchase orders</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Purchase Orders</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your purchase orders</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="h-4 w-4 mr-2" />
+            <Filter className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
             Filters
           </Button>
           <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
             Export
           </Button>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -165,11 +165,11 @@ export default function PurchaseOrdersPage() {
                 New Order
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl">
+            <DialogContent className="max-w-4xl bg-white dark:bg-gray-800">
               <DialogHeader>
-                <DialogTitle>Create Purchase Order</DialogTitle>
+                <DialogTitle className="text-gray-900 dark:text-gray-100">Create Purchase Order</DialogTitle>
               </DialogHeader>
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 Purchase order form will be implemented here
               </div>
             </DialogContent>
@@ -179,44 +179,44 @@ export default function PurchaseOrdersPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-sm text-gray-600">Total Orders</p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">12</div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-600">5</div>
-            <p className="text-sm text-gray-600">Pending</p>
+            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">5</div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">7</div>
-            <p className="text-sm text-gray-600">Received</p>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">7</div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Received</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold">₹2,45,000</div>
-            <p className="text-sm text-gray-600">Total Value</p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">₹2,45,000</div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Total Value</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
       {showFilters && (
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-lg">Filters</CardTitle>
+            <CardTitle className="text-lg text-gray-900 dark:text-gray-100">Filters</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Search</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
                   <Input
                     placeholder="Search orders..."
                     value={filters.search}
@@ -227,7 +227,7 @@ export default function PurchaseOrdersPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Brand</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Brand</label>
                 <Select value={filters.brandId} onValueChange={(value) => handleFilterChange('brandId', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="All brands" />
@@ -244,7 +244,7 @@ export default function PurchaseOrdersPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
                 <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="All status" />
@@ -260,7 +260,7 @@ export default function PurchaseOrdersPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Date From</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date From</label>
                 <Input
                   type="date"
                   value={filters.dateFrom}
@@ -269,7 +269,7 @@ export default function PurchaseOrdersPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Date To</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date To</label>
                 <Input
                   type="date"
                   value={filters.dateTo}
@@ -278,7 +278,7 @@ export default function PurchaseOrdersPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Sort By</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
                 <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange('sortBy', value)}>
                   <SelectTrigger>
                     <SelectValue />
@@ -293,7 +293,7 @@ export default function PurchaseOrdersPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Order</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Order</label>
                 <Select value={filters.sortOrder} onValueChange={(value) => handleFilterChange('sortOrder', value)}>
                   <SelectTrigger>
                     <SelectValue />
@@ -316,12 +316,12 @@ export default function PurchaseOrdersPage() {
       )}
 
       {/* Orders Table */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Purchase Orders ({pagination.total})</CardTitle>
+            <CardTitle className="text-gray-900 dark:text-gray-100">Purchase Orders ({pagination.total})</CardTitle>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Show</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Show</span>
               <Select 
                 value={pagination.limit.toString()} 
                 onValueChange={(value) => setPagination(prev => ({ ...prev, limit: parseInt(value), page: 1 }))}
@@ -342,37 +342,37 @@ export default function PurchaseOrdersPage() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <ShoppingCart className="h-8 w-8 animate-spin text-gray-400" />
+              <ShoppingCart className="h-8 w-8 animate-spin text-gray-400 dark:text-gray-500" />
             </div>
           ) : (
             <>
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Order #</TableHead>
-                    <TableHead>Brand</TableHead>
-                    <TableHead>Order Date</TableHead>
-                    <TableHead>Expected Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Items</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableRow className="border-b border-gray-200 dark:border-gray-700">
+                    <TableHead className="text-gray-900 dark:text-gray-100">Order #</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Brand</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Order Date</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Expected Date</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Status</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Amount</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Items</TableHead>
+                    <TableHead className="text-right text-gray-900 dark:text-gray-100">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {orders.map((order) => (
-                    <TableRow key={order.id}>
+                    <TableRow key={order.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <TableCell>
-                        <div className="font-medium">{order.orderNumber}</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">{order.orderNumber}</div>
                       </TableCell>
-                      <TableCell>{order.brand?.name || 'N/A'}</TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">{order.brand?.name || 'N/A'}</TableCell>
                       <TableCell>
-                        <div className="text-sm">
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
                           {new Date(order.orderDate).toLocaleDateString()}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm">
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
                           {order.expectedDate ? new Date(order.expectedDate).toLocaleDateString() : 'Not set'}
                         </div>
                       </TableCell>
@@ -382,7 +382,7 @@ export default function PurchaseOrdersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">
+                        <div className="font-medium text-gray-900 dark:text-gray-100">
                           ₹{order.totalAmount.toLocaleString()}
                         </div>
                       </TableCell>
@@ -394,13 +394,13 @@ export default function PurchaseOrdersPage() {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
                           <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
                           <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
                         </div>
                       </TableCell>
@@ -411,7 +411,7 @@ export default function PurchaseOrdersPage() {
               
               {/* Pagination */}
               <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-500 dark:text-gray-400">
                   Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
                 </div>
                 <div className="flex items-center gap-2">
@@ -421,7 +421,7 @@ export default function PurchaseOrdersPage() {
                     onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                     disabled={pagination.page === 1}
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                     Previous
                   </Button>
                   <div className="flex items-center gap-1">
@@ -446,7 +446,7 @@ export default function PurchaseOrdersPage() {
                     disabled={pagination.page === pagination.pages}
                   >
                     Next
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                   </Button>
                 </div>
               </div>

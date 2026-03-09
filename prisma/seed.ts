@@ -23,18 +23,20 @@ async function main() {
   // Create sample brands
   const brands = await Promise.all([
     prisma.brand.upsert({
-      where: { name: 'Kajaria' },
+      where: { id: 'kajaria-id' },
       update: {},
       create: {
+        id: 'kajaria-id',
         name: 'Kajaria',
         description: 'Leading tiles manufacturer',
         contactInfo: 'contact@kajaria.com',
       },
     }),
     prisma.brand.upsert({
-      where: { name: 'Somany' },
+      where: { id: 'somany-id' },
       update: {},
       create: {
+        id: 'somany-id',
         name: 'Somany',
         description: 'Premium ceramic tiles',
         contactInfo: 'info@somany.com',
@@ -45,17 +47,19 @@ async function main() {
   // Create sample categories
   const categories = await Promise.all([
     prisma.category.upsert({
-      where: { name: 'Floor Tiles' },
+      where: { id: 'floor-tiles-id' },
       update: {},
       create: {
+        id: 'floor-tiles-id',
         name: 'Floor Tiles',
         description: 'Tiles for flooring applications',
       },
     }),
     prisma.category.upsert({
-      where: { name: 'Wall Tiles' },
+      where: { id: 'wall-tiles-id' },
       update: {},
       create: {
+        id: 'wall-tiles-id',
         name: 'Wall Tiles',
         description: 'Tiles for wall applications',
       },
@@ -65,17 +69,19 @@ async function main() {
   // Create sample finish types
   const finishTypes = await Promise.all([
     prisma.finishType.upsert({
-      where: { name: 'Glossy' },
+      where: { id: 'glossy-id' },
       update: {},
       create: {
+        id: 'glossy-id',
         name: 'Glossy',
         description: 'High gloss finish',
       },
     }),
     prisma.finishType.upsert({
-      where: { name: 'Matt' },
+      where: { id: 'matt-id' },
       update: {},
       create: {
+        id: 'matt-id',
         name: 'Matt',
         description: 'Matte finish',
       },
@@ -84,9 +90,10 @@ async function main() {
 
   // Create sample location
   const location = await prisma.location.upsert({
-    where: { name: 'Main Warehouse' },
+    where: { id: 'main-warehouse-id' },
     update: {},
     create: {
+      id: 'main-warehouse-id',
       name: 'Main Warehouse',
       address: '123 Industrial Area, City',
     },

@@ -2,11 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { Bell, Menu, Search, User, Plus, LogOut } from 'lucide-react'
+import { Menu, Search, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Sidebar from './sidebar'
-import Image from 'next/image'
+import MobileNav from './mobile-nav'
+import MobileQuickActions from './mobile-quick-actions'
+import NotificationDropdown from '@/components/NotificationDropdown'
+import UserDropdown from '@/components/UserDropdown'
+import { NotificationProvider } from '@/contexts/NotificationContext'
+import { ThemeProvider } from '@/contexts/ThemeContext'
+import { ToastProvider } from '@/contexts/ToastContext'
+import ThemeToggle from '@/components/ThemeToggle'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -33,72 +40,95 @@ export default function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-3 md:px-4 py-3 flex items-center justify-between sticky top-0 z-40">
-        <div className="flex items-center gap-2 md:gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="md:hidden"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden md:flex"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <Image src="/HOT LOGO TRANSPARENT.PNG" alt="Logo" width={60} height={60} className="object-contain" />
-        </div>
+    <ThemeProvider>
+      <ToastProvider>
+        <NotificationProvider>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16 md:pb-0">
+          {/* Header */}
+          <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between fixed top-0 left-0 right-0 z-50 shadow-sm">
+            <div className="flex items-center gap-3">
+              {/* Mobile Hamburger Menu */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 md:hidden"
+              >
+                <Menu className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              </Button>
+              
+              {/* Desktop Hamburger Menu */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 hidden md:inline-flex"
+              >
+                <Menu className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              </Button>
+              
+              {/* Logo */}
+              <div className="flex items-center">
+                <img
+                  src="/logo.jpeg"
+                  alt="Logo"
+                  className="h-8 w-auto object-contain"
+                />
+              </div>
+            </div>
 
-        <div className="hidden lg:flex items-center gap-4 flex-1 max-w-md mx-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search products, orders..."
-              className="pl-10"
-            />
+            {/* Desktop Search */}
+            <div className="hidden lg:flex items-center gap-4 flex-1 max-w-md mx-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+                <Input
+                  placeholder="Search..."
+                  className="pl-10 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 sm:gap-2">
+              {/* Mobile Search Button */}
+              <Button variant="ghost" size="sm" className="p-2 md:hidden">
+                <Search className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              </Button>
+              
+              <Button variant="default" size="sm" className="bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-gray-600 hidden sm:flex text-xs px-3 py-2">
+                <Plus className="h-4 w-4 mr-1 text-blue-600 dark:text-blue-400" />
+                <span className="hidden md:inline">Quick Add</span>
+              </Button>
+              <ThemeToggle />
+              <NotificationDropdown />
+              <UserDropdown onLogout={handleLogout} />
+            </div>
+          </header>
+
+          <div className="flex pt-16 sm:pt-20">
+            {/* Desktop Sidebar */}
+            <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+            {/* Main Content */}
+            <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'} min-h-screen`}>
+              <div className="p-3 sm:p-4 md:p-6">
+                {children}
+              </div>
+            </main>
           </div>
+
+          {/* Mobile Navigation */}
+          <MobileNav />
+          
+          {/* Mobile Quick Actions */}
+          <MobileQuickActions />
+
+          {/* Footer - Hidden on mobile */}
+          <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 md:px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400 hidden md:block">
+            © 2024 Tiles Inventory Management System. All rights reserved.
+          </footer>
         </div>
-
-        <div className="flex items-center gap-1 md:gap-2">
-          <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700 hidden md:flex">
-            <Plus className="h-4 w-4 mr-1" />
-            Quick Add
-          </Button>
-          <Button variant="ghost" size="sm" className="hidden sm:flex">
-            <Bell className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="sm" className="hidden sm:flex">
-            <User className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="h-5 w-5" />
-          </Button>
-        </div>
-      </header>
-
-      <div className="flex">
-        {/* Sidebar */}
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-        {/* Main Content */}
-        <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'}`}>
-          <div className="p-3 md:p-6">
-            {children}
-          </div>
-        </main>
-      </div>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 px-3 md:px-6 py-4 text-center text-xs md:text-sm text-gray-500">
-        © 2024 Tiles Inventory Management System. All rights reserved.
-      </footer>
-    </div>
+        </NotificationProvider>
+      </ToastProvider>
+    </ThemeProvider>
   )
 }

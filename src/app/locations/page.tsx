@@ -61,9 +61,13 @@ export default function LocationsPage() {
         setIsDialogOpen(false)
         setEditingLocation(null)
         setFormData({ name: '' })
+        alert(editingLocation ? 'Location updated successfully!' : 'Location created successfully!')
+      } else {
+        alert('Error saving location. Please try again.')
       }
     } catch (error) {
       console.error('Error saving location:', error)
+      alert('Error saving location. Please try again.')
     }
   }
 
@@ -79,9 +83,13 @@ export default function LocationsPage() {
         const response = await fetch(`/api/locations/${id}`, { method: 'DELETE' })
         if (response.ok) {
           fetchLocations()
+          alert('Location deleted successfully!')
+        } else {
+          alert('Error deleting location. Please try again.')
         }
       } catch (error) {
         console.error('Error deleting location:', error)
+        alert('Error deleting location. Please try again.')
       }
     }
   }
@@ -96,7 +104,7 @@ export default function LocationsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Locations</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Locations</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => {
@@ -107,9 +115,9 @@ export default function LocationsPage() {
               Add Location
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-white dark:bg-gray-800">
             <DialogHeader>
-              <DialogTitle>{editingLocation ? 'Edit Location' : 'Add Location'}</DialogTitle>
+              <DialogTitle className="text-gray-900 dark:text-gray-100">{editingLocation ? 'Edit Location' : 'Add Location'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
@@ -132,39 +140,39 @@ export default function LocationsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-blue-600" />
+              <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <div>
-                <div className="text-2xl font-bold">{locations.length}</div>
-                <p className="text-sm text-gray-600">Total Locations</p>
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{locations.length}</div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Locations</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
               {locations.filter(l => l.isActive).length}
             </div>
-            <p className="text-sm text-gray-600">Active Locations</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Active Locations</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {locations.reduce((total, location) => total + (location._count?.batches || 0), 0)}
             </div>
-            <p className="text-sm text-gray-600">Total Batches</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Total Batches</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardContent className="p-4">
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
             <Input
               placeholder="Search locations..."
               value={search}
@@ -182,10 +190,10 @@ export default function LocationsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredLocations.map((location) => (
-            <Card key={location.id} className="hover:shadow-lg transition-shadow">
+            <Card key={location.id} className="hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{location.name}</CardTitle>
+                  <CardTitle className="text-lg text-gray-900 dark:text-gray-100">{location.name}</CardTitle>
                   <Badge variant={location.isActive ? "default" : "secondary"}>
                     {location.isActive ? "Active" : "Inactive"}
                   </Badge>
@@ -194,19 +202,19 @@ export default function LocationsPage() {
               <CardContent>
                 <div className="space-y-3">
                   {location.address && (
-                    <p className="text-sm text-gray-600">{location.address}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{location.address}</p>
                   )}
                   
-                  <div className="flex items-center justify-between pt-3 border-t">
-                    <div className="text-sm text-gray-500">
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       {location._count?.batches || 0} batches
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(location)}>
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleDelete(location.id)}>
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                       </Button>
                     </div>
                   </div>
@@ -218,11 +226,11 @@ export default function LocationsPage() {
       )}
 
       {filteredLocations.length === 0 && !loading && (
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-8 text-center">
-            <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No locations found</h3>
-            <p className="text-gray-500 mb-4">
+            <MapPin className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No locations found</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
               {search ? 'Try adjusting your search terms.' : 'Get started by adding your first location.'}
             </p>
             <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setIsDialogOpen(true)}>

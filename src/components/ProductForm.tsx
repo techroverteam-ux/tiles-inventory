@@ -19,6 +19,7 @@ interface FormData {
   locationId: string
   batchName: string
   stock: string
+  image: File | null
 }
 
 export default function ProductForm({ onSuccess, product }: ProductFormProps) {
@@ -30,7 +31,8 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
     brandId: product?.brandId || '',
     locationId: '',
     batchName: '',
-    stock: product?.pcsPerBox?.toString() || ''
+    stock: product?.pcsPerBox?.toString() || '',
+    image: null
   })
   
   const [sizes, setSizes] = useState<any[]>([])
@@ -59,10 +61,10 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
         locationsRes.json()
       ])
 
-      setSizes((sizesData.sizes || []).filter(s => s.isActive))
-      setCategories((categoriesData.categories || []).filter(c => c.isActive))
-      setBrands((brandsData.brands || []).filter(b => b.isActive))
-      setLocations((locationsData.locations || []).filter(l => l.isActive))
+      setSizes((sizesData.sizes || []).filter((s: any) => s.isActive))
+      setCategories((categoriesData.categories || []).filter((c: any) => c.isActive))
+      setBrands((brandsData.brands || []).filter((b: any) => b.isActive))
+      setLocations((locationsData.locations || []).filter((l: any) => l.isActive))
     } catch (error) {
       console.error('Error fetching dropdown data:', error)
     }
@@ -76,10 +78,22 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
       const url = product ? `/api/products/${product.id}` : '/api/products'
       const method = product ? 'PUT' : 'POST'
       
+      const submitData = new FormData()
+      submitData.append('name', formData.name)
+      submitData.append('code', formData.code)
+      submitData.append('sizeId', formData.sizeId)
+      submitData.append('categoryId', formData.categoryId)
+      submitData.append('brandId', formData.brandId)
+      submitData.append('locationId', formData.locationId)
+      submitData.append('batchName', formData.batchName)
+      submitData.append('stock', formData.stock)
+      if (formData.image) {
+        submitData.append('image', formData.image)
+      }
+      
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: submitData
       })
 
       if (response.ok) {
@@ -93,7 +107,8 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
           brandId: '',
           locationId: '',
           batchName: '',
-          stock: ''
+          stock: '',
+          image: null
         })
       } else {
         console.error('API Error:', response.status, response.statusText)
@@ -213,6 +228,19 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
           required
           className="w-full"
         />
+      </div>
+
+      <div className="space-y-1">
+        <label className="text-sm font-medium">Tile Image</label>
+        <Input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setFormData({ ...formData, image: e.target.files?.[0] || null })}
+          className="w-full"
+        />
+        {formData.image && (
+          <p className="text-xs text-gray-500">Selected: {formData.image.name}</p>
+        )}
       </div>
 
       <div className="flex gap-2 pt-4">

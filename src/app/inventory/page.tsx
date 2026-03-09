@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { MobileCard, MobileCardHeader, MobileCardField, MobileStatsCard } from '@/components/ui/mobile-card'
 import { 
   Plus, 
   Search, 
@@ -187,34 +188,34 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Inventory</h1>
-          <p className="text-gray-600 mt-1">Track your stock levels and batches</p>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">Inventory</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Track your stock levels and batches</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
+          <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
+            <Filter className="h-4 w-4 md:mr-2 text-gray-600 dark:text-gray-300" />
+            <span className="hidden md:inline">Filters</span>
           </Button>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" className="hidden md:flex">
+            <Download className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
             Export
           </Button>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Stock
+              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Add Stock</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl bg-white dark:bg-gray-800">
               <DialogHeader>
-                <DialogTitle>Add Stock Batch</DialogTitle>
+                <DialogTitle className="text-gray-900 dark:text-gray-100">Add Stock Batch</DialogTitle>
               </DialogHeader>
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 Stock batch form will be implemented here
               </div>
             </DialogContent>
@@ -222,74 +223,115 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+      {/* Mobile Stats Cards */}
+      <div className="grid grid-cols-2 md:hidden gap-3">
+        <MobileStatsCard
+          title="Batches"
+          value={inventory.length}
+          subtitle="Total batches"
+          icon={<Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+        />
+        <MobileStatsCard
+          title="Low Stock"
+          value={getLowStockCount()}
+          subtitle="Need attention"
+          icon={<AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />}
+        />
+        <MobileStatsCard
+          title="Total Value"
+          value={`₹${(getTotalValue() / 1000).toFixed(0)}K`}
+          subtitle="Inventory value"
+          icon={<TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />}
+        />
+        <MobileStatsCard
+          title="Units"
+          value={getTotalQuantity()}
+          subtitle="Total units"
+          icon={<BarChart3 className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
+        />
+      </div>
+
+      {/* Desktop Stats Cards */}
+      <div className="hidden md:grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Package className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{inventory.length}</div>
-                <p className="text-sm text-gray-600">Total Batches</p>
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{inventory.length}</div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Batches</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+              <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-red-600">{getLowStockCount()}</div>
-                <p className="text-sm text-gray-600">Low Stock Items</p>
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{getLowStockCount()}</div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Low Stock Items</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <div className="text-2xl font-bold">₹{getTotalValue().toLocaleString()}</div>
-                <p className="text-sm text-gray-600">Total Value</p>
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">₹{getTotalValue().toLocaleString()}</div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Value</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <BarChart3 className="h-5 w-5 text-purple-600" />
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                <BarChart3 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{getTotalQuantity()}</div>
-                <p className="text-sm text-gray-600">Total Units</p>
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{getTotalQuantity()}</div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Units</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Mobile Search Bar */}
+      <div className="md:hidden">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+          <Input
+            placeholder="Search inventory..."
+            value={filters.search}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
       {/* Filters */}
       {showFilters && (
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-lg">Filters</CardTitle>
+            <CardTitle className="text-base md:text-lg text-gray-900 dark:text-gray-100">Filters</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Search</label>
+              <div className="space-y-2 md:block hidden">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
                   <Input
                     placeholder="Search inventory..."
                     value={filters.search}
@@ -300,7 +342,7 @@ export default function InventoryPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Location</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
                 <Select value={filters.locationId} onValueChange={(value) => handleFilterChange('locationId', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="All locations" />
@@ -317,7 +359,7 @@ export default function InventoryPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Brand</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Brand</label>
                 <Select value={filters.brandId} onValueChange={(value) => handleFilterChange('brandId', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="All brands" />
@@ -334,7 +376,7 @@ export default function InventoryPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Category</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
                 <Select value={filters.categoryId} onValueChange={(value) => handleFilterChange('categoryId', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="All categories" />
@@ -351,7 +393,7 @@ export default function InventoryPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Stock Level</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Stock Level</label>
                 <Select value={filters.lowStock} onValueChange={(value) => handleFilterChange('lowStock', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="All stock levels" />
@@ -365,7 +407,7 @@ export default function InventoryPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Date From</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date From</label>
                 <Input
                   type="date"
                   value={filters.dateFrom}
@@ -374,7 +416,7 @@ export default function InventoryPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Date To</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date To</label>
                 <Input
                   type="date"
                   value={filters.dateTo}
@@ -383,7 +425,7 @@ export default function InventoryPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Sort By</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
                 <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange('sortBy', value)}>
                   <SelectTrigger>
                     <SelectValue />
@@ -407,13 +449,104 @@ export default function InventoryPage() {
         </Card>
       )}
 
-      {/* Inventory Table */}
-      <Card>
+      {/* Mobile Inventory List */}
+      <div className="md:hidden space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Stock Batches ({pagination.total})</h2>
+          <Select 
+            value={pagination.limit.toString()} 
+            onValueChange={(value) => setPagination(prev => ({ ...prev, limit: parseInt(value), page: 1 }))}
+          >
+            <SelectTrigger className="w-16">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Package className="h-8 w-8 animate-spin text-gray-400 dark:text-gray-500" />
+          </div>
+        ) : (
+          <>
+            {inventory.map((item) => (
+              <MobileCard key={item.id}>
+                <MobileCardHeader
+                  title={item.product.name}
+                  subtitle={`${item.product.brand.name} • ${item.product.code}`}
+                  badge={
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getStockBadgeVariant(item.quantity)} className="text-xs">
+                        {item.quantity} units
+                      </Badge>
+                      {item.quantity < 10 && <AlertTriangle className="h-4 w-4 text-red-500" />}
+                    </div>
+                  }
+                  actions={
+                    <>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </>
+                  }
+                />
+                <MobileCardField label="Batch" value={<code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs">{item.batchNumber}</code>} />
+                <MobileCardField label="Location" value={item.location.name} />
+                <MobileCardField label="Shade" value={item.shade ? <Badge variant="outline" className="text-xs">{item.shade}</Badge> : '-'} />
+                <MobileCardField label="Purchase Price" value={`₹${item.purchasePrice.toLocaleString()}`} />
+                <MobileCardField label="Selling Price" value={`₹${item.sellingPrice.toLocaleString()}`} />
+                <MobileCardField label="Total Value" value={`₹${(item.quantity * item.sellingPrice).toLocaleString()}`} />
+                <MobileCardField label="Sq Ft" value={`${(item.quantity * item.product.sqftPerBox).toFixed(0)} sq ft`} />
+              </MobileCard>
+            ))}
+            
+            {/* Mobile Pagination */}
+            <div className="flex items-center justify-between pt-4">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {((pagination.page - 1) * pagination.limit) + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                  disabled={pagination.page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{pagination.page}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                  disabled={pagination.page === pagination.pages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Desktop Inventory Table */}
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hidden md:block">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Stock Batches ({pagination.total})</CardTitle>
+            <CardTitle className="text-gray-900 dark:text-gray-100">Stock Batches ({pagination.total})</CardTitle>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Show</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Show</span>
               <Select 
                 value={pagination.limit.toString()} 
                 onValueChange={(value) => setPagination(prev => ({ ...prev, limit: parseInt(value), page: 1 }))}
@@ -434,41 +567,41 @@ export default function InventoryPage() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Package className="h-8 w-8 animate-spin text-gray-400" />
+              <Package className="h-8 w-8 animate-spin text-gray-400 dark:text-gray-500" />
             </div>
           ) : (
             <>
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Batch</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Shade</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead>Purchase Price</TableHead>
-                    <TableHead>Selling Price</TableHead>
-                    <TableHead>Value</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableRow className="border-b border-gray-200 dark:border-gray-700">
+                    <TableHead className="text-gray-900 dark:text-gray-100">Product</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Batch</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Location</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Shade</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Stock</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Purchase Price</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Selling Price</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Value</TableHead>
+                    <TableHead className="text-right text-gray-900 dark:text-gray-100">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {inventory.map((item) => (
-                    <TableRow key={item.id}>
+                    <TableRow key={item.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <TableCell>
                         <div>
-                          <div className="font-medium">{item.product.name}</div>
-                          <div className="text-sm text-gray-500">
+                          <div className="font-medium text-gray-900 dark:text-gray-100">{item.product.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
                             {item.product.brand.name} • {item.product.code}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <code className="bg-gray-100 px-2 py-1 rounded text-sm">
+                        <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm text-gray-900 dark:text-gray-100">
                           {item.batchNumber}
                         </code>
                       </TableCell>
-                      <TableCell>{item.location.name}</TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">{item.location.name}</TableCell>
                       <TableCell>
                         {item.shade ? (
                           <Badge variant="outline">{item.shade}</Badge>
@@ -485,25 +618,25 @@ export default function InventoryPage() {
                             <AlertTriangle className="h-4 w-4 text-red-500" />
                           )}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {(item.quantity * item.product.sqftPerBox).toFixed(0)} sq ft
                         </div>
                       </TableCell>
-                      <TableCell>₹{item.purchasePrice.toLocaleString()}</TableCell>
-                      <TableCell>₹{item.sellingPrice.toLocaleString()}</TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="text-gray-900 dark:text-gray-100">₹{item.purchasePrice.toLocaleString()}</TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">₹{item.sellingPrice.toLocaleString()}</TableCell>
+                      <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                         ₹{(item.quantity * item.sellingPrice).toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
                           <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
                           <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
                         </div>
                       </TableCell>
@@ -512,9 +645,9 @@ export default function InventoryPage() {
                 </TableBody>
               </Table>
               
-              {/* Pagination */}
+              {/* Desktop Pagination */}
               <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-500 dark:text-gray-400">
                   Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
                 </div>
                 <div className="flex items-center gap-2">
@@ -524,7 +657,7 @@ export default function InventoryPage() {
                     onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                     disabled={pagination.page === 1}
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                     Previous
                   </Button>
                   <div className="flex items-center gap-1">
@@ -549,7 +682,7 @@ export default function InventoryPage() {
                     disabled={pagination.page === pagination.pages}
                   >
                     Next
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                   </Button>
                 </div>
               </div>

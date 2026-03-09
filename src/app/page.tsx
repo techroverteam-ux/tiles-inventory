@@ -1,108 +1,172 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { MobileStatsCard, MobileCard, MobileCardHeader, MobileCardField } from '@/components/ui/mobile-card'
 import { 
   Package, 
   ShoppingCart, 
   TrendingUp, 
-  AlertTriangle,
-  DollarSign,
-  Users
+  AlertTriangle
 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
-
-const salesData = [
-  { month: 'Jan', sales: 4000, purchases: 2400 },
-  { month: 'Feb', sales: 3000, purchases: 1398 },
-  { month: 'Mar', sales: 2000, purchases: 9800 },
-  { month: 'Apr', sales: 2780, purchases: 3908 },
-  { month: 'May', sales: 1890, purchases: 4800 },
-  { month: 'Jun', sales: 2390, purchases: 3800 },
-]
-
-const lowStockItems = [
-  { name: 'Ceramic Floor Tile 60x60', stock: 5, minStock: 20 },
-  { name: 'Marble Wall Tile 30x30', stock: 8, minStock: 15 },
-  { name: 'Porcelain Tile 80x80', stock: 3, minStock: 10 },
-]
-
-const recentOrders = [
-  { id: 'PO001', type: 'Purchase', brand: 'Kajaria', amount: 45000, status: 'Pending' },
-  { id: 'SO001', type: 'Sales', customer: 'ABC Builders', amount: 25000, status: 'Delivered' },
-  { id: 'PO002', type: 'Purchase', brand: 'Somany', amount: 32000, status: 'Received' },
-]
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function Dashboard() {
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    monthlySales: 0,
+    purchaseOrders: 0,
+    lowStockItems: 0
+  })
+  const [salesData, setSalesData] = useState<any[]>([])
+  const [lowStockItems, setLowStockItems] = useState<any[]>([])
+  const [recentOrders, setRecentOrders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
+
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch stats
+      const statsResponse = await fetch('/api/dashboard/stats')
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json()
+        setStats(statsData)
+      }
+
+      // Fetch sales data
+      const salesResponse = await fetch('/api/dashboard/sales-data')
+      if (salesResponse.ok) {
+        const salesData = await salesResponse.json()
+        setSalesData(salesData)
+      }
+
+      // Fetch low stock items
+      const lowStockResponse = await fetch('/api/dashboard/low-stock')
+      if (lowStockResponse.ok) {
+        const lowStockData = await lowStockResponse.json()
+        setLowStockItems(lowStockData)
+      }
+
+      // Fetch recent orders
+      const ordersResponse = await fetch('/api/dashboard/recent-orders')
+      if (ordersResponse.ok) {
+        const ordersData = await ordersResponse.json()
+        setRecentOrders(ordersData)
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Package className="h-8 w-8 animate-spin text-gray-400 dark:text-gray-500" />
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Dashboard</h1>
-        <div className="text-xs md:text-sm text-gray-500">
-          Last updated: {new Date().toLocaleString()}
-        </div>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
+        <p className="text-sm text-gray-600 dark:text-gray-400 md:hidden">Overview of your inventory</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-        <Card>
+      {/* Mobile Stats Cards */}
+      <div className="grid grid-cols-2 md:hidden gap-3">
+        <MobileStatsCard
+          title="Products"
+          value={stats.totalProducts.toLocaleString()}
+          subtitle="Active items"
+          icon={<Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+        />
+        <MobileStatsCard
+          title="Sales"
+          value={`₹${(stats.monthlySales / 1000).toFixed(0)}K`}
+          subtitle="This month"
+          icon={<TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />}
+        />
+        <MobileStatsCard
+          title="Orders"
+          value={stats.purchaseOrders}
+          subtitle="Active"
+          icon={<ShoppingCart className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
+        />
+        <MobileStatsCard
+          title="Low Stock"
+          value={stats.lowStockItems}
+          subtitle="Need attention"
+          icon={<AlertTriangle className="h-4 w-4 text-red-500 dark:text-red-400" />}
+        />
+      </div>
+
+      {/* Desktop Stats Cards */}
+      <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Total Products</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Products</CardTitle>
+            <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl md:text-2xl font-bold">1,234</div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalProducts.toLocaleString()}</div>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Active products</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Monthly Sales</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Monthly Sales</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl md:text-2xl font-bold">₹2,45,000</div>
-            <p className="text-xs text-muted-foreground">+8% from last month</p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">₹{stats.monthlySales.toLocaleString()}</div>
+            <p className="text-xs text-gray-600 dark:text-gray-400">This month</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Purchase Orders</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Purchase Orders</CardTitle>
+            <ShoppingCart className="h-4 w-4 text-purple-600 dark:text-purple-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl md:text-2xl font-bold">45</div>
-            <p className="text-xs text-muted-foreground">5 pending delivery</p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.purchaseOrders}</div>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Active orders</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Low Stock Items</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Low Stock Items</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-500 dark:text-red-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl md:text-2xl font-bold text-red-600">12</div>
-            <p className="text-xs text-muted-foreground">Requires attention</p>
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.lowStockItems}</div>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Requires attention</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Sales Chart */}
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-base md:text-lg">Sales vs Purchases</CardTitle>
+            <CardTitle className="text-base md:text-lg text-gray-900 dark:text-gray-100">Sales vs Purchases</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={200}>
               <BarChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" className="dark:stroke-gray-600" />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#6B7280' }} className="dark:fill-gray-400" />
+                <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} className="dark:fill-gray-400" />
+                <Tooltip contentStyle={{ backgroundColor: 'var(--background)', border: '1px solid var(--border)', fontSize: '12px' }} />
                 <Bar dataKey="sales" fill="#3b82f6" />
                 <Bar dataKey="purchases" fill="#10b981" />
               </BarChart>
@@ -111,62 +175,100 @@ export default function Dashboard() {
         </Card>
 
         {/* Low Stock Alert */}
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-              <AlertTriangle className="h-4 md:h-5 w-4 md:w-5 text-red-500" />
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg text-gray-900 dark:text-gray-100">
+              <AlertTriangle className="h-4 w-4 text-red-500 dark:text-red-400" />
               Low Stock Alert
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 md:space-y-4">
-              {lowStockItems.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-2 md:p-3 bg-red-50 rounded-lg">
-                  <div>
-                    <p className="font-medium text-xs md:text-sm">{item.name}</p>
-                    <p className="text-xs text-gray-500">Min stock: {item.minStock}</p>
+            <div className="space-y-3">
+              {lowStockItems.length === 0 ? (
+                <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm">No low stock items</p>
+              ) : (
+                lowStockItems.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{item.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Min stock: {item.minStock}</p>
+                    </div>
+                    <Badge variant="destructive" className="text-xs ml-2">{item.stock} left</Badge>
                   </div>
-                  <Badge variant="destructive" className="text-xs">{item.stock} left</Badge>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Orders */}
-      <Card>
+      {/* Recent Orders - Mobile Optimized */}
+      <div className="md:hidden">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Recent Orders</h2>
+        <div className="space-y-3">
+          {recentOrders.length === 0 ? (
+            <MobileCard>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm">No recent orders</p>
+            </MobileCard>
+          ) : (
+            recentOrders.map((order) => (
+              <MobileCard key={order.id}>
+                <MobileCardHeader
+                  title={order.id}
+                  subtitle={order.type === 'Purchase' ? order.brand : order.customer}
+                  badge={<Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'} className="text-xs">{order.status}</Badge>}
+                />
+                <MobileCardField
+                  label="Amount"
+                  value={`₹${order.amount.toLocaleString()}`}
+                />
+                <MobileCardField
+                  label="Type"
+                  value={order.type}
+                />
+              </MobileCard>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Recent Orders - Desktop */}
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hidden md:block">
         <CardHeader>
-          <CardTitle className="text-base md:text-lg">Recent Orders</CardTitle>
+          <CardTitle className="text-lg text-gray-900 dark:text-gray-100">Recent Orders</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 md:space-y-4">
-            {recentOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
-                <div className="flex items-center gap-3 md:gap-4">
-                  <div className={`p-2 rounded-full ${
-                    order.type === 'Purchase' ? 'bg-green-100' : 'bg-blue-100'
-                  }`}>
-                    {order.type === 'Purchase' ? 
-                      <ShoppingCart className="h-3 md:h-4 w-3 md:w-4 text-green-600" /> : 
-                      <TrendingUp className="h-3 md:h-4 w-3 md:w-4 text-blue-600" />
-                    }
+          <div className="space-y-4">
+            {recentOrders.length === 0 ? (
+              <p className="text-gray-500 dark:text-gray-400 text-center py-4">No recent orders</p>
+            ) : (
+              recentOrders.map((order) => (
+                <div key={order.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-2 rounded-full ${
+                      order.type === 'Purchase' ? 'bg-green-100 dark:bg-green-900/20' : 'bg-blue-100 dark:bg-blue-900/20'
+                    }`}>
+                      {order.type === 'Purchase' ? 
+                        <ShoppingCart className="h-4 w-4 text-green-600 dark:text-green-400" /> : 
+                        <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      }
+                    </div>
+                    <div>
+                      <p className="font-medium text-base text-gray-900 dark:text-gray-100">{order.id}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {order.type === 'Purchase' ? order.brand : order.customer}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-sm md:text-base">{order.id}</p>
-                    <p className="text-xs md:text-sm text-gray-500">
-                      {order.type === 'Purchase' ? order.brand : order.customer}
-                    </p>
+                  <div className="text-right">
+                    <p className="font-medium text-base text-gray-900 dark:text-gray-100">₹{order.amount.toLocaleString()}</p>
+                    <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'} className="text-xs">
+                      {order.status}
+                    </Badge>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-medium text-sm md:text-base">₹{order.amount.toLocaleString()}</p>
-                  <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'} className="text-xs">
-                    {order.status}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

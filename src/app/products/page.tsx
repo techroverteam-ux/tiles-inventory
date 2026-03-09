@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { MobileCard, MobileCardHeader, MobileCardField, MobileCardActions } from '@/components/ui/mobile-card'
 import ProductForm from '@/components/ProductForm'
 import { 
   Plus, 
@@ -20,7 +21,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Package,
-  Calendar
+  Calendar,
+  MoreVertical
 } from 'lucide-react'
 
 interface Product {
@@ -39,6 +41,7 @@ interface Product {
   totalStock: number
   isActive: boolean
   createdAt: string
+  batches?: { location?: { name: string } }[]
 }
 
 interface Filters {
@@ -168,27 +171,27 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Products</h1>
-          <p className="text-gray-600 mt-1">Manage your tile inventory</p>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">Products</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage your tile inventory</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
+          <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
+            <Filter className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Filters</span>
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" size="sm" className="hidden md:flex">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Product
+              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Add Product</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
@@ -204,16 +207,29 @@ export default function ProductsPage() {
         </div>
       </div>
 
+      {/* Mobile Search Bar */}
+      <div className="md:hidden">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search products..."
+            value={filters.search}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
       {/* Filters */}
       {showFilters && (
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-lg">Filters</CardTitle>
+            <CardTitle className="text-base md:text-lg text-gray-900 dark:text-gray-100">Filters</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Search</label>
+              <div className="space-y-2 md:block hidden">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
@@ -226,7 +242,7 @@ export default function ProductsPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Brand</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Brand</label>
                 <Select value={filters.brandId} onValueChange={(value) => handleFilterChange('brandId', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="All brands" />
@@ -243,7 +259,7 @@ export default function ProductsPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Category</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
                 <Select value={filters.categoryId} onValueChange={(value) => handleFilterChange('categoryId', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="All categories" />
@@ -260,7 +276,7 @@ export default function ProductsPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
                 <Select value={filters.isActive} onValueChange={(value) => handleFilterChange('isActive', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="All status" />
@@ -274,7 +290,7 @@ export default function ProductsPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Date From</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date From</label>
                 <Input
                   type="date"
                   value={filters.dateFrom}
@@ -283,7 +299,7 @@ export default function ProductsPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Date To</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date To</label>
                 <Input
                   type="date"
                   value={filters.dateTo}
@@ -292,7 +308,7 @@ export default function ProductsPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Sort By</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
                 <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange('sortBy', value)}>
                   <SelectTrigger>
                     <SelectValue />
@@ -307,7 +323,7 @@ export default function ProductsPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Order</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Order</label>
                 <Select value={filters.sortOrder} onValueChange={(value) => handleFilterChange('sortOrder', value)}>
                   <SelectTrigger>
                     <SelectValue />
@@ -329,13 +345,95 @@ export default function ProductsPage() {
         </Card>
       )}
 
-      {/* Products Table */}
-      <Card>
+      {/* Mobile Products List */}
+      <div className="md:hidden space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Products ({products.length})</h2>
+          <Select 
+            value={pagination.limit.toString()} 
+            onValueChange={(value) => setPagination(prev => ({ ...prev, limit: parseInt(value), page: 1 }))}
+          >
+            <SelectTrigger className="w-16">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Package className="h-8 w-8 animate-spin text-gray-400 dark:text-gray-500" />
+          </div>
+        ) : (
+          <>
+            {products.map((product) => (
+              <MobileCard key={product.id}>
+                <MobileCardHeader
+                  title={product.name}
+                  subtitle={`${product.brand.name} • ${product.code}`}
+                  badge={<Badge variant={product.pcsPerBox > 0 ? 'default' : 'destructive'} className="text-xs">{product.pcsPerBox} units</Badge>}
+                  actions={
+                    <>
+                      <Button variant="ghost" size="sm" onClick={() => handleView(product)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(product)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(product.id)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </>
+                  }
+                />
+                <MobileCardField label="Category" value={product.category.name} />
+                <MobileCardField label="Finish" value={product.finishType.name} />
+                <MobileCardField label="Pieces/Box" value={`${product.pcsPerBox} pcs`} />
+                <MobileCardField label="Location" value={product.batches?.[0]?.location?.name || 'No location'} />
+                <MobileCardField label="Created" value={new Date(product.createdAt).toLocaleDateString()} />
+              </MobileCard>
+            ))}
+            
+            {/* Mobile Pagination */}
+            <div className="flex items-center justify-between pt-4">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {((pagination.page - 1) * pagination.limit) + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                  disabled={pagination.page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{pagination.page}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                  disabled={pagination.page === pagination.pages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Desktop Products Table */}
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hidden md:block">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Products ({products.length})</CardTitle>
+            <CardTitle className="text-gray-900 dark:text-gray-100">Products ({products.length})</CardTitle>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Show</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Show</span>
               <Select 
                 value={pagination.limit.toString()} 
                 onValueChange={(value) => setPagination(prev => ({ ...prev, limit: parseInt(value), page: 1 }))}
@@ -356,39 +454,39 @@ export default function ProductsPage() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Package className="h-8 w-8 animate-spin text-gray-400" />
+              <Package className="h-8 w-8 animate-spin text-gray-400 dark:text-gray-500" />
             </div>
           ) : (
             <>
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Brand</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Dimensions</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableRow className="border-b border-gray-200 dark:border-gray-700">
+                    <TableHead className="text-gray-900 dark:text-gray-100">Product</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Brand</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Category</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Dimensions</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Stock</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Location</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Created</TableHead>
+                    <TableHead className="text-right text-gray-900 dark:text-gray-100">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {products.map((product) => (
-                    <TableRow key={product.id}>
+                    <TableRow key={product.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <TableCell>
                         <div>
-                          <div className="font-medium">{product.name}</div>
-                          <div className="text-sm text-gray-500">{product.code}</div>
+                          <div className="font-medium text-gray-900 dark:text-gray-100">{product.name}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{product.code}</div>
                         </div>
                       </TableCell>
-                      <TableCell>{product.brand.name}</TableCell>
-                      <TableCell>{product.category.name}</TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">{product.brand.name}</TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">{product.category.name}</TableCell>
                       <TableCell>
-                        <div className="text-sm">
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
                           {product.finishType.name}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
                           {product.pcsPerBox} pcs
                         </div>
                       </TableCell>
@@ -398,25 +496,25 @@ export default function ProductsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm">
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
                           {product.batches?.[0]?.location?.name || 'No location'}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm">
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
                           {new Date(product.createdAt).toLocaleDateString()}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button variant="ghost" size="sm" onClick={() => handleView(product)}>
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(product)}>
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleDelete(product.id)}>
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
                         </div>
                       </TableCell>
@@ -425,9 +523,9 @@ export default function ProductsPage() {
                 </TableBody>
               </Table>
               
-              {/* Pagination */}
+              {/* Desktop Pagination */}
               <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-500 dark:text-gray-400">
                   Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
                 </div>
                 <div className="flex items-center gap-2">
@@ -479,12 +577,12 @@ export default function ProductsPage() {
           </DialogHeader>
           {selectedProduct && (
             <div className="space-y-4">
-              <div><strong>Name:</strong> {selectedProduct.name}</div>
-              <div><strong>Code:</strong> {selectedProduct.code}</div>
-              <div><strong>Brand:</strong> {selectedProduct.brand.name}</div>
-              <div><strong>Category:</strong> {selectedProduct.category.name}</div>
-              <div><strong>Size:</strong> {selectedProduct.finishType.name}</div>
-              <div><strong>Stock:</strong> {selectedProduct.pcsPerBox} units</div>
+              <div className="text-gray-900 dark:text-gray-100"><strong>Name:</strong> {selectedProduct.name}</div>
+              <div className="text-gray-900 dark:text-gray-100"><strong>Code:</strong> {selectedProduct.code}</div>
+              <div className="text-gray-900 dark:text-gray-100"><strong>Brand:</strong> {selectedProduct.brand.name}</div>
+              <div className="text-gray-900 dark:text-gray-100"><strong>Category:</strong> {selectedProduct.category.name}</div>
+              <div className="text-gray-900 dark:text-gray-100"><strong>Size:</strong> {selectedProduct.finishType.name}</div>
+              <div className="text-gray-900 dark:text-gray-100"><strong>Stock:</strong> {selectedProduct.pcsPerBox} units</div>
             </div>
           )}
         </DialogContent>

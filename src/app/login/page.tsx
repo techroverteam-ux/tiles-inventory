@@ -52,12 +52,11 @@ export default function LoginPage() {
           <CardHeader className="text-center pb-8 pt-8">
             <div className="flex justify-center mb-6">
               <Image
-                src="/HOT LOGO TRANSPARENT.PNG"
+                src="/logo.jpeg"
                 alt="Company Logo"
-                width={250}
-                height={120}
+                width={200}
+                height={80}
                 className="object-contain max-w-full h-auto"
-                style={{ filter: 'brightness(1) contrast(1)' }}
               />
             </div>
             <p className="text-gray-600 mt-3 text-lg">Welcome back! Please sign in to continue</p>
