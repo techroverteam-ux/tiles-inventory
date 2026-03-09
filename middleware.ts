@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
 
   // Public routes that don't require authentication
   if (request.nextUrl.pathname.startsWith('/login') || 
-      request.nextUrl.pathname.startsWith('/api/auth/login')) {
+      request.nextUrl.pathname.startsWith('/api')) {
     return NextResponse.next()
   }
 
@@ -18,13 +18,17 @@ export function middleware(request: NextRequest) {
 
   // Check if user is authenticated
   if (!token) {
+    console.log('No token found, redirecting to login')
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
   try {
-    jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret')
+    const secret = process.env.JWT_SECRET || 'tiles-inventory-secret-2024'
+    jwt.verify(token, secret)
+    console.log('Token verified successfully')
     return NextResponse.next()
   } catch (error) {
+    console.log('Token verification failed:', error)
     return NextResponse.redirect(new URL('/login', request.url))
   }
 }
