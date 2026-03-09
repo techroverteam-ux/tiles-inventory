@@ -70,9 +70,13 @@ export default function Layout({ children }: LayoutProps) {
               {/* Logo */}
               <div className="flex items-center">
                 <img
-                  src="/logo.jpeg"
+                  src="/logo.jpeg?v=1"
                   alt="Logo"
                   className="h-8 w-auto object-contain"
+                  onError={(e) => {
+                    console.error('Header logo failed to load')
+                    e.currentTarget.style.display = 'none'
+                  }}
                 />
               </div>
             </div>

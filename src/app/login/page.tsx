@@ -33,7 +33,6 @@ export default function LoginPage() {
 
       if (response.ok) {
         router.push('/')
-        router.refresh()
       } else {
         const errorData = await response.json()
         setError(errorData.error || 'Login failed')
@@ -68,9 +67,13 @@ export default function LoginPage() {
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur-lg opacity-30"></div>
                 <div className="relative bg-white dark:bg-gray-700 rounded-2xl p-4 shadow-lg">
                   <img
-                    src="/logo.jpeg"
+                    src="/logo.jpeg?v=1"
                     alt="Company Logo"
                     className="h-16 w-auto object-contain mx-auto"
+                    onError={(e) => {
+                      console.error('Logo failed to load')
+                      e.currentTarget.style.display = 'none'
+                    }}
                   />
                 </div>
               </div>
