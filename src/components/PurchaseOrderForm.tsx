@@ -5,6 +5,30 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
+interface Brand {
+  id: string
+  name: string
+  isActive: boolean
+}
+
+interface Category {
+  id: string
+  name: string
+  isActive: boolean
+}
+
+interface Size {
+  id: string
+  name: string
+  isActive: boolean
+}
+
+interface Location {
+  id: string
+  name: string
+  isActive: boolean
+}
+
 interface PurchaseOrderFormProps {
   onSuccess: () => void
   order?: any
@@ -33,10 +57,10 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
     quantity: ''
   })
   
-  const [brands, setBrands] = useState<any[]>([])
-  const [categories, setCategories] = useState<any[]>([])
-  const [sizes, setSizes] = useState<any[]>([])
-  const [locations, setLocations] = useState<any[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [sizes, setSizes] = useState<Size[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -59,10 +83,10 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
         locationsRes.json()
       ])
 
-      setBrands((brandsData.brands || []).filter(b => b.isActive))
-      setCategories((categoriesData.categories || []).filter(c => c.isActive))
-      setSizes((sizesData.sizes || []).filter(s => s.isActive))
-      setLocations((locationsData.locations || []).filter(l => l.isActive))
+      setBrands((brandsData.brands || []).filter((b: Brand) => b.isActive))
+      setCategories((categoriesData.categories || []).filter((c: Category) => c.isActive))
+      setSizes((sizesData.sizes || []).filter((s: Size) => s.isActive))
+      setLocations((locationsData.locations || []).filter((l: Location) => l.isActive))
     } catch (error) {
       console.error('Error fetching dropdown data:', error)
     }

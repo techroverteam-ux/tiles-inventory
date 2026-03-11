@@ -11,6 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Search, Edit, Trash2, Tag } from 'lucide-react'
 import { useToast } from '@/contexts/ToastContext'
 
+interface Brand {
+  id: string
+  name: string
+  isActive: boolean
+}
+
 interface Category {
   id: string
   name: string
@@ -34,7 +40,7 @@ export default function CategoriesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [formData, setFormData] = useState({ name: '', brandId: '' })
-  const [brands, setBrands] = useState<any[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
 
   useEffect(() => {
     fetchCategories()
@@ -58,7 +64,7 @@ export default function CategoriesPage() {
     try {
       const response = await fetch('/api/brands')
       const data = await response.json()
-      setBrands((data.brands || []).filter(b => b.isActive))
+      setBrands((data.brands || []).filter((b: Brand) => b.isActive))
     } catch (error) {
       console.error('Error fetching brands:', error)
     }

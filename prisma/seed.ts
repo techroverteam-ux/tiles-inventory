@@ -53,6 +53,7 @@ async function main() {
         id: '507f1f77bcf86cd799439013',
         name: 'Floor Tiles',
         description: 'Tiles for flooring applications',
+        brandId: '507f1f77bcf86cd799439011', // Kajaria
       },
     }),
     prisma.category.upsert({
@@ -62,6 +63,7 @@ async function main() {
         id: '507f1f77bcf86cd799439014',
         name: 'Wall Tiles',
         description: 'Tiles for wall applications',
+        brandId: '507f1f77bcf86cd799439012', // Somany
       },
     }),
   ])
