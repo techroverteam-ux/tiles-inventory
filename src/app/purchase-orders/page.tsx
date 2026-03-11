@@ -22,6 +22,7 @@ import {
   Calendar,
   Package
 } from 'lucide-react'
+import PurchaseOrderForm from '@/components/PurchaseOrderForm'
 
 interface PurchaseOrder {
   id: string
@@ -53,6 +54,9 @@ export default function PurchaseOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [showViewDialog, setShowViewDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null)
   
   const [pagination, setPagination] = useState({
     page: 1,
@@ -74,20 +78,12 @@ export default function PurchaseOrdersPage() {
   const fetchOrders = async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-        ...Object.fromEntries(
-          Object.entries(filters).filter(([_, value]) => value !== '')
-        )
-      })
-      
-      const response = await fetch(`/api/purchase-orders?${params}`)
+      const response = await fetch('/api/purchase-orders')
       const data = await response.json()
       
       if (response.ok) {
         setOrders(data.orders || [])
-        setPagination(data.pagination || pagination)
+        setPagination(prev => ({ ...prev, total: data.orders?.length || 0 }))
       }
     } catch (error) {
       console.error('Error fetching purchase orders:', error)
@@ -108,7 +104,7 @@ export default function PurchaseOrdersPage() {
 
   useEffect(() => {
     fetchOrders()
-  }, [pagination.page, pagination.limit, filters])
+  }, [])
 
   useEffect(() => {
     fetchBrands()
@@ -129,6 +125,16 @@ export default function PurchaseOrdersPage() {
       sortBy: 'createdAt',
       sortOrder: 'desc'
     })
+  }
+
+  const handleView = (order: PurchaseOrder) => {
+    setSelectedOrder(order)
+    setShowViewDialog(true)
+  }
+
+  const handleEdit = (order: PurchaseOrder) => {
+    setSelectedOrder(order)
+    setShowEditDialog(true)
   }
 
   const getStatusBadgeVariant = (status: string) => {
@@ -169,9 +175,10 @@ export default function PurchaseOrdersPage() {
               <DialogHeader>
                 <DialogTitle className="text-gray-900 dark:text-gray-100">Create Purchase Order</DialogTitle>
               </DialogHeader>
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                Purchase order form will be implemented here
-              </div>
+              <PurchaseOrderForm onSuccess={() => {
+                setShowAddDialog(false)
+                fetchOrders()
+              }} />
             </DialogContent>
           </Dialog>
         </div>
@@ -181,25 +188,31 @@ export default function PurchaseOrdersPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">12</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{orders.length}</div>
             <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
           </CardContent>
         </Card>
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">5</div>
+            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+              {orders.filter(o => o.status === 'PENDING').length}
+            </div>
             <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
           </CardContent>
         </Card>
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">7</div>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {orders.filter(o => o.status === 'RECEIVED').length}
+            </div>
             <p className="text-sm text-gray-600 dark:text-gray-400">Received</p>
           </CardContent>
         </Card>
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">₹2,45,000</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              ₹{orders.reduce((sum, o) => sum + o.totalAmount, 0).toLocaleString()}
+            </div>
             <p className="text-sm text-gray-600 dark:text-gray-400">Total Value</p>
           </CardContent>
         </Card>
@@ -319,7 +332,7 @@ export default function PurchaseOrdersPage() {
       <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-gray-900 dark:text-gray-100">Purchase Orders ({pagination.total})</CardTitle>
+            <CardTitle className="text-gray-900 dark:text-gray-100">Purchase Orders ({orders.length})</CardTitle>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">Show</span>
               <Select 
@@ -393,13 +406,13 @@ export default function PurchaseOrdersPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleView(order)}>
                             <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(order)}>
                             <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(order.id)}>
                             <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
                         </div>
@@ -454,6 +467,44 @@ export default function PurchaseOrdersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* View Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>View Purchase Order</DialogTitle>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-4">
+              <div><strong>Order Number:</strong> {selectedOrder.orderNumber}</div>
+              <div><strong>Brand:</strong> {selectedOrder.brand?.name}</div>
+              <div><strong>Order Date:</strong> {new Date(selectedOrder.orderDate).toLocaleDateString()}</div>
+              <div><strong>Expected Date:</strong> {selectedOrder.expectedDate ? new Date(selectedOrder.expectedDate).toLocaleDateString() : 'Not set'}</div>
+              <div><strong>Status:</strong> {selectedOrder.status}</div>
+              <div><strong>Amount:</strong> ₹{selectedOrder.totalAmount.toLocaleString()}</div>
+              <div><strong>Notes:</strong> {selectedOrder.notes || 'No notes'}</div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Edit Purchase Order</DialogTitle>
+          </DialogHeader>
+          {selectedOrder && (
+            <PurchaseOrderForm 
+              order={selectedOrder}
+              onSuccess={() => {
+                setShowEditDialog(false)
+                fetchOrders()
+              }} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

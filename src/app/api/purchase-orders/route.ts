@@ -81,28 +81,8 @@ export async function POST(request: NextRequest) {
         brandId: data.brandId,
         orderDate: new Date(data.orderDate),
         expectedDate: data.expectedDate ? new Date(data.expectedDate) : null,
-        status: data.status || 'PENDING',
-        totalAmount: data.totalAmount,
-        notes: data.notes,
-        items: {
-          create: data.items.map((item: any) => ({
-            productId: item.productId,
-            locationId: item.locationId,
-            batchNumber: item.batchNumber,
-            shade: item.shade,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            totalPrice: item.quantity * item.unitPrice,
-          })),
-        },
-      },
-      include: {
-        brand: true,
-        items: {
-          include: {
-            product: true,
-          },
-        },
+        status: 'PENDING',
+        totalAmount: 0,
       },
     })
 

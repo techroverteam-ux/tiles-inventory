@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { MobileCard, MobileCardHeader, MobileCardField, MobileCardActions } from '@/components/ui/mobile-card'
 import ProductForm from '@/components/ProductForm'
 import { 
   Plus, 
@@ -17,12 +16,13 @@ import {
   Download, 
   Edit, 
   Trash2, 
-  Eye,
-  ChevronLeft,
-  ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Package,
-  Calendar,
-  MoreVertical
+  MapPin,
+  Layers,
+  Tag,
+  Box
 } from 'lucide-react'
 
 interface Product {
@@ -30,6 +30,7 @@ interface Product {
   name: string
   code: string
   description?: string
+  imageUrl?: string
   brand: { name: string }
   category: { name: string }
   finishType: { name: string }
@@ -41,7 +42,10 @@ interface Product {
   totalStock: number
   isActive: boolean
   createdAt: string
-  batches?: { location?: { name: string } }[]
+  batches?: { 
+    batchNumber: string
+    location?: { name: string } 
+  }[]
 }
 
 interface Filters {
@@ -62,9 +66,9 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
-  const [showViewDialog, setShowViewDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [expandedProduct, setExpandedProduct] = useState<string | null>(null)
   
   const [pagination, setPagination] = useState({
     page: 1,
@@ -104,7 +108,7 @@ export default function ProductsPage() {
     try {
       const response = await fetch('/api/brands')
       const data = await response.json()
-      if (response.ok) setBrands(data)
+      if (response.ok) setBrands(data.brands || [])
     } catch (error) {
       console.error('Error fetching brands:', error)
     }
@@ -114,7 +118,7 @@ export default function ProductsPage() {
     try {
       const response = await fetch('/api/categories')
       const data = await response.json()
-      if (response.ok) setCategories(data)
+      if (response.ok) setCategories(data.categories || [])
     } catch (error) {
       console.error('Error fetching categories:', error)
     }
@@ -122,9 +126,6 @@ export default function ProductsPage() {
 
   useEffect(() => {
     fetchProducts()
-  }, [])
-
-  useEffect(() => {
     fetchBrands()
     fetchCategories()
   }, [])
@@ -147,11 +148,6 @@ export default function ProductsPage() {
     })
   }
 
-  const handleView = (product: Product) => {
-    setSelectedProduct(product)
-    setShowViewDialog(true)
-  }
-
   const handleEdit = (product: Product) => {
     setSelectedProduct(product)
     setShowEditDialog(true)
@@ -168,6 +164,10 @@ export default function ProductsPage() {
         console.error('Error deleting product:', error)
       }
     }
+  }
+
+  const toggleExpand = (productId: string) => {
+    setExpandedProduct(expandedProduct === productId ? null : productId)
   }
 
   return (
@@ -194,9 +194,9 @@ export default function ProductsPage() {
                 <span className="hidden md:inline">Add Product</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-xl max-h-[85vh] overflow-hidden">
               <DialogHeader>
-                <DialogTitle>Add New Product</DialogTitle>
+                <DialogTitle className="text-base">Add New Product</DialogTitle>
               </DialogHeader>
               <ProductForm onSuccess={() => {
                 setShowAddDialog(false)
@@ -290,24 +290,6 @@ export default function ProductsPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date From</label>
-                <Input
-                  type="date"
-                  value={filters.dateFrom}
-                  onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date To</label>
-                <Input
-                  type="date"
-                  value={filters.dateTo}
-                  onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
                 <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange('sortBy', value)}>
                   <SelectTrigger>
@@ -345,84 +327,155 @@ export default function ProductsPage() {
         </Card>
       )}
 
-      {/* Mobile Products List */}
-      <div className="md:hidden space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Products ({products.length})</h2>
-          <Select 
-            value={pagination.limit.toString()} 
-            onValueChange={(value) => setPagination(prev => ({ ...prev, limit: parseInt(value), page: 1 }))}
-          >
-            <SelectTrigger className="w-16">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="25">25</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
+      {/* Mobile Products List - Expandable Cards */}
+      <div className="md:hidden space-y-2">
         {loading ? (
-          <div className="flex items-center justify-center py-8">
+          <div className="flex items-center justify-center py-12">
             <Package className="h-8 w-8 animate-spin text-gray-400 dark:text-gray-500" />
           </div>
         ) : (
           <>
             {products.map((product) => (
-              <MobileCard key={product.id}>
-                <MobileCardHeader
-                  title={product.name}
-                  subtitle={`${product.brand.name} • ${product.code}`}
-                  badge={<Badge variant={product.pcsPerBox > 0 ? 'default' : 'destructive'} className="text-xs">{product.pcsPerBox} units</Badge>}
-                  actions={
-                    <>
-                      <Button variant="ghost" size="sm" onClick={() => handleView(product)}>
-                        <Eye className="h-4 w-4" />
+              <Card key={product.id} className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="p-3">
+                  <div className="flex items-start gap-3">
+                    {/* Product Image */}
+                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 flex items-center justify-center border border-gray-200 dark:border-gray-600">
+                      {product.imageUrl ? (
+                        <img 
+                          src={product.imageUrl} 
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.currentTarget
+                            target.style.display = 'none'
+                            const parent = target.parentElement
+                            if (parent) {
+                              parent.innerHTML = '<svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
+                            }
+                          }}
+                        />
+                      ) : (
+                        <svg className="h-6 w-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </div>
+
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
+                            {product.name}
+                          </h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {product.code}
+                          </p>
+                        </div>
+                        <Badge variant={product.pcsPerBox > 0 ? 'default' : 'destructive'} className="text-xs px-2 py-0.5 flex-shrink-0">
+                          {product.pcsPerBox}
+                        </Badge>
+                      </div>
+
+                      {/* Quick Info Pills */}
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs">
+                          <Tag className="h-3 w-3" />
+                          {product.brand.name}
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 text-xs">
+                          <Layers className="h-3 w-3" />
+                          {product.category.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-col gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleEdit(product)}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Edit className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(product)}>
-                        <Edit className="h-4 w-4" />
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleDelete(product.id)}
+                        className="h-7 w-7 p-0 text-red-500 hover:text-red-600"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(product.id)}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </>
-                  }
-                />
-                <MobileCardField label="Category" value={product.category.name} />
-                <MobileCardField label="Finish" value={product.finishType.name} />
-                <MobileCardField label="Pieces/Box" value={`${product.pcsPerBox} pcs`} />
-                <MobileCardField label="Location" value={product.batches?.[0]?.location?.name || 'No location'} />
-                <MobileCardField label="Created" value={new Date(product.createdAt).toLocaleDateString()} />
-              </MobileCard>
+                    </div>
+                  </div>
+
+                  {/* Expand Button */}
+                  <button
+                    onClick={() => toggleExpand(product.id)}
+                    className="w-full flex items-center justify-center gap-1 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                  >
+                    {expandedProduct === product.id ? (
+                      <>
+                        <span>Less details</span>
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      </>
+                    ) : (
+                      <>
+                        <span>More details</span>
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Expandable Details */}
+                {expandedProduct === product.id && (
+                  <div className="px-3 pb-3 pt-0 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Finish Type</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{product.finishType.name}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Pieces/Box</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{product.pcsPerBox} pcs</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          Location
+                        </p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {product.batches?.[0]?.location?.name || 'N/A'}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                          <Box className="h-3 w-3" />
+                          Batch
+                        </p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {product.batches?.[0]?.batchNumber?.split('-')[0] || 'N/A'}
+                        </p>
+                      </div>
+                      <div className="space-y-1 col-span-2">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Created</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {new Date(product.createdAt).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </Card>
             ))}
-            
-            {/* Mobile Pagination */}
-            <div className="flex items-center justify-between pt-4">
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                {((pagination.page - 1) * pagination.limit) + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                  disabled={pagination.page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm text-gray-600 dark:text-gray-400">{pagination.page}</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                  disabled={pagination.page === pagination.pages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
           </>
         )}
       </div>
@@ -457,142 +510,106 @@ export default function ProductsPage() {
               <Package className="h-8 w-8 animate-spin text-gray-400 dark:text-gray-500" />
             </div>
           ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-gray-200 dark:border-gray-700">
-                    <TableHead className="text-gray-900 dark:text-gray-100">Product</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Brand</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Category</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Dimensions</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Stock</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Location</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Created</TableHead>
-                    <TableHead className="text-right text-gray-900 dark:text-gray-100">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products.map((product) => (
-                    <TableRow key={product.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <TableCell>
-                        <div>
-                          <div className="font-medium text-gray-900 dark:text-gray-100">{product.name}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{product.code}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100">{product.brand.name}</TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100">{product.category.name}</TableCell>
-                      <TableCell>
-                        <div className="text-sm text-gray-900 dark:text-gray-100">
-                          {product.finishType.name}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {product.pcsPerBox} pcs
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={product.pcsPerBox > 0 ? 'default' : 'destructive'}>
-                          {product.pcsPerBox} units
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm text-gray-900 dark:text-gray-100">
-                          {product.batches?.[0]?.location?.name || 'No location'}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm text-gray-900 dark:text-gray-100">
-                          {new Date(product.createdAt).toLocaleDateString()}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleView(product)}>
-                            <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(product)}>
-                            <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(product.id)}>
-                            <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              
-              {/* Desktop Pagination */}
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                    disabled={pagination.page === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                      const page = i + 1
-                      return (
-                        <Button
-                          key={page}
-                          variant={pagination.page === page ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setPagination(prev => ({ ...prev, page }))}
-                        >
-                          {page}
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-gray-200 dark:border-gray-700">
+                  <TableHead className="text-gray-900 dark:text-gray-100">Image</TableHead>
+                  <TableHead className="text-gray-900 dark:text-gray-100">Product</TableHead>
+                  <TableHead className="text-gray-900 dark:text-gray-100">Brand</TableHead>
+                  <TableHead className="text-gray-900 dark:text-gray-100">Category</TableHead>
+                  <TableHead className="text-gray-900 dark:text-gray-100">Dimensions</TableHead>
+                  <TableHead className="text-gray-900 dark:text-gray-100">Stock</TableHead>
+                  <TableHead className="text-gray-900 dark:text-gray-100">Location</TableHead>
+                  <TableHead className="text-gray-900 dark:text-gray-100">Batch</TableHead>
+                  <TableHead className="text-gray-900 dark:text-gray-100">Created</TableHead>
+                  <TableHead className="text-right text-gray-900 dark:text-gray-100">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {products.map((product) => (
+                  <TableRow key={product.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <TableCell>
+                      <div className="w-12 h-12 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center border border-gray-200 dark:border-gray-600">
+                        {product.imageUrl ? (
+                          <img 
+                            src={product.imageUrl} 
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.currentTarget
+                              target.style.display = 'none'
+                              const parent = target.parentElement
+                              if (parent) {
+                                parent.innerHTML = '<svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
+                              }
+                            }}
+                          />
+                        ) : (
+                          <svg className="h-6 w-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">{product.name}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{product.code}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-gray-900 dark:text-gray-100">{product.brand.name}</TableCell>
+                    <TableCell className="text-gray-900 dark:text-gray-100">{product.category.name}</TableCell>
+                    <TableCell>
+                      <div className="text-sm text-gray-900 dark:text-gray-100">
+                        {product.finishType.name}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {product.pcsPerBox} pcs
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={product.pcsPerBox > 0 ? 'default' : 'destructive'}>
+                        {product.pcsPerBox} units
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-gray-900 dark:text-gray-100">
+                        {product.batches?.[0]?.location?.name || 'No location'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-gray-900 dark:text-gray-100">
+                        {product.batches?.[0]?.batchNumber?.split('-')[0] || 'N/A'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-gray-900 dark:text-gray-100">
+                        {new Date(product.createdAt).toLocaleDateString()}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(product)}>
+                          <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                         </Button>
-                      )
-                    })}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                    disabled={pagination.page === pagination.pages}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(product.id)}>
+                          <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
 
-      {/* View Dialog */}
-      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>View Product</DialogTitle>
-          </DialogHeader>
-          {selectedProduct && (
-            <div className="space-y-4">
-              <div className="text-gray-900 dark:text-gray-100"><strong>Name:</strong> {selectedProduct.name}</div>
-              <div className="text-gray-900 dark:text-gray-100"><strong>Code:</strong> {selectedProduct.code}</div>
-              <div className="text-gray-900 dark:text-gray-100"><strong>Brand:</strong> {selectedProduct.brand.name}</div>
-              <div className="text-gray-900 dark:text-gray-100"><strong>Category:</strong> {selectedProduct.category.name}</div>
-              <div className="text-gray-900 dark:text-gray-100"><strong>Size:</strong> {selectedProduct.finishType.name}</div>
-              <div className="text-gray-900 dark:text-gray-100"><strong>Stock:</strong> {selectedProduct.pcsPerBox} units</div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-xl max-h-[85vh] overflow-hidden">
           <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
+            <DialogTitle className="text-base">Edit Product</DialogTitle>
           </DialogHeader>
           {selectedProduct && (
             <ProductForm 

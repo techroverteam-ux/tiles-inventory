@@ -8,7 +8,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     
     const category = await prisma.category.update({
       where: { id },
-      data: { name: data.name },
+      data: { 
+        name: data.name,
+        brandId: data.brandId,
+      },
+      include: {
+        brand: {
+          select: {
+            name: true,
+          },
+        },
+      },
     })
     return NextResponse.json(category)
   } catch (error) {
@@ -20,9 +30,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    await prisma.category.update({
+    const category = await prisma.category.delete({
       where: { id },
-      data: { isActive: false },
     })
     return NextResponse.json({ success: true })
   } catch (error) {

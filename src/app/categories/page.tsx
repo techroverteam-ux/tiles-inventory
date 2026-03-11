@@ -1,34 +1,44 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Search, Edit, Trash2, Tag } from 'lucide-react'
+import { useToast } from '@/contexts/ToastContext'
 
 interface Category {
   id: string
   name: string
   description?: string
+  brandId: string
   isActive: boolean
   createdAt: string
+  brand?: {
+    name: string
+  }
   _count?: {
     products: number
   }
 }
 
 export default function CategoriesPage() {
+  const { showToast } = useToast()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
-  const [formData, setFormData] = useState({ name: '' })
+  const [formData, setFormData] = useState({ name: '', brandId: '' })
+  const [brands, setBrands] = useState<any[]>([])
 
   useEffect(() => {
     fetchCategories()
+    fetchBrands()
   }, [])
 
   const fetchCategories = async () => {
@@ -44,6 +54,16 @@ export default function CategoriesPage() {
     }
   }
 
+  const fetchBrands = async () => {
+    try {
+      const response = await fetch('/api/brands')
+      const data = await response.json()
+      setBrands((data.brands || []).filter(b => b.isActive))
+    } catch (error) {
+      console.error('Error fetching brands:', error)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -53,27 +73,35 @@ export default function CategoriesPage() {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: formData.name }),
+        body: JSON.stringify({ name: formData.name, brandId: formData.brandId }),
       })
 
       if (response.ok) {
-        fetchCategories()
+        const newCategory = await response.json()
+        if (!editingCategory) {
+          setCategories([newCategory, ...categories])
+        } else {
+          setCategories(categories.map(c => c.id === newCategory.id ? newCategory : c))
+        }
         setIsDialogOpen(false)
         setEditingCategory(null)
-        setFormData({ name: '' })
-        alert(editingCategory ? 'Category updated successfully!' : 'Category created successfully!')
+        setFormData({ name: '', brandId: '' })
+        showToast(
+          editingCategory ? 'Category updated successfully!' : 'Category created successfully!',
+          'success'
+        )
       } else {
-        alert('Error saving category. Please try again.')
+        showToast('Error saving category. Please try again.', 'error')
       }
     } catch (error) {
       console.error('Error saving category:', error)
-      alert('Error saving category. Please try again.')
+      showToast('Error saving category. Please try again.', 'error')
     }
   }
 
   const handleEdit = (category: Category) => {
     setEditingCategory(category)
-    setFormData({ name: category.name })
+    setFormData({ name: category.name, brandId: category.brandId })
     setIsDialogOpen(true)
   }
 
@@ -82,23 +110,21 @@ export default function CategoriesPage() {
       try {
         const response = await fetch(`/api/categories/${id}`, { method: 'DELETE' })
         if (response.ok) {
-          fetchCategories()
-          alert('Category deleted successfully!')
+          setCategories(categories.filter(c => c.id !== id))
+          showToast('Category deleted successfully!', 'success')
         } else {
-          alert('Error deleting category. Please try again.')
+          showToast('Error deleting category. Please try again.', 'error')
         }
       } catch (error) {
         console.error('Error deleting category:', error)
-        alert('Error deleting category. Please try again.')
+        showToast('Error deleting category. Please try again.', 'error')
       }
     }
   }
 
   const filteredCategories = categories.filter(category =>
-    category.isActive && (
-      category.name.toLowerCase().includes(search.toLowerCase()) ||
-      category.description?.toLowerCase().includes(search.toLowerCase())
-    )
+    category.name.toLowerCase().includes(search.toLowerCase()) ||
+    category.description?.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -109,7 +135,7 @@ export default function CategoriesPage() {
           <DialogTrigger asChild>
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => {
               setEditingCategory(null)
-              setFormData({ name: '' })
+              setFormData({ name: '', brandId: '' })
             }}>
               <Plus className="h-4 w-4 mr-2" />
               Add Category
@@ -120,6 +146,18 @@ export default function CategoriesPage() {
               <DialogTitle className="text-gray-900 dark:text-gray-100">{editingCategory ? 'Edit Category' : 'Add Category'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <Select value={formData.brandId} onValueChange={(value) => setFormData({ ...formData, brandId: value })} required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select brand" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  {brands.map((brand) => (
+                    <SelectItem key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Input
                 placeholder="Category name"
                 value={formData.name}
@@ -193,7 +231,12 @@ export default function CategoriesPage() {
             <Card key={category.id} className="hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg text-gray-900 dark:text-gray-100">{category.name}</CardTitle>
+                  <div>
+                    <CardTitle className="text-lg text-gray-900 dark:text-gray-100">{category.name}</CardTitle>
+                    {category.brand && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{category.brand.name}</p>
+                    )}
+                  </div>
                   <Badge variant={category.isActive ? "default" : "secondary"}>
                     {category.isActive ? "Active" : "Inactive"}
                   </Badge>
