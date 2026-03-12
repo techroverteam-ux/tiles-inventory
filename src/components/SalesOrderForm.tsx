@@ -132,10 +132,13 @@ export default function SalesOrderForm({ onSuccess, order }: SalesOrderFormProps
           })
         }
       } else {
-        console.error('API Error:', response.status, response.statusText)
+        const errorData = await response.json()
+        alert(errorData.error || 'Failed to save sales order')
+        console.error('API Error:', response.status, errorData)
       }
     } catch (error) {
       console.error('Error saving sales order:', error)
+      alert('Error saving sales order')
     } finally {
       setLoading(false)
     }

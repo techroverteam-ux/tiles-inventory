@@ -140,6 +140,14 @@ export async function POST(request: NextRequest) {
     const amount = parseFloat(data.amount) || 0
     const unitPrice = quantity > 0 ? amount / quantity : 0
 
+    // Check if batch has enough quantity
+    if (batch.quantity < quantity) {
+      return NextResponse.json(
+        { error: `Insufficient stock. Available: ${batch.quantity}, Required: ${quantity}` },
+        { status: 400 }
+      )
+    }
+
     // Deduct quantity from batch when sold
     await prisma.batch.update({
       where: { id: batch.id },
