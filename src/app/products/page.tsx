@@ -95,6 +95,8 @@ export default function ProductsPage() {
       const data = await response.json()
       
       if (response.ok) {
+        console.log('Products data:', data.products)
+        console.log('First product batches:', data.products[0]?.batches)
         setProducts(data.products || [])
       }
     } catch (error) {
