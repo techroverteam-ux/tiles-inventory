@@ -140,12 +140,17 @@ export async function POST(request: NextRequest) {
     const amount = parseFloat(data.amount) || 0
     const unitPrice = quantity > 0 ? amount / quantity : 0
 
-    // Check if batch has enough quantity
+    // Log current batch quantity for debugging
+    console.log(`Batch ${batch.id} current quantity: ${batch.quantity}, requested: ${quantity}`)
+
+    // Check if batch has enough quantity (allow negative for manual inventory management)
     if (batch.quantity < quantity) {
-      return NextResponse.json(
-        { error: `Insufficient stock. Available: ${batch.quantity}, Required: ${quantity}` },
-        { status: 400 }
-      )
+      console.warn(`Warning: Insufficient stock. Available: ${batch.quantity}, Required: ${quantity}. Proceeding with negative inventory.`)
+      // Optionally uncomment the line below to enforce stock validation:
+      // return NextResponse.json(
+      //   { error: `Insufficient stock. Available: ${batch.quantity}, Required: ${quantity}` },
+      //   { status: 400 }
+      // )
     }
 
     // Deduct quantity from batch when sold
