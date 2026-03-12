@@ -36,70 +36,34 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     for (const item of order.items) {
       const product = item.product
       
-      // Check if matching product exists with same brand, category, size, and location
-      const existingProduct = await prisma.product.findFirst({
+      // Find existing batch with same product and location
+      const existingBatch = await prisma.batch.findFirst({
         where: {
-          brandId: product.brandId,
-          categoryId: product.categoryId,
-          sizeId: product.sizeId,
-          batches: {
-            some: {
-              locationId: locationId
-            }
-          }
-        },
-        include: {
-          batches: {
-            where: {
-              locationId: locationId
-            }
-          }
+          productId: product.id,
+          locationId: locationId
         }
       })
       
-      if (existingProduct && existingProduct.batches.length > 0) {
-        // Update existing batch quantity and batch number
+      if (existingBatch) {
+        // Update existing batch quantity
         await prisma.batch.update({
-          where: { id: existingProduct.batches[0].id },
+          where: { id: existingBatch.id },
           data: {
-            batchNumber: item.batchNumber || existingProduct.batches[0].batchNumber,
+            batchNumber: item.batchNumber || existingBatch.batchNumber,
             quantity: {
               increment: item.quantity
-            }
+            },
+            purchasePrice: item.unitPrice || existingBatch.purchasePrice,
+            sellingPrice: item.unitPrice ? (item.unitPrice * 1.2) : existingBatch.sellingPrice
           }
         })
         
-        // Update product pcsPerBox
-        await prisma.product.update({
-          where: { id: existingProduct.id },
-          data: {
-            pcsPerBox: {
-              increment: item.quantity
-            }
-          }
-        })
-        
-        console.log(`Updated existing product: ${existingProduct.id} with ${item.quantity} units`)
+        console.log(`Updated existing batch: ${existingBatch.id} with ${item.quantity} units`)
       } else {
-        // Create new product
-        const newProduct = await prisma.product.create({
-          data: {
-            name: product.name,
-            code: `${product.code}-${Date.now()}`,
-            brandId: product.brandId,
-            categoryId: product.categoryId,
-            sizeId: product.sizeId,
-            finishTypeId: product.finishTypeId,
-            sqftPerBox: product.sqftPerBox || 1,
-            pcsPerBox: item.quantity,
-            imageUrl: product.imageUrl
-          }
-        })
-        
-        // Create batch for new product
+        // Create new batch for existing product at this location
         await prisma.batch.create({
           data: {
-            productId: newProduct.id,
+            productId: product.id,
             locationId: locationId,
             batchNumber: item.batchNumber || `BATCH-${Date.now()}`,
             quantity: item.quantity,
@@ -108,7 +72,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           }
         })
         
-        console.log(`Created new product: ${newProduct.id} with ${item.quantity} units`)
+        console.log(`Created new batch for product: ${product.id} with ${item.quantity} units at location`)
       }
     }
     
