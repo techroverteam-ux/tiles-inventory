@@ -213,14 +213,21 @@ export default function InventoryPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this batch?')) {
+    if (confirm('Are you sure you want to delete this batch? This will also remove all related purchase and sales records.')) {
       try {
         const response = await fetch(`/api/inventory/${id}`, { method: 'DELETE' })
+        const data = await response.json()
+        
         if (response.ok) {
+          alert('Batch deleted successfully')
           fetchInventory()
+        } else {
+          alert(`Failed to delete batch: ${data.error || 'Unknown error'}`)
+          console.error('Delete error:', data)
         }
       } catch (error) {
         console.error('Error deleting batch:', error)
+        alert('Error deleting batch. Please try again.')
       }
     }
   }

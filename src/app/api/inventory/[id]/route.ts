@@ -40,14 +40,28 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   try {
     const { id } = await params
     
-    // Delete related sales items first
+    // Get batch details first
+    const batch = await prisma.batch.findUnique({
+      where: { id },
+      select: { productId: true, locationId: true, batchNumber: true }
+    })
+    
+    if (!batch) {
+      return NextResponse.json({ error: 'Batch not found' }, { status: 404 })
+    }
+    
+    // Delete related sales items that reference this batch
     await prisma.salesItem.deleteMany({
       where: { batchId: id },
     })
     
-    // Delete related purchase items
+    // Delete related purchase items with matching product, location, and batch number
     await prisma.purchaseItem.deleteMany({
-      where: { batchId: id },
+      where: { 
+        productId: batch.productId,
+        locationId: batch.locationId,
+        batchNumber: batch.batchNumber
+      },
     })
     
     // Now delete the batch
