@@ -5,6 +5,30 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
+interface Brand {
+  id: string
+  name: string
+  isActive: boolean
+}
+
+interface Category {
+  id: string
+  name: string
+  isActive: boolean
+}
+
+interface Size {
+  id: string
+  name: string
+  isActive: boolean
+}
+
+interface Location {
+  id: string
+  name: string
+  isActive: boolean
+}
+
 interface PurchaseOrderFormProps {
   onSuccess: () => void
   order?: any
@@ -35,11 +59,12 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
     amount: order?.totalAmount?.toString() || ''
   })
   
-  const [brands, setBrands] = useState<any[]>([])
-  const [categories, setCategories] = useState<any[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [filteredCategories, setFilteredCategories] = useState<any[]>([])
-  const [sizes, setSizes] = useState<any[]>([])
+  const [sizes, setSizes] = useState<Size[]>([])
   const [filteredSizes, setFilteredSizes] = useState<any[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -84,9 +109,18 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
 
   const fetchDropdownData = async () => {
     try {
-      const brandsRes = await fetch('/api/brands')
-      const brandsData = await brandsRes.json()
-      setBrands((brandsData.brands || []).filter(b => b.isActive))
+      const [brandsRes, locationsRes] = await Promise.all([
+        fetch('/api/brands'),
+        fetch('/api/locations')
+      ])
+
+      const [brandsData, locationsData] = await Promise.all([
+        brandsRes.json(),
+        locationsRes.json()
+      ])
+
+      setBrands((brandsData.brands || []).filter((b: Brand) => b.isActive))
+      setLocations((locationsData.locations || []).filter((l: Location) => l.isActive))
     } catch (error) {
       console.error('Error fetching dropdown data:', error)
     }

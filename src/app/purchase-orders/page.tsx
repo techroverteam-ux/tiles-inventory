@@ -184,6 +184,21 @@ export default function PurchaseOrdersPage() {
     setShowEditDialog(true)
   }
 
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this purchase order?')) {
+      try {
+        const response = await fetch(`/api/purchase-orders/${id}`, { method: 'DELETE' })
+        if (response.ok) {
+          setOrders(orders.filter(o => o.id !== id))
+        } else {
+          console.error('Failed to delete purchase order')
+        }
+      } catch (error) {
+        console.error('Error deleting purchase order:', error)
+      }
+    }
+  }
+
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'PENDING': return 'secondary'
