@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
     console.log('Product created with imageUrl:', product.imageUrl)
 
     // Create batch
-    await prisma.batch.create({
+    const batch = await prisma.batch.create({
       data: {
         productId: product.id,
         locationId,
@@ -201,8 +201,26 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    console.log('Batch created:', batch)
     console.log('Product created successfully:', product.id)
-    return NextResponse.json(product, { status: 201 })
+    
+    // Return product with batches included
+    const productWithBatches = await prisma.product.findUnique({
+      where: { id: product.id },
+      include: {
+        brand: true,
+        category: true,
+        size: true,
+        finishType: true,
+        batches: {
+          include: {
+            location: true
+          }
+        }
+      }
+    })
+    
+    return NextResponse.json(productWithBatches, { status: 201 })
     
   } catch (error: any) {
     console.error('Product creation error:', error)
