@@ -33,11 +33,11 @@ interface InventoryItem {
     code: string
     brand: { name: string }
     category: { name: string }
+    size?: { name: string }
     sqftPerBox: number
   }
   location: { name: string }
   batchNumber: string
-  shade?: string
   quantity: number
   purchasePrice: number
   sellingPrice: number
@@ -65,6 +65,14 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
+  const [editFormData, setEditFormData] = useState({
+    batchNumber: '',
+    quantity: '',
+    purchasePrice: '',
+    sellingPrice: ''
+  })
   
   const [pagination, setPagination] = useState({
     page: 1,
@@ -167,6 +175,54 @@ export default function InventoryPage() {
       sortBy: 'createdAt',
       sortOrder: 'desc'
     })
+  }
+
+  const handleEdit = (item: InventoryItem) => {
+    setSelectedItem(item)
+    setEditFormData({
+      batchNumber: item.batchNumber,
+      quantity: item.quantity.toString(),
+      purchasePrice: item.purchasePrice.toString(),
+      sellingPrice: item.sellingPrice.toString()
+    })
+    setShowEditDialog(true)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!selectedItem) return
+    
+    try {
+      const response = await fetch(`/api/inventory/${selectedItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          batchNumber: editFormData.batchNumber,
+          quantity: parseInt(editFormData.quantity),
+          purchasePrice: parseFloat(editFormData.purchasePrice),
+          sellingPrice: parseFloat(editFormData.sellingPrice)
+        })
+      })
+      
+      if (response.ok) {
+        setShowEditDialog(false)
+        fetchInventory()
+      }
+    } catch (error) {
+      console.error('Error updating batch:', error)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this batch?')) {
+      try {
+        const response = await fetch(`/api/inventory/${id}`, { method: 'DELETE' })
+        if (response.ok) {
+          fetchInventory()
+        }
+      } catch (error) {
+        console.error('Error deleting batch:', error)
+      }
+    }
   }
 
   const getStockBadgeVariant = (quantity: number) => {
@@ -489,25 +545,22 @@ export default function InventoryPage() {
                   }
                   actions={
                     <>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)}>
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
                     </>
                   }
                 />
+                <MobileCardField label="Category" value={item.product.category.name} />
+                <MobileCardField label="Size" value={item.product.size?.name || 'N/A'} />
                 <MobileCardField label="Batch" value={<code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs">{item.batchNumber}</code>} />
                 <MobileCardField label="Location" value={item.location.name} />
-                <MobileCardField label="Shade" value={item.shade ? <Badge variant="outline" className="text-xs">{item.shade}</Badge> : '-'} />
                 <MobileCardField label="Purchase Price" value={`₹${item.purchasePrice.toLocaleString()}`} />
                 <MobileCardField label="Selling Price" value={`₹${item.sellingPrice.toLocaleString()}`} />
                 <MobileCardField label="Total Value" value={`₹${(item.quantity * item.sellingPrice).toLocaleString()}`} />
-                <MobileCardField label="Sq Ft" value={`${(item.quantity * item.product.sqftPerBox).toFixed(0)} sq ft`} />
               </MobileCard>
             ))}
             
@@ -575,9 +628,10 @@ export default function InventoryPage() {
                 <TableHeader>
                   <TableRow className="border-b border-gray-200 dark:border-gray-700">
                     <TableHead className="text-gray-900 dark:text-gray-100">Product</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Category</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Size</TableHead>
                     <TableHead className="text-gray-900 dark:text-gray-100">Batch</TableHead>
                     <TableHead className="text-gray-900 dark:text-gray-100">Location</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Shade</TableHead>
                     <TableHead className="text-gray-900 dark:text-gray-100">Stock</TableHead>
                     <TableHead className="text-gray-900 dark:text-gray-100">Purchase Price</TableHead>
                     <TableHead className="text-gray-900 dark:text-gray-100">Selling Price</TableHead>
@@ -596,19 +650,14 @@ export default function InventoryPage() {
                           </div>
                         </div>
                       </TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">{item.product.category.name}</TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">{item.product.size?.name || 'N/A'}</TableCell>
                       <TableCell>
                         <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm text-gray-900 dark:text-gray-100">
                           {item.batchNumber}
                         </code>
                       </TableCell>
                       <TableCell className="text-gray-900 dark:text-gray-100">{item.location.name}</TableCell>
-                      <TableCell>
-                        {item.shade ? (
-                          <Badge variant="outline">{item.shade}</Badge>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Badge variant={getStockBadgeVariant(item.quantity)}>
@@ -618,9 +667,6 @@ export default function InventoryPage() {
                             <AlertTriangle className="h-4 w-4 text-red-500" />
                           )}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {(item.quantity * item.product.sqftPerBox).toFixed(0)} sq ft
-                        </div>
                       </TableCell>
                       <TableCell className="text-gray-900 dark:text-gray-100">₹{item.purchasePrice.toLocaleString()}</TableCell>
                       <TableCell className="text-gray-900 dark:text-gray-100">₹{item.sellingPrice.toLocaleString()}</TableCell>
@@ -629,13 +675,10 @@ export default function InventoryPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
                             <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)}>
                             <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                           </Button>
                         </div>
@@ -690,6 +733,56 @@ export default function InventoryPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="bg-white dark:bg-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900 dark:text-gray-100">Edit Inventory Batch</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Batch Number</label>
+              <Input
+                value={editFormData.batchNumber}
+                onChange={(e) => setEditFormData({ ...editFormData, batchNumber: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Quantity</label>
+              <Input
+                type="number"
+                value={editFormData.quantity}
+                onChange={(e) => setEditFormData({ ...editFormData, quantity: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Purchase Price</label>
+              <Input
+                type="number"
+                value={editFormData.purchasePrice}
+                onChange={(e) => setEditFormData({ ...editFormData, purchasePrice: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Selling Price</label>
+              <Input
+                type="number"
+                value={editFormData.sellingPrice}
+                onChange={(e) => setEditFormData({ ...editFormData, sellingPrice: e.target.value })}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleSaveEdit} className="bg-blue-600 hover:bg-blue-700">
+                Save Changes
+              </Button>
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

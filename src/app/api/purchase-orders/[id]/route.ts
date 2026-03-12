@@ -1,0 +1,45 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    const data = await request.json()
+    
+    const order = await prisma.purchaseOrder.update({
+      where: { id },
+      data: {
+        orderNumber: data.orderNumber,
+        brandId: data.brandId,
+        orderDate: new Date(data.orderDate),
+        expectedDate: data.expectedDate ? new Date(data.expectedDate) : null,
+      }
+    })
+    
+    return NextResponse.json(order)
+  } catch (error: any) {
+    console.error('Purchase order update error:', error)
+    return NextResponse.json({ error: 'Failed to update purchase order' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    
+    // Delete purchase order items first
+    await prisma.purchaseItem.deleteMany({
+      where: { purchaseOrderId: id }
+    })
+    
+    // Delete purchase order
+    await prisma.purchaseOrder.delete({
+      where: { id }
+    })
+    
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error('Purchase order delete error:', error)
+    return NextResponse.json({ error: 'Failed to delete purchase order' }, { status: 500 })
+  }
+}

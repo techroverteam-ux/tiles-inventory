@@ -14,11 +14,15 @@ export async function GET(request: NextRequest) {
           include: {
             location: true
           },
-          take: 1
+          take: 1,
+          orderBy: {
+            updatedAt: 'desc'
+          }
         }
       },
       orderBy: { createdAt: 'desc' },
     })
+    
     return NextResponse.json({ products })
   } catch (error) {
     console.error('Products fetch error:', error)
@@ -190,7 +194,7 @@ export async function POST(request: NextRequest) {
       data: {
         productId: product.id,
         locationId,
-        batchNumber: `${batchName}-${Date.now()}`,
+        batchNumber: batchName,
         quantity: stockNum,
         purchasePrice: 0,
         sellingPrice: 0,

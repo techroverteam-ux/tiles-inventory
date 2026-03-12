@@ -458,7 +458,7 @@ export default function ProductsPage() {
                           Batch
                         </p>
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {product.batches?.[0]?.batchNumber?.split('-')[0] || 'N/A'}
+                          {product.batches?.[0]?.batchNumber || 'N/A'}
                         </p>
                       </div>
                       <div className="space-y-1 col-span-2">
@@ -579,7 +579,7 @@ export default function ProductsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm text-gray-900 dark:text-gray-100">
-                        {product.batches?.[0]?.batchNumber?.split('-')[0] || 'N/A'}
+                        {product.batches?.[0]?.batchNumber || 'N/A'}
                       </div>
                     </TableCell>
                     <TableCell>

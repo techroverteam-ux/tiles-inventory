@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-interface PurchaseOrderFormProps {
+interface SalesOrderFormProps {
   onSuccess: () => void
   order?: any
 }
@@ -13,25 +13,25 @@ interface PurchaseOrderFormProps {
 interface FormData {
   orderNumber: string
   brandId: string
-  orderDate: string
-  expectedDate: string
+  soldDate: string
   categoryId: string
   sizeId: string
+  locationId: string
   quantity: string
   batchName: string
   amount: string
 }
 
-export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFormProps) {
+export default function SalesOrderForm({ onSuccess, order }: SalesOrderFormProps) {
   const [formData, setFormData] = useState<FormData>({
-    orderNumber: order?.orderNumber || `PO-${Date.now()}`,
-    brandId: order?.brandId || '',
-    orderDate: order?.orderDate?.split('T')[0] || new Date().toISOString().split('T')[0],
-    expectedDate: order?.expectedDate?.split('T')[0] || '',
+    orderNumber: order?.orderNumber || `SO-${Date.now()}`,
+    brandId: order?.items?.[0]?.product?.brandId || '',
+    soldDate: order?.orderDate?.split('T')[0] || new Date().toISOString().split('T')[0],
     categoryId: order?.items?.[0]?.product?.categoryId || '',
     sizeId: order?.items?.[0]?.product?.sizeId || '',
+    locationId: order?.items?.[0]?.batch?.locationId || '',
     quantity: order?.items?.[0]?.quantity?.toString() || '',
-    batchName: order?.items?.[0]?.batchNumber || '',
+    batchName: order?.items?.[0]?.batch?.batchNumber || '',
     amount: order?.totalAmount?.toString() || ''
   })
   
@@ -40,6 +40,7 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
   const [filteredCategories, setFilteredCategories] = useState<any[]>([])
   const [sizes, setSizes] = useState<any[]>([])
   const [filteredSizes, setFilteredSizes] = useState<any[]>([])
+  const [locations, setLocations] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -84,9 +85,18 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
 
   const fetchDropdownData = async () => {
     try {
-      const brandsRes = await fetch('/api/brands')
-      const brandsData = await brandsRes.json()
+      const [brandsRes, locationsRes] = await Promise.all([
+        fetch('/api/brands'),
+        fetch('/api/locations')
+      ])
+
+      const [brandsData, locationsData] = await Promise.all([
+        brandsRes.json(),
+        locationsRes.json()
+      ])
+
       setBrands((brandsData.brands || []).filter(b => b.isActive))
+      setLocations((locationsData.locations || []).filter(l => l.isActive))
     } catch (error) {
       console.error('Error fetching dropdown data:', error)
     }
@@ -97,7 +107,7 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
     setLoading(true)
 
     try {
-      const url = order ? `/api/purchase-orders/${order.id}` : '/api/purchase-orders'
+      const url = order ? `/api/sales-orders/${order.id}` : '/api/sales-orders'
       const method = order ? 'PUT' : 'POST'
       
       const response = await fetch(url, {
@@ -110,12 +120,12 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
         onSuccess()
         if (!order) {
           setFormData({
-            orderNumber: `PO-${Date.now()}`,
+            orderNumber: `SO-${Date.now()}`,
             brandId: '',
-            orderDate: new Date().toISOString().split('T')[0],
-            expectedDate: '',
+            soldDate: new Date().toISOString().split('T')[0],
             categoryId: '',
             sizeId: '',
+            locationId: '',
             quantity: '',
             batchName: '',
             amount: ''
@@ -125,7 +135,7 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
         console.error('API Error:', response.status, response.statusText)
       }
     } catch (error) {
-      console.error('Error saving purchase order:', error)
+      console.error('Error saving sales order:', error)
     } finally {
       setLoading(false)
     }
@@ -163,21 +173,12 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Order Date</label>
+          <label className="text-sm font-medium">Sold Date</label>
           <Input
             type="date"
-            value={formData.orderDate}
-            onChange={(e) => setFormData({ ...formData, orderDate: e.target.value })}
+            value={formData.soldDate}
+            onChange={(e) => setFormData({ ...formData, soldDate: e.target.value })}
             required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Expected Date</label>
-          <Input
-            type="date"
-            value={formData.expectedDate}
-            onChange={(e) => setFormData({ ...formData, expectedDate: e.target.value })}
           />
         </div>
 
@@ -214,6 +215,22 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
         </div>
 
         <div className="space-y-2">
+          <label className="text-sm font-medium">Location</label>
+          <Select value={formData.locationId} onValueChange={(value) => setFormData({ ...formData, locationId: value })} required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select location" />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              {locations.map((location) => (
+                <SelectItem key={location.id} value={location.id}>
+                  {location.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
           <label className="text-sm font-medium">Quantity</label>
           <Input
             type="number"
@@ -234,10 +251,10 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Amount (Optional)</label>
+          <label className="text-sm font-medium">Sale Price (Optional)</label>
           <Input
             type="number"
-            placeholder="Enter amount"
+            placeholder="Enter sale price"
             value={formData.amount}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
           />

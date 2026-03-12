@@ -3,120 +3,355 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Filter, Download, TrendingUp } from 'lucide-react'
-
+import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Download, 
+  Edit, 
+  Trash2, 
+  Eye,
+  ShoppingCart
+} from 'lucide-react'
+import SalesOrderForm from '@/components/SalesOrderForm'
 import { useToast } from '@/contexts/ToastContext'
 
-export default function SalesOrdersPage() {
-  const [showFilters, setShowFilters] = useState(false)
-  const [orders, setOrders] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const { showToast } = useToast()
+interface SalesOrder {
+  id: string
+  orderNumber: string
+  brand: { name: string }
+  orderDate: string
+  status: string
+  totalAmount: number
+  items: any[]
+  createdAt: string
+}
 
-  useEffect(() => {
-    fetchOrders()
-  }, [])
+export default function SalesOrdersPage() {
+  const { showToast } = useToast()
+  const [orders, setOrders] = useState<SalesOrder[]>([])
+  const [brands, setBrands] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showFilters, setShowFilters] = useState(false)
+  const [showAddDialog, setShowAddDialog] = useState(false)
+  const [showViewDialog, setShowViewDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null)
+  
+  const [filters, setFilters] = useState({
+    search: '',
+    brandId: '',
+    sortBy: 'createdAt',
+    sortOrder: 'desc'
+  })
 
   const fetchOrders = async () => {
+    setLoading(true)
     try {
       const response = await fetch('/api/sales-orders')
       const data = await response.json()
-      setOrders(data.orders || [])
+      
+      if (response.ok) {
+        setOrders(data.orders || [])
+      }
     } catch (error) {
-      showToast('Failed to load sales orders', 'error')
+      console.error('Error fetching sales orders:', error)
     } finally {
       setLoading(false)
     }
   }
 
+  const fetchBrands = async () => {
+    try {
+      const response = await fetch('/api/brands')
+      const data = await response.json()
+      if (response.ok) setBrands(data.brands || [])
+    } catch (error) {
+      console.error('Error fetching brands:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchOrders()
+    fetchBrands()
+  }, [])
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this sales order?')) {
+      try {
+        const response = await fetch(`/api/sales-orders/${id}`, { method: 'DELETE' })
+        if (response.ok) {
+          showToast('Sales order deleted successfully', 'success')
+          fetchOrders()
+        }
+      } catch (error) {
+        console.error('Error deleting sales order:', error)
+        showToast('Error deleting sales order', 'error')
+      }
+    }
+  }
+
+  const handleView = (order: SalesOrder) => {
+    setSelectedOrder(order)
+    setShowViewDialog(true)
+  }
+
+  const handleEdit = (order: SalesOrder) => {
+    setSelectedOrder(order)
+    setShowEditDialog(true)
+  }
+
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      brandId: '',
+      sortBy: 'createdAt',
+      sortOrder: 'desc'
+    })
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Sales Orders</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage customer orders</p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your sales orders</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
             <Filter className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
             Filters
           </Button>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
-            Export
-          </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="h-4 w-4 mr-2" />
-            New Sale
-          </Button>
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                New Order
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl bg-white dark:bg-gray-800">
+              <DialogHeader>
+                <DialogTitle className="text-gray-900 dark:text-gray-100">Create Sales Order</DialogTitle>
+              </DialogHeader>
+              <SalesOrderForm onSuccess={() => {
+                setShowAddDialog(false)
+                fetchOrders()
+              }} />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{orders.filter(o => o.status !== 'CANCELLED').length}</div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Sales</p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{orders.length}</div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
           </CardContent>
         </Card>
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{orders.filter(o => o.status === 'PENDING').length}</div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {orders.filter(o => o.status === 'DELIVERED').length}
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Sold</p>
           </CardContent>
         </Card>
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{orders.filter(o => o.status === 'DELIVERED').length}</div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Delivered</p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              ₹{orders.reduce((sum, o) => sum + o.totalAmount, 0).toLocaleString()}
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Total Value</p>
           </CardContent>
         </Card>
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">₹{orders.reduce((sum, o) => sum + (o.amount || 0), 0).toLocaleString()}</div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {orders.reduce((sum, o) => sum + o.items?.reduce((s, i) => s + (i.quantity || 0), 0), 0)}
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Total Units</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Filters */}
+      {showFilters && (
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-lg text-gray-900 dark:text-gray-100">Filters</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+                  <Input
+                    placeholder="Search orders..."
+                    value={filters.search}
+                    onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Brand</label>
+                <Select value={filters.brandId} onValueChange={(value) => setFilters({ ...filters, brandId: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All brands" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All brands</SelectItem>
+                    {brands.map((brand) => (
+                      <SelectItem key={brand.id} value={brand.id}>
+                        {brand.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="flex justify-end mt-4">
+              <Button variant="outline" onClick={clearFilters}>
+                Clear Filters
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Orders Table */}
       <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="text-gray-900 dark:text-gray-100">Sales Orders</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-gray-100">Sales Orders ({orders.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-gray-500 animate-spin" />
-              <p>Loading sales orders...</p>
-            </div>
-          ) : orders.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
-              <p>No sales orders found. Create your first sale order.</p>
+            <div className="flex items-center justify-center py-8">
+              <ShoppingCart className="h-8 w-8 animate-spin text-gray-400 dark:text-gray-500" />
             </div>
           ) : (
-            <div className="space-y-4">
-              {orders.map((order) => (
-                <div key={order.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-medium text-gray-900 dark:text-gray-100">{order.orderNumber}</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{order.customer}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">₹{order.amount?.toLocaleString()}</p>
-                      <Badge variant={order.status === 'DELIVERED' ? 'default' : 'secondary'}>
-                        {order.status}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-gray-200 dark:border-gray-700">
+                    <TableHead className="text-gray-900 dark:text-gray-100">Order #</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Brand</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Batch Name</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Quantity</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Category</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Dimensions</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Location</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Sold Date</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Status</TableHead>
+                    <TableHead className="text-gray-900 dark:text-gray-100">Sale Price</TableHead>
+                    <TableHead className="text-right text-gray-900 dark:text-gray-100">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => (
+                    <TableRow key={order.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <TableCell>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">{order.orderNumber}</div>
+                      </TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">{order.brand?.name || 'N/A'}</TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">
+                        {order.items?.[0]?.batch?.batchNumber || 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">
+                        {order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0}
+                      </TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">
+                        {order.items?.[0]?.product?.category?.name || 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">
+                        {order.items?.[0]?.product?.size?.name || 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-gray-900 dark:text-gray-100">
+                        {order.items?.[0]?.batch?.location?.name || 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
+                          {new Date(order.orderDate).toLocaleDateString()}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="default" className="bg-green-600">
+                          SOLD
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                          ₹{order.totalAmount.toLocaleString()}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleView(order)}>
+                            <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(order)}>
+                            <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(order.id)}>
+                            <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* View Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="bg-white dark:bg-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900 dark:text-gray-100">View Sales Order</DialogTitle>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-4">
+              <div className="text-gray-900 dark:text-gray-100"><strong>Order Number:</strong> {selectedOrder.orderNumber}</div>
+              <div className="text-gray-900 dark:text-gray-100"><strong>Brand:</strong> {selectedOrder.brand?.name}</div>
+              <div className="text-gray-900 dark:text-gray-100"><strong>Order Date:</strong> {new Date(selectedOrder.orderDate).toLocaleDateString()}</div>
+              <div className="text-gray-900 dark:text-gray-100"><strong>Status:</strong> SOLD</div>
+              <div className="text-gray-900 dark:text-gray-100"><strong>Sale Price:</strong> ₹{selectedOrder.totalAmount.toLocaleString()}</div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-4xl bg-white dark:bg-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900 dark:text-gray-100">Edit Sales Order</DialogTitle>
+          </DialogHeader>
+          {selectedOrder && (
+            <SalesOrderForm 
+              order={selectedOrder}
+              onSuccess={() => {
+                setShowEditDialog(false)
+                fetchOrders()
+              }} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
