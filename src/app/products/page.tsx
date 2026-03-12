@@ -449,7 +449,9 @@ export default function ProductsPage() {
                           Location
                         </p>
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {product.batches?.[0]?.location?.name || 'N/A'}
+                          {product.batches && product.batches.length > 0 && product.batches[0].location
+                            ? product.batches[0].location.name 
+                            : 'No location'}
                         </p>
                       </div>
                       <div className="space-y-1">
@@ -458,7 +460,9 @@ export default function ProductsPage() {
                           Batch
                         </p>
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {product.batches?.[0]?.batchNumber || 'N/A'}
+                          {product.batches && product.batches.length > 0 
+                            ? product.batches[0].batchNumber 
+                            : 'No batch'}
                         </p>
                       </div>
                       <div className="space-y-1 col-span-2">
@@ -574,12 +578,16 @@ export default function ProductsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm text-gray-900 dark:text-gray-100">
-                        {product.batches?.[0]?.location?.name || 'No location'}
+                        {product.batches && product.batches.length > 0 && product.batches[0].location
+                          ? product.batches[0].location.name 
+                          : 'No location'}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm text-gray-900 dark:text-gray-100">
-                        {product.batches?.[0]?.batchNumber || 'N/A'}
+                        {product.batches && product.batches.length > 0 
+                          ? product.batches[0].batchNumber 
+                          : 'No batch'}
                       </div>
                     </TableCell>
                     <TableCell>
