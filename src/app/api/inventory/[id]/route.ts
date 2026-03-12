@@ -40,6 +40,17 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   try {
     const { id } = await params
     
+    // Delete related sales items first
+    await prisma.salesItem.deleteMany({
+      where: { batchId: id },
+    })
+    
+    // Delete related purchase items
+    await prisma.purchaseItem.deleteMany({
+      where: { batchId: id },
+    })
+    
+    // Now delete the batch
     await prisma.batch.delete({
       where: { id },
     })
