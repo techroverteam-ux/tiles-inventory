@@ -189,29 +189,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // Refresh session
   const refreshSession = useCallback(async () => {
     try {
-      console.log('🔄 SessionContext: Refreshing session...')
       const response = await fetch('/api/auth/verify', {
         method: 'GET',
         credentials: 'include'
       })
 
-      console.log('📞 SessionContext: Verify response status:', response.status)
-
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ SessionContext: Session refresh successful')
         setUser(data.user)
         setIsAuthenticated(true)
         localStorage.setItem('user', JSON.stringify(data.user))
         localStorage.setItem('lastActivity', Date.now().toString())
         resetIdleTimer()
       } else {
-        console.log('❌ SessionContext: Session refresh failed, logging out')
         // Session invalid, logout
         await logout()
       }
     } catch (error) {
-      console.error('💥 SessionContext: Session refresh error:', error)
+      console.error('Session refresh error:', error)
       await logout()
     }
   }, [resetIdleTimer, logout])
@@ -237,12 +232,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             return
           }
           
-          // Use stored user data instead of verifying immediately
-          console.log('💾 SessionContext: Using stored user data')
-          const userData = JSON.parse(storedUser)
-          setUser(userData)
-          setIsAuthenticated(true)
-          resetIdleTimer()
+          // Verify session with server
+          await refreshSession()
         } else {
           // No stored session
           setIsLoading(false)
