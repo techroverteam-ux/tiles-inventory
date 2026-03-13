@@ -1,46 +1,51 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Search, Edit, Trash2, Tag } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useToast } from '@/contexts/ToastContext'
-
-interface Brand {
-  id: string
-  name: string
-  isActive: boolean
-}
+import { DataView } from '@/components/ui/data-view'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 
 interface Category {
   id: string
   name: string
   description?: string
   brandId: string
-  isActive: boolean
-  createdAt: string
-  brand?: {
+  brand: {
     name: string
   }
+  isActive: boolean
+  createdAt: string
   _count?: {
     products: number
   }
 }
 
+interface Brand {
+  id: string
+  name: string
+}
+
 export default function CategoriesPage() {
-  const { showToast } = useToast()
   const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
-  const [formData, setFormData] = useState({ name: '', brandId: '' })
   const [brands, setBrands] = useState<Brand[]>([])
+  const [loading, setLoading] = useState(true)
+  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [showForm, setShowForm] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    brandId: ''
+  })
+  const [submitting, setSubmitting] = useState(false)
+  
+  const { showToast } = useToast()
+  const router = useRouter()
 
   useEffect(() => {
     fetchCategories()
@@ -49,12 +54,15 @@ export default function CategoriesPage() {
 
   const fetchCategories = async () => {
     try {
-      setLoading(true)
       const response = await fetch('/api/categories')
-      const data = await response.json()
-      setCategories(data.categories || [])
+      if (response.ok) {
+        const data = await response.json()
+        setCategories(data.categories || [])
+      } else {
+        showToast('Failed to fetch categories', 'error')
+      }
     } catch (error) {
-      console.error('Error fetching categories:', error)
+      showToast('Error fetching categories', 'error')
     } finally {
       setLoading(false)
     }
@@ -63,8 +71,10 @@ export default function CategoriesPage() {
   const fetchBrands = async () => {
     try {
       const response = await fetch('/api/brands')
-      const data = await response.json()
-      setBrands((data.brands || []).filter((b: Brand) => b.isActive))
+      if (response.ok) {
+        const data = await response.json()
+        setBrands(data.brands?.filter((b: Brand & { isActive: boolean }) => b.isActive) || [])
+      }
     } catch (error) {
       console.error('Error fetching brands:', error)
     }
@@ -72,6 +82,12 @@ export default function CategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData.name.trim() || !formData.brandId) {
+      showToast('Please fill in all required fields', 'error')
+      return
+    }
+
+    setSubmitting(true)
     try {
       const url = editingCategory ? `/api/categories/${editingCategory.id}` : '/api/categories'
       const method = editingCategory ? 'PUT' : 'POST'
@@ -79,216 +95,248 @@ export default function CategoriesPage() {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: formData.name, brandId: formData.brandId }),
+        body: JSON.stringify(formData)
       })
 
       if (response.ok) {
-        const newCategory = await response.json()
-        if (!editingCategory) {
-          setCategories([newCategory, ...categories])
-        } else {
-          setCategories(categories.map(c => c.id === newCategory.id ? newCategory : c))
-        }
-        setIsDialogOpen(false)
-        setEditingCategory(null)
-        setFormData({ name: '', brandId: '' })
         showToast(
           editingCategory ? 'Category updated successfully!' : 'Category created successfully!',
           'success'
         )
+        setShowForm(false)
+        setEditingCategory(null)
+        setFormData({ name: '', description: '', brandId: '' })
+        fetchCategories()
       } else {
-        showToast('Error saving category. Please try again.', 'error')
+        const errorData = await response.json()
+        showToast(errorData.error || 'Failed to save category', 'error')
       }
     } catch (error) {
-      console.error('Error saving category:', error)
-      showToast('Error saving category. Please try again.', 'error')
+      showToast('Error saving category', 'error')
+    } finally {
+      setSubmitting(false)
     }
   }
 
   const handleEdit = (category: Category) => {
     setEditingCategory(category)
-    setFormData({ name: category.name, brandId: category.brandId })
-    setIsDialogOpen(true)
+    setFormData({
+      name: category.name,
+      description: category.description || '',
+      brandId: category.brandId
+    })
+    setShowForm(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this category?')) {
-      try {
-        const response = await fetch(`/api/categories/${id}`, { method: 'DELETE' })
-        if (response.ok) {
-          setCategories(categories.filter(c => c.id !== id))
-          showToast('Category deleted successfully!', 'success')
-        } else {
-          showToast('Error deleting category. Please try again.', 'error')
-        }
-      } catch (error) {
-        console.error('Error deleting category:', error)
-        showToast('Error deleting category. Please try again.', 'error')
+  const handleDelete = async (category: Category) => {
+    if (!confirm(`Are you sure you want to delete "${category.name}"?`)) return
+
+    try {
+      const response = await fetch(`/api/categories/${category.id}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        showToast('Category deleted successfully!', 'success')
+        fetchCategories()
+      } else {
+        const errorData = await response.json()
+        showToast(errorData.error || 'Failed to delete category', 'error')
       }
+    } catch (error) {
+      showToast('Error deleting category', 'error')
     }
   }
 
-  const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(search.toLowerCase()) ||
-    category.description?.toLowerCase().includes(search.toLowerCase())
+  const renderGridItem = (category: Category) => (
+    <Card className="h-full hover:shadow-lg transition-shadow">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-lg font-semibold text-card-foreground">
+              {category.name}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              {category.brand.name}
+            </p>
+          </div>
+          <Badge variant={category.isActive ? 'default' : 'secondary'}>
+            {category.isActive ? 'Active' : 'Inactive'}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {category.description && (
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+            {category.description}
+          </p>
+        )}
+        <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
+          <span>Products: {category._count?.products || 0}</span>
+          <span>Created: {new Date(category.createdAt).toLocaleDateString()}</span>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleEdit(category)}
+            className="flex-1"
+          >
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDelete(category)}
+            className="flex-1 text-destructive hover:text-destructive"
+          >
+            Delete
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   )
 
+  const renderListRow = (category: Category) => (
+    <>
+      <td className="px-4 py-3">
+        <div className="font-medium text-foreground">{category.name}</div>
+        <div className="text-sm text-muted-foreground">{category.brand.name}</div>
+      </td>
+      <td className="px-4 py-3">
+        <div className="text-sm text-muted-foreground">
+          {category.description || 'No description'}
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <Badge variant={category.isActive ? 'default' : 'secondary'}>
+          {category.isActive ? 'Active' : 'Inactive'}
+        </Badge>
+      </td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">
+        {category._count?.products || 0}
+      </td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">
+        {new Date(category.createdAt).toLocaleDateString()}
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleEdit(category)}
+          >
+            Edit
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDelete(category)}
+            className="text-destructive hover:text-destructive"
+          >
+            Delete
+          </Button>
+        </div>
+      </td>
+    </>
+  )
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading categories...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Categories</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => {
-              setEditingCategory(null)
-              setFormData({ name: '', brandId: '' })
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Category
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-white dark:bg-gray-800">
-            <DialogHeader>
-              <DialogTitle className="text-gray-900 dark:text-gray-100">{editingCategory ? 'Edit Category' : 'Add Category'}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Select value={formData.brandId} onValueChange={(value) => setFormData({ ...formData, brandId: value })} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select brand" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  {brands.map((brand) => (
-                    <SelectItem key={brand.id} value={brand.id}>
-                      {brand.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="Category name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-              <div className="flex gap-2">
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                  {editingCategory ? 'Update' : 'Create'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Tag className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{filteredCategories.length}</div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Categories</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {filteredCategories.length}
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Active Categories</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {categories.reduce((total, category) => total + (category._count?.products || 0), 0)}
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Products</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-        <CardContent className="p-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
-            <Input
-              placeholder="Search categories..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {loading ? (
-        <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCategories.map((category) => (
-            <Card key={category.id} className="hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg text-gray-900 dark:text-gray-100">{category.name}</CardTitle>
-                    {category.brand && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{category.brand.name}</p>
-                    )}
-                  </div>
-                  <Badge variant={category.isActive ? "default" : "secondary"}>
-                    {category.isActive ? "Active" : "Inactive"}
-                  </Badge>
+    <div className="container mx-auto p-6 space-y-6">
+      <DataView
+        items={categories}
+        view={view}
+        onViewChange={setView}
+        title="Categories"
+        actions={
+          <Dialog open={showForm} onOpenChange={setShowForm}>
+            <DialogTrigger asChild>
+              <Button onClick={() => {
+                setEditingCategory(null)
+                setFormData({ name: '', description: '', brandId: '' })
+              }}>
+                Add Category
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-border">
+              <DialogHeader>
+                <DialogTitle className="text-card-foreground">
+                  {editingCategory ? 'Edit Category' : 'Add New Category'}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground">Name *</label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter category name"
+                    required
+                    className="bg-background border-input text-foreground"
+                  />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {category.description && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{category.description}</p>
-                  )}
-                  
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {category._count?.products || 0} products
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(category)}>
-                        <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(category.id)}>
-                        <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                      </Button>
-                    </div>
-                  </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Brand *</label>
+                  <select
+                    value={formData.brandId}
+                    onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                  >
+                    <option value="">Select a brand</option>
+                    {brands.map((brand) => (
+                      <option key={brand.id} value={brand.id}>
+                        {brand.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {filteredCategories.length === 0 && !loading && (
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-8 text-center">
-            <Tag className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No categories found</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              {search ? 'Try adjusting your search terms.' : 'Get started by adding your first category.'}
-            </p>
-            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Category
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+                <div>
+                  <label className="text-sm font-medium text-foreground">Description</label>
+                  <Input
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Enter description (optional)"
+                    className="bg-background border-input text-foreground"
+                  />
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground">
+                    {submitting ? 'Saving...' : editingCategory ? 'Update' : 'Create'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowForm(false)}
+                    className="border-border text-foreground"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        }
+        gridProps={{
+          renderItem: renderGridItem,
+          columns: 3
+        }}
+        listProps={{
+          headers: ['Name & Brand', 'Description', 'Status', 'Products', 'Created', 'Actions'],
+          renderRow: renderListRow
+        }}
+      />
     </div>
   )
 }

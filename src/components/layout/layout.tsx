@@ -104,7 +104,7 @@ export default function Layout({ children }: LayoutProps) {
               </Button>
               <ThemeToggle />
               <NotificationDropdown />
-              <UserDropdown onLogout={handleLogout} />
+              <UserDropdown />
             </div>
           </header>
 
