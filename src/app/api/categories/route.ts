@@ -5,28 +5,40 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const limit = parseInt(searchParams.get('limit') || '50')
     const search = searchParams.get('search') || ''
     const isActive = searchParams.get('isActive')
     const brandId = searchParams.get('brandId')
 
     const skip = (page - 1) * limit
 
-    const where: any = {
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
-      ...(brandId && { brandId }),
+    const where: any = {}
+    
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { description: { contains: search } },
+      ]
+    }
+    
+    if (brandId) {
+      where.brandId = brandId
+    }
+    
+    if (isActive !== null && isActive !== undefined) {
+      where.isActive = isActive === 'true'
     }
 
     const [categories, total] = await Promise.all([
       prisma.category.findMany({
         where,
         include: {
-          brand: true,
+          brand: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
           _count: {
             select: {
               products: true,
@@ -52,7 +64,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Categories fetch error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch categories' },
+      { 
+        error: 'Failed to fetch categories',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }
@@ -62,13 +77,27 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     
+    if (!data.name || !data.brandId) {
+      return NextResponse.json(
+        { error: 'Name and brandId are required' },
+        { status: 400 }
+      )
+    }
+    
     const category = await prisma.category.create({
       data: {
         name: data.name,
+        description: data.description || null,
         brandId: data.brandId,
+        isActive: true,
       },
       include: {
-        brand: true,
+        brand: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     })
 
@@ -76,7 +105,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Category creation error:', error)
     return NextResponse.json(
-      { error: 'Failed to create category' },
+      { 
+        error: 'Failed to create category',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

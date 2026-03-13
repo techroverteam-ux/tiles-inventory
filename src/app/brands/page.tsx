@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Plus, Search, Edit, Trash2, Building } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useToast } from '@/contexts/ToastContext'
+import { DataView } from '@/components/ui/data-view'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 
 interface Brand {
   id: string
@@ -17,18 +18,32 @@ interface Brand {
   isActive: boolean
   createdAt: string
   _count?: {
+    categories: number
     products: number
   }
+}
+
+interface FormData {
+  name: string
+  description: string
+  contactInfo: string
 }
 
 export default function BrandsPage() {
   const [brands, setBrands] = useState<Brand[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [showForm, setShowForm] = useState(false)
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
-  const [formData, setFormData] = useState({ name: '' })
+  const [formData, setFormData] = useState<FormData>({
+    name: '',
+    description: '',
+    contactInfo: ''
+  })
+  const [submitting, setSubmitting] = useState(false)
+  
   const { showToast } = useToast()
+  const router = useRouter()
 
   useEffect(() => {
     fetchBrands()
@@ -36,13 +51,15 @@ export default function BrandsPage() {
 
   const fetchBrands = async () => {
     try {
-      setLoading(true)
       const response = await fetch('/api/brands')
-      const data = await response.json()
-      setBrands(data.brands || [])
+      if (response.ok) {
+        const data = await response.json()
+        setBrands(data.brands || [])
+      } else {
+        showToast('Failed to fetch brands', 'error')
+      }
     } catch (error) {
-      console.error('Error fetching brands:', error)
-      showToast('Failed to load brands', 'error')
+      showToast('Error fetching brands', 'error')
     } finally {
       setLoading(false)
     }
@@ -50,6 +67,12 @@ export default function BrandsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData.name.trim()) {
+      showToast('Please enter a brand name', 'error')
+      return
+    }
+
+    setSubmitting(true)
     try {
       const url = editingBrand ? `/api/brands/${editingBrand.id}` : '/api/brands'
       const method = editingBrand ? 'PUT' : 'POST'
@@ -57,200 +80,255 @@ export default function BrandsPage() {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: formData.name }),
+        body: JSON.stringify(formData)
       })
 
       if (response.ok) {
-        fetchBrands()
-        setIsDialogOpen(false)
+        showToast(
+          editingBrand ? 'Brand updated successfully!' : 'Brand created successfully!',
+          'success'
+        )
+        setShowForm(false)
         setEditingBrand(null)
-        setFormData({ name: '' })
-        showToast(editingBrand ? 'Brand updated successfully!' : 'Brand created successfully!', 'success')
+        setFormData({ name: '', description: '', contactInfo: '' })
+        fetchBrands()
       } else {
-        showToast('Error saving brand. Please try again.', 'error')
+        const errorData = await response.json()
+        showToast(errorData.error || 'Failed to save brand', 'error')
       }
     } catch (error) {
-      console.error('Error saving brand:', error)
-      showToast('Error saving brand. Please try again.', 'error')
+      showToast('Error saving brand', 'error')
+    } finally {
+      setSubmitting(false)
     }
   }
 
   const handleEdit = (brand: Brand) => {
     setEditingBrand(brand)
-    setFormData({ name: brand.name })
-    setIsDialogOpen(true)
+    setFormData({
+      name: brand.name,
+      description: brand.description || '',
+      contactInfo: brand.contactInfo || ''
+    })
+    setShowForm(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this brand?')) {
-      try {
-        const response = await fetch(`/api/brands/${id}`, { method: 'DELETE' })
-        if (response.ok) {
-          fetchBrands()
-          showToast('Brand deleted successfully!', 'success')
-        } else {
-          showToast('Error deleting brand. Please try again.', 'error')
-        }
-      } catch (error) {
-        console.error('Error deleting brand:', error)
-        showToast('Error deleting brand. Please try again.', 'error')
+  const handleDelete = async (brand: Brand) => {
+    if (!confirm(`Are you sure you want to delete "${brand.name}"?`)) return
+
+    try {
+      const response = await fetch(`/api/brands/${brand.id}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        showToast('Brand deleted successfully!', 'success')
+        fetchBrands()
+      } else {
+        const errorData = await response.json()
+        showToast(errorData.error || 'Failed to delete brand', 'error')
       }
+    } catch (error) {
+      showToast('Error deleting brand', 'error')
     }
   }
 
-  const filteredBrands = brands.filter(brand =>
-    brand.isActive && (
-      brand.name.toLowerCase().includes(search.toLowerCase()) ||
-      brand.description?.toLowerCase().includes(search.toLowerCase())
-    )
+  const renderGridItem = (brand: Brand) => (
+    <Card className="h-full hover:shadow-lg transition-shadow bg-card border-border">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="text-lg font-semibold text-card-foreground">
+              {brand.name}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              {brand.contactInfo || 'No contact info'}
+            </p>
+          </div>
+          <Badge variant={brand.isActive ? 'default' : 'secondary'}>
+            {brand.isActive ? 'Active' : 'Inactive'}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {brand.description && (
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+            {brand.description}
+          </p>
+        )}
+        <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
+          <span>Categories: {brand._count?.categories || 0}</span>
+          <span>Products: {brand._count?.products || 0}</span>
+        </div>
+        <div className="text-xs text-muted-foreground mb-4">
+          Created: {new Date(brand.createdAt).toLocaleDateString()}
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleEdit(brand)}
+            className="flex-1 border-border text-foreground hover:bg-accent"
+          >
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDelete(brand)}
+            className="flex-1 text-destructive hover:text-destructive border-border hover:bg-destructive/10"
+          >
+            Delete
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   )
 
+  const renderListRow = (brand: Brand) => (
+    <>
+      <td className="px-4 py-3">
+        <div className="font-medium text-foreground">{brand.name}</div>
+        <div className="text-sm text-muted-foreground">{brand.contactInfo || 'No contact'}</div>
+      </td>
+      <td className="px-4 py-3">
+        <div className="text-sm text-muted-foreground">
+          {brand.description || 'No description'}
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <Badge variant={brand.isActive ? 'default' : 'secondary'}>
+          {brand.isActive ? 'Active' : 'Inactive'}
+        </Badge>
+      </td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">
+        {brand._count?.categories || 0}
+      </td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">
+        {brand._count?.products || 0}
+      </td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">
+        {new Date(brand.createdAt).toLocaleDateString()}
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleEdit(brand)}
+            className="text-foreground hover:bg-accent"
+          >
+            Edit
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDelete(brand)}
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            Delete
+          </Button>
+        </div>
+      </td>
+    </>
+  )
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading brands...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Brands</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => {
-              setEditingBrand(null)
-              setFormData({ name: '' })
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Brand
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-white dark:bg-gray-800">
-            <DialogHeader>
-              <DialogTitle className="text-gray-900 dark:text-gray-100">{editingBrand ? 'Edit Brand' : 'Add Brand'}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                placeholder="Brand name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-              <div className="flex gap-2">
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                  {editingBrand ? 'Update' : 'Create'}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Building className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{filteredBrands.length}</div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Brands</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              {filteredBrands.length}
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Active Brands</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {brands.reduce((total, brand) => total + (brand._count?.products || 0), 0)}
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Products</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search */}
-      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-        <CardContent className="p-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
-            <Input
-              placeholder="Search brands..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Brands Grid */}
-      {loading ? (
-        <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBrands.map((brand) => (
-            <Card key={brand.id} className="hover:shadow-lg transition-shadow bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg text-gray-900 dark:text-gray-100">{brand.name}</CardTitle>
-                  <Badge variant={brand.isActive ? "default" : "secondary"}>
-                    {brand.isActive ? "Active" : "Inactive"}
-                  </Badge>
+    <div className="container mx-auto p-6 space-y-6">
+      <DataView
+        items={brands}
+        view={view}
+        onViewChange={setView}
+        title="Brands"
+        actions={
+          <Dialog open={showForm} onOpenChange={setShowForm}>
+            <DialogTrigger asChild>
+              <Button 
+                onClick={() => {
+                  setEditingBrand(null)
+                  setFormData({ name: '', description: '', contactInfo: '' })
+                }}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+              >
+                Add Brand
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-border">
+              <DialogHeader>
+                <DialogTitle className="text-card-foreground font-semibold">
+                  {editingBrand ? 'Edit Brand' : 'Add New Brand'}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground">Name *</label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter brand name"
+                    required
+                    className="bg-background border-input text-foreground"
+                  />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {brand.description && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{brand.description}</p>
-                  )}
-                  
-                  {brand.contactInfo && (
-                    <p className="text-sm text-blue-600 dark:text-blue-400">{brand.contactInfo}</p>
-                  )}
-                  
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {brand._count?.products || 0} products
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(brand)}>
-                        <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(brand.id)}>
-                        <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                      </Button>
-                    </div>
-                  </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Description</label>
+                  <Input
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Enter description (optional)"
+                    className="bg-background border-input text-foreground"
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {filteredBrands.length === 0 && !loading && (
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardContent className="p-8 text-center">
-            <Building className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No brands found</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              {search ? 'Try adjusting your search terms.' : 'Get started by adding your first brand.'}
-            </p>
-            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Brand
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+                <div>
+                  <label className="text-sm font-medium text-foreground">Contact Info</label>
+                  <Input
+                    value={formData.contactInfo}
+                    onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })}
+                    placeholder="Enter contact information (optional)"
+                    className="bg-background border-input text-foreground"
+                  />
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button 
+                    type="submit" 
+                    disabled={submitting} 
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+                  >
+                    {submitting ? 'Saving...' : editingBrand ? 'Update' : 'Create'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowForm(false)}
+                    className="border-border text-foreground hover:bg-accent font-medium"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        }
+        gridProps={{
+          renderItem: renderGridItem,
+          columns: 3
+        }}
+        listProps={{
+          headers: ['Name & Contact', 'Description', 'Status', 'Categories', 'Products', 'Created', 'Actions'],
+          renderRow: renderListRow
+        }}
+      />
     </div>
   )
 }
