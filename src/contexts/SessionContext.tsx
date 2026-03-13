@@ -35,7 +35,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [showIdleWarning, setShowIdleWarning] = useState(false)
   
   const router = useRouter()
-  const { showToast } = useToast()
+  
+  // Safely get toast function
+  let showToast: ((message: string, type: 'success' | 'error' | 'info' | 'warning') => void) | null = null
+  try {
+    const toastContext = useToast()
+    showToast = toastContext.showToast
+  } catch (error) {
+    // ToastProvider not available, continue without toast
+    console.log('ToastProvider not available in SessionProvider')
+  }
 
   // Clear all timers
   const clearTimers = useCallback(() => {
@@ -58,14 +67,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // Set warning timer (18 minutes)
       const newWarningTimer = setTimeout(() => {
         setShowIdleWarning(true)
-        showToast('Your session will expire in 2 minutes due to inactivity', 'warning')
+        if (showToast) {
+          showToast('Your session will expire in 2 minutes due to inactivity', 'warning')
+        }
       }, WARNING_TIMEOUT)
       
       // Set logout timer (20 minutes)
       const newIdleTimer = setTimeout(async () => {
         console.log('Session expired due to inactivity')
         await logout()
-        showToast('Session expired due to inactivity. Please login again.', 'error')
+        if (showToast) {
+          showToast('Session expired due to inactivity. Please login again.', 'error')
+        }
       }, IDLE_TIMEOUT)
       
       setWarningTimer(newWarningTimer)
@@ -83,7 +96,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // Login function
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('🔄 SessionContext: Starting login...')
       setIsLoading(true)
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -93,13 +108,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         credentials: 'include'
       })
 
+      console.log('📞 SessionContext: Login response status:', response.status)
+
       if (response.ok) {
         const data = await response.json()
         const userData = data.user
         
+        console.log('👤 SessionContext: User data received:', userData)
+        
         setUser(userData)
         setIsAuthenticated(true)
         
+        console.log('💾 SessionContext: Storing user data in localStorage')
         // Store user data in localStorage for persistence
         localStorage.setItem('user', JSON.stringify(userData))
         localStorage.setItem('lastActivity', Date.now().toString())
@@ -107,19 +127,30 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         // Start idle timer
         resetIdleTimer()
         
-        showToast('Login successful!', 'success')
+        console.log('✅ SessionContext: Login successful, authentication state updated')
+        
+        // Show toast if available
+        if (showToast) {
+          showToast('Login successful!', 'success')
+        }
         return true
       } else {
         const errorData = await response.json()
-        showToast(errorData.error || 'Login failed', 'error')
+        console.log('❌ SessionContext: Login failed:', errorData)
+        if (showToast) {
+          showToast(errorData.error || 'Login failed', 'error')
+        }
         return false
       }
     } catch (error) {
-      console.error('Login error:', error)
-      showToast('Login failed. Please try again.', 'error')
+      console.error('💥 SessionContext: Login error:', error)
+      if (showToast) {
+        showToast('Login failed. Please try again.', 'error')
+      }
       return false
     } finally {
       setIsLoading(false)
+      console.log('🏁 SessionContext: Login process completed')
     }
   }, [resetIdleTimer, showToast])
 
@@ -307,7 +338,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
                 onClick={() => {
                   setShowIdleWarning(false)
                   resetIdleTimer()
-                  showToast('Session extended', 'success')
+                  if (showToast) {
+                    showToast('Session extended', 'success')
+                  }
                 }}
                 className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md font-medium transition-colors"
               >

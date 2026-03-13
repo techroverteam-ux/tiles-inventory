@@ -5,11 +5,14 @@ import { verifyToken } from '@/lib/auth'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
+  console.log('🔍 Middleware: Processing request for:', pathname)
+  
   // Public routes that don't require authentication
   const publicRoutes = ['/login', '/api/auth/login', '/api/auth/logout']
   
   // Root redirect
   if (pathname === '/') {
+    console.log('🚀 Middleware: Redirecting root to dashboard')
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
   
@@ -18,25 +21,30 @@ export function middleware(request: NextRequest) {
       pathname.startsWith('/_next/') || 
       pathname.startsWith('/api/upload') ||
       pathname.includes('.')) {
+    console.log('✅ Middleware: Allowing public route:', pathname)
     return NextResponse.next()
   }
   
   // Check authentication for protected routes
   const token = request.cookies.get('auth-token')?.value
+  console.log('🍪 Middleware: Auth token present:', !!token)
   
   if (!token) {
+    console.log('❌ Middleware: No token, redirecting to login')
     return NextResponse.redirect(new URL('/login', request.url))
   }
   
   // Verify token
   const user = verifyToken(token)
   if (!user) {
+    console.log('❌ Middleware: Invalid token, redirecting to login')
     // Clear invalid token
     const response = NextResponse.redirect(new URL('/login', request.url))
     response.cookies.delete('auth-token')
     return response
   }
   
+  console.log('✅ Middleware: Valid token, allowing access to:', pathname)
   return NextResponse.next()
 }
 

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Eye, EyeOff } from 'lucide-react'
 import { useSession } from '@/contexts/SessionContext'
+import AuthDebug from '@/components/AuthDebug'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('admin@tiles.com')
@@ -27,11 +28,27 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
 
-    const success = await login(email, password)
-    if (success) {
-      router.push('/dashboard')
-    } else {
-      setError('Invalid credentials. Please try again.')
+    console.log('🔄 Starting login process...')
+    console.log('📧 Email:', email)
+    console.log('🔐 Password length:', password.length)
+
+    try {
+      const success = await login(email, password)
+      console.log('✅ Login result:', success)
+      
+      if (success) {
+        console.log('🚀 Login successful, redirecting to dashboard...')
+        // Add a small delay to ensure state is updated
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 100)
+      } else {
+        console.log('❌ Login failed')
+        setError('Invalid credentials. Please try again.')
+      }
+    } catch (error) {
+      console.error('💥 Login error:', error)
+      setError('Login failed. Please try again.')
     }
   }
 
@@ -143,6 +160,7 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+      <AuthDebug />
     </div>
   )
 }
