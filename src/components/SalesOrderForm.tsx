@@ -95,8 +95,8 @@ export default function SalesOrderForm({ onSuccess, order }: SalesOrderFormProps
         locationsRes.json()
       ])
 
-      setBrands((brandsData.brands || []).filter(b => b.isActive))
-      setLocations((locationsData.locations || []).filter(l => l.isActive))
+      setBrands((brandsData.brands || []).filter((b: any) => b.isActive))
+      setLocations((locationsData.locations || []).filter((l: any) => l.isActive))
     } catch (error) {
       console.error('Error fetching dropdown data:', error)
     }
