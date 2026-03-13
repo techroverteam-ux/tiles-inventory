@@ -65,9 +65,9 @@ export async function POST(request: NextRequest) {
 
     const cookieOptions = {
       httpOnly: true,
-      secure: true, // Always true for HTTPS (Vercel)
-      sameSite: 'none' as const, // Required for cross-origin cookies
-      maxAge: 86400, // 24 hours
+      secure: true,
+      sameSite: 'lax' as const,
+      maxAge: 86400,
       path: '/'
     }
     
