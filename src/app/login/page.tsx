@@ -17,16 +17,14 @@ export default function LoginPage() {
   const router = useRouter()
   const { login, isLoading, isAuthenticated } = useSession()
 
-  // Remove automatic redirect effect to prevent loops
-  // useEffect(() => {
-  //   console.log('🔍 Login: Auth state check - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading)
-  //   if (isAuthenticated && !isLoading) {
-  //     console.log('🚀 Auth state changed: redirecting to dashboard')
-  //     window.location.replace('/dashboard')
-  //   }
-  // }, [isAuthenticated, isLoading])
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      console.log('🚀 Auth state changed: redirecting to dashboard')
+      router.replace('/dashboard')
+    }
+  }, [isAuthenticated, isLoading, router])
 
-  // Only redirect on successful login, not on every auth state change
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -41,8 +39,8 @@ export default function LoginPage() {
       
       if (success) {
         console.log('🚀 Login successful, redirecting to dashboard...')
-        // Force immediate redirect only after successful login
-        window.location.href = '/dashboard'
+        // Force immediate redirect without delay
+        router.replace('/dashboard')
       } else {
         console.log('❌ Login failed')
         setError('Invalid credentials. Please try again.')
@@ -51,24 +49,6 @@ export default function LoginPage() {
       console.error('💥 Login error:', error)
       setError('Login failed. Please try again.')
     }
-  }
-
-  // Don't render login form if already authenticated and not loading
-  if (isAuthenticated && !isLoading) {
-    // Just show loading state, don't auto-redirect
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-800 to-slate-900 flex items-center justify-center">
-        <div className="text-white text-center">
-          <p>Already logged in</p>
-          <button 
-            onClick={() => window.location.href = '/dashboard'}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Go to Dashboard
-          </button>
-        </div>
-      </div>
-    )
   }
 
   return (

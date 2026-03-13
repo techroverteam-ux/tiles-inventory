@@ -29,15 +29,6 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value
   console.log('🍪 Middleware: Auth token present:', !!token)
   
-  // Don't redirect authenticated users from login page - let the page handle it
-  // if (token && pathname === '/login') {
-  //   const user = verifyToken(token)
-  //   if (user) {
-  //     console.log('🚀 Middleware: Authenticated user accessing login, redirecting to dashboard')
-  //     return NextResponse.redirect(new URL('/dashboard', request.url))
-  //   }
-  // }
-  
   if (!token) {
     console.log('❌ Middleware: No token, redirecting to login')
     return NextResponse.redirect(new URL('/login', request.url))
