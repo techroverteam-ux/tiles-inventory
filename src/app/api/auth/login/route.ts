@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
 
     console.log('Generated token:', token.substring(0, 50) + '...')
     console.log('JWT Secret used:', process.env.JWT_SECRET ? 'ENV_VAR' : 'FALLBACK')
+    console.log('Environment:', process.env.NODE_ENV)
+    console.log('Setting cookie with secure:', process.env.NODE_ENV === 'production')
 
     const response = NextResponse.json({
       message: 'Login successful',
@@ -61,13 +63,18 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    response.cookies.set('auth-token', token, {
+    const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Always true for HTTPS (Vercel)
+      sameSite: 'none' as const, // Required for cross-origin cookies
       maxAge: 86400, // 24 hours
       path: '/'
-    })
+    }
+    
+    console.log('Cookie options:', cookieOptions)
+    response.cookies.set('auth-token', token, cookieOptions)
+    
+    console.log('✅ Login: Cookie set successfully')
 
     return response
   } catch (error) {

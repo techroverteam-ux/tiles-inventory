@@ -4,15 +4,29 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 Verify: Starting session verification')
+    console.log('🍪 Verify: Cookies received:', request.cookies.getAll().map(c => ({ name: c.name, value: c.value.substring(0, 20) + '...' })))
+    
+    const authToken = request.cookies.get('auth-token')?.value
+    console.log('🎫 Verify: Auth token present:', !!authToken)
+    
+    if (authToken) {
+      console.log('🎫 Verify: Token preview:', authToken.substring(0, 50) + '...')
+    }
+    
     const authUser = getAuthUser(request)
+    console.log('👤 Verify: Auth user extracted:', !!authUser)
     
     if (!authUser) {
+      console.log('❌ Verify: No valid session found')
       return NextResponse.json(
         { error: 'No valid session found' },
         { status: 401 }
       )
     }
 
+    console.log('👤 Verify: User ID from token:', authUser.userId)
+    
     // Fetch fresh user data from database
     const user = await prisma.user.findUnique({
       where: { id: authUser.userId },
@@ -25,13 +39,17 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    console.log('🗄️ Verify: User found in database:', !!user)
+    
     if (!user || !user.isActive) {
+      console.log('❌ Verify: User not found or inactive')
       return NextResponse.json(
         { error: 'User not found or inactive' },
         { status: 401 }
       )
     }
 
+    console.log('✅ Verify: Session verification successful')
     return NextResponse.json({
       message: 'Session valid',
       user: {
@@ -42,7 +60,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Session verification error:', error)
+    console.error('💥 Verify: Session verification error:', error)
     return NextResponse.json(
       { error: 'Session verification failed' },
       { status: 401 }
