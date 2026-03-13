@@ -116,8 +116,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         
         console.log('👤 SessionContext: User data received:', userData)
         
+        // Set state synchronously
         setUser(userData)
         setIsAuthenticated(true)
+        setIsLoading(false)
         
         console.log('💾 SessionContext: Storing user data in localStorage')
         // Store user data in localStorage for persistence
