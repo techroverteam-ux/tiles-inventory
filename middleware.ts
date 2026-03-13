@@ -8,7 +8,7 @@ export function middleware(request: NextRequest) {
   console.log('🔍 Middleware: Processing request for:', pathname)
   
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/api/auth/login', '/api/auth/logout']
+  const publicRoutes = ['/login', '/api/auth/login', '/api/auth/logout', '/api/auth/verify']
   
   // Root redirect
   if (pathname === '/') {

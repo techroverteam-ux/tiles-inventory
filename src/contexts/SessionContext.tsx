@@ -228,28 +228,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           if (timeSinceLastActivity > IDLE_TIMEOUT) {
             localStorage.removeItem('user')
             localStorage.removeItem('lastActivity')
-            router.push('/login')
+            setIsLoading(false)
             return
           }
           
           // Verify session with server
           await refreshSession()
         } else {
-          // No stored session, redirect to login if not already there
-          if (window.location.pathname !== '/login') {
-            router.push('/login')
-          }
+          // No stored session
+          setIsLoading(false)
         }
       } catch (error) {
         console.error('Session initialization error:', error)
-        router.push('/login')
-      } finally {
         setIsLoading(false)
       }
     }
 
     initializeSession()
-  }, [refreshSession, router])
+  }, [refreshSession])
 
   // Set up activity listeners
   useEffect(() => {
