@@ -1,13 +1,42 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import jwt from 'jsonwebtoken'
+import { verifyToken } from '@/lib/auth'
 
 export function middleware(request: NextRequest) {
-  // Only handle root redirect, skip auth for now
-  if (request.nextUrl.pathname === '/') {
+  const { pathname } = request.nextUrl
+  
+  // Public routes that don't require authentication
+  const publicRoutes = ['/login', '/api/auth/login', '/api/auth/logout']
+  
+  // Root redirect
+  if (pathname === '/') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
-
+  
+  // Skip auth check for public routes and static assets
+  if (publicRoutes.includes(pathname) || 
+      pathname.startsWith('/_next/') || 
+      pathname.startsWith('/api/upload') ||
+      pathname.includes('.')) {
+    return NextResponse.next()
+  }
+  
+  // Check authentication for protected routes
+  const token = request.cookies.get('auth-token')?.value
+  
+  if (!token) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+  
+  // Verify token
+  const user = verifyToken(token)
+  if (!user) {
+    // Clear invalid token
+    const response = NextResponse.redirect(new URL('/login', request.url))
+    response.cookies.delete('auth-token')
+    return response
+  }
+  
   return NextResponse.next()
 }
 

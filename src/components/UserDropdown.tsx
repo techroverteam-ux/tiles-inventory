@@ -1,50 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
-import { useToast } from '@/contexts/ToastContext'
-
-interface User {
-  id: string
-  name: string
-  email: string
-  role: string
-}
+import { useSession } from '@/contexts/SessionContext'
 
 export default function UserDropdown() {
-  const [user, setUser] = useState<User | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const { theme, toggleTheme } = useTheme()
-  const { showToast } = useToast()
+  const { user, logout } = useSession()
   const router = useRouter()
 
-  useEffect(() => {
-    // Get user info from localStorage or API
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      setUser(JSON.parse(userData))
-    }
-  }, [])
-
   const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
-      })
-
-      if (response.ok) {
-        localStorage.removeItem('user')
-        showToast('Logged out successfully', 'success')
-        router.push('/login')
-      } else {
-        showToast('Logout failed', 'error')
-      }
-    } catch (error) {
-      console.error('Logout error:', error)
-      showToast('Logout failed', 'error')
-    }
+    await logout()
+    setIsOpen(false)
   }
 
   if (!user) return null

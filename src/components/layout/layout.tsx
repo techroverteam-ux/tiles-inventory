@@ -13,6 +13,8 @@ import UserDropdown from '@/components/UserDropdown'
 import { NotificationProvider } from '@/contexts/NotificationContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { ToastProvider } from '@/contexts/ToastContext'
+import { SessionProvider } from '@/contexts/SessionContext'
+import ProtectedRoute from '@/components/ProtectedRoute'
 import ThemeToggle from '@/components/ThemeToggle'
 
 interface LayoutProps {
@@ -27,7 +29,15 @@ export default function Layout({ children }: LayoutProps) {
 
   // Don't show layout on login page
   if (pathname === '/login') {
-    return <>{children}</>
+    return (
+      <ThemeProvider>
+        <ToastProvider>
+          <SessionProvider>
+            {children}
+          </SessionProvider>
+        </ToastProvider>
+      </ThemeProvider>
+    )
   }
 
   const handleLogout = async () => {
@@ -42,7 +52,9 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <NotificationProvider>
+        <SessionProvider>
+          <ProtectedRoute>
+            <NotificationProvider>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16 md:pb-0">
           {/* Header */}
           <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between fixed top-0 left-0 right-0 z-50 shadow-sm">
@@ -131,7 +143,9 @@ export default function Layout({ children }: LayoutProps) {
             © 2026 Tiles Inventory Management System. All rights reserved.
           </footer>
         </div>
-        </NotificationProvider>
+            </NotificationProvider>
+          </ProtectedRoute>
+        </SessionProvider>
       </ToastProvider>
     </ThemeProvider>
   )

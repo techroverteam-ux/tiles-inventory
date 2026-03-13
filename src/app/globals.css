@@ -59,6 +59,51 @@
 }
 
 @layer utilities {
+  /* Microsoft-style Skeleton Loading Animations */
+  @keyframes skeleton-loading {
+    0% {
+      background-position: -200px 0;
+    }
+    100% {
+      background-position: calc(200px + 100%) 0;
+    }
+  }
+  
+  @keyframes skeleton-pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+  
+  .animate-skeleton {
+    animation: skeleton-loading 2s ease-in-out infinite;
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--muted)/0.5) 37%,
+      hsl(var(--muted)) 63%
+    );
+    background-size: 400px 100%;
+  }
+  
+  .animate-skeleton-pulse {
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  /* Enhanced skeleton for dark mode */
+  .dark .animate-skeleton {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)/0.3) 25%,
+      hsl(var(--muted)/0.1) 37%,
+      hsl(var(--muted)/0.3) 63%
+    );
+    background-size: 400px 100%;
+  }
+
   /* Enhanced Dialog Animations */
   @keyframes dialog-overlay-show {
     from {
@@ -179,5 +224,27 @@
   /* Focus ring improvements */
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
+  }
+  
+  /* Content loading states */
+  .content-loading {
+    @apply animate-skeleton;
+  }
+  
+  /* Staggered animation delays for multiple skeletons */
+  .skeleton-delay-1 {
+    animation-delay: 0.1s;
+  }
+  
+  .skeleton-delay-2 {
+    animation-delay: 0.2s;
+  }
+  
+  .skeleton-delay-3 {
+    animation-delay: 0.3s;
+  }
+  
+  .skeleton-delay-4 {
+    animation-delay: 0.4s;
   }
 }

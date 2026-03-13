@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { LoadingPage } from '@/components/ui/skeleton'
 
 interface Category {
   id: string
@@ -242,14 +243,7 @@ export default function CategoriesPage() {
   )
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading categories...</p>
-        </div>
-      </div>
-    )
+    return <LoadingPage view={view} title="Categories" items={6} columns={3} />
   }
 
   return (

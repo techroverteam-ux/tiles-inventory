@@ -1,54 +1,37 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Eye, EyeOff } from 'lucide-react'
+import { useSession } from '@/contexts/SessionContext'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('admin@tiles.com')
   const [password, setPassword] = useState('admin123')
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const { login, isLoading, isAuthenticated } = useSession()
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
     setError('')
 
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        // Store user data in localStorage for client-side auth
-        localStorage.setItem('user', JSON.stringify(data.user))
-        // Force a page reload to ensure middleware picks up the new cookie
-        window.location.href = '/dashboard'
-      } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Login failed')
-        
-        // Log detailed error for debugging
-        if (errorData.details) {
-          console.error('Login error details:', errorData.details)
-        }
-      }
-    } catch (error) {
-      setError('Network error. Please try again.')
-    } finally {
-      setIsLoading(false)
+    const success = await login(email, password)
+    if (success) {
+      router.push('/dashboard')
+    } else {
+      setError('Invalid credentials. Please try again.')
     }
   }
 
