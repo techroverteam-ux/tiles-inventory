@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/contexts/ToastContext'
+import ImageUpload from '@/components/ui/image-upload'
 
 interface ProductFormProps {
   onSuccess: () => void
@@ -20,7 +21,7 @@ interface FormData {
   locationId: string
   batchName: string
   stock: string
-  image: File | null
+  imageUrl: string
 }
 
 export default function ProductForm({ onSuccess, product }: ProductFormProps) {
@@ -34,7 +35,7 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
     locationId: '',
     batchName: '',
     stock: product?.pcsPerBox?.toString() || '',
-    image: null
+    imageUrl: product?.imageUrl || ''
   })
   
   const [sizes, setSizes] = useState<any[]>([])
@@ -102,58 +103,17 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
     }
   }
 
+  const handleImageUploaded = (url: string) => {
+    setFormData({ ...formData, imageUrl: url })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
-      // Client-side validation
       if (!formData.name.trim()) {
         showToast('Please enter a product name', 'error')
-        setLoading(false)
-        return
-      }
-
-      if (!formData.code.trim()) {
-        showToast('Please enter a product code', 'error')
-        setLoading(false)
-        return
-      }
-
-      if (!formData.brandId) {
-        showToast('Please select a brand', 'error')
-        setLoading(false)
-        return
-      }
-
-      if (!formData.categoryId) {
-        showToast('Please select a category', 'error')
-        setLoading(false)
-        return
-      }
-
-      if (!formData.sizeId) {
-        showToast('Please select a size', 'error')
-        setLoading(false)
-        return
-      }
-
-      if (!product) {
-        if (!formData.locationId) {
-          showToast('Please select a location', 'error')
-          setLoading(false)
-          return
-        }
-
-        if (!formData.batchName.trim()) {
-          showToast('Please enter a batch name', 'error')
-          setLoading(false)
-          return
-        }
-      }
-
-      if (!formData.stock || parseInt(formData.stock) <= 0) {
-        showToast('Please enter a valid stock quantity', 'error')
         setLoading(false)
         return
       }
@@ -161,79 +121,36 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
       const url = product ? `/api/products/${product.id}` : '/api/products'
       const method = product ? 'PUT' : 'POST'
       
-      const submitData = new FormData()
-      submitData.append('name', formData.name.trim())
-      submitData.append('code', formData.code.trim())
-      submitData.append('sizeId', formData.sizeId)
-      submitData.append('categoryId', formData.categoryId)
-      submitData.append('brandId', formData.brandId)
-      submitData.append('finishTypeId', formData.sizeId)
-      submitData.append('locationId', formData.locationId)
-      submitData.append('batchName', formData.batchName.trim())
-      submitData.append('stock', formData.stock)
-      submitData.append('sqftPerBox', '1')
-      submitData.append('pcsPerBox', formData.stock)
-      
-      if (formData.image) {
-        console.log('Appending image to FormData:', formData.image.name, formData.image.size)
-        submitData.append('image', formData.image)
-      } else {
-        console.log('No image selected')
-      }
-      
-      console.log('Submitting product data:', {
-        name: formData.name,
-        code: formData.code,
-        brandId: formData.brandId,
-        categoryId: formData.categoryId,
+      const submitData = {
+        name: formData.name.trim(),
+        code: formData.code.trim(),
         sizeId: formData.sizeId,
+        categoryId: formData.categoryId,
+        brandId: formData.brandId,
+        finishTypeId: formData.sizeId,
+        locationId: formData.locationId,
+        batchName: formData.batchName.trim(),
         stock: formData.stock,
-        hasImage: !!formData.image
-      })
+        sqftPerBox: '1',
+        pcsPerBox: formData.stock,
+        imageUrl: formData.imageUrl
+      }
       
       const response = await fetch(url, {
         method,
-        body: submitData
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData)
       })
-
-      console.log('Response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
-      })
-
-      // Check if response is JSON
-      const contentType = response.headers.get('content-type')
-      let responseData
-      
-      try {
-        if (contentType && contentType.includes('application/json')) {
-          responseData = await response.json()
-          console.log('Parsed JSON response:', responseData)
-        } else {
-          // Response is not JSON, get text instead
-          const textResponse = await response.text()
-          console.error('Non-JSON response:', textResponse)
-          console.error('Content-Type was:', contentType)
-          responseData = { error: 'Server returned invalid response', details: textResponse }
-        }
-      } catch (parseError: any) {
-        console.error('Failed to parse response:', parseError)
-        const rawText = await response.text()
-        console.error('Raw response text:', rawText)
-        responseData = { error: 'Failed to parse server response', details: parseError.message }
-      }
 
       if (response.ok) {
-        console.log('Product saved successfully:', responseData)
         showToast(
           product ? 'Product updated successfully!' : 'Product created successfully!',
           'success'
         )
         onSuccess()
         
-        // Reset form only for new products
         if (!product) {
           setFormData({
             name: '',
@@ -244,20 +161,12 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
             locationId: '',
             batchName: '',
             stock: '',
-            image: null
+            imageUrl: ''
           })
         }
       } else {
-        // Handle error response
-        console.error('API Error:', {
-          status: response.status,
-          statusText: response.statusText,
-          contentType: contentType,
-          error: responseData
-        })
-        
-        const errorMessage = responseData.details || responseData.error || responseData.message || 'Failed to save product'
-        showToast(errorMessage, 'error')
+        const errorData = await response.json()
+        showToast(errorData.error || 'Failed to save product', 'error')
       }
     } catch (error: any) {
       console.error('Error submitting product:', error)
@@ -268,141 +177,135 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2 py-2 max-h-[70vh] overflow-y-auto">
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Tile Name *</label>
-          <Input
-            placeholder="Enter tile name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-            className="h-8 text-sm"
-          />
+    <div className="bg-card text-card-foreground border border-border rounded-lg">
+      <form onSubmit={handleSubmit} className="space-y-4 p-6 max-h-[70vh] overflow-y-auto">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Tile Name *</label>
+            <Input
+              placeholder="Enter tile name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              className="bg-background border-input text-foreground"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Item Code *</label>
+            <Input
+              placeholder="Enter item code"
+              value={formData.code}
+              onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+              required
+              className="bg-background border-input text-foreground"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Brand *</label>
+            <Select value={formData.brandId} onValueChange={(value) => {
+              setFormData({ ...formData, brandId: value, categoryId: '', sizeId: '' })
+            }} required>
+              <SelectTrigger className="bg-background border-input text-foreground">
+                <SelectValue placeholder="Select brand" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                {brands.map((brand) => (
+                  <SelectItem key={brand.id} value={brand.id} className="text-popover-foreground">
+                    {brand.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Category *</label>
+            <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value, sizeId: '' })} disabled={!formData.brandId} required>
+              <SelectTrigger className="bg-background border-input text-foreground">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                {filteredCategories.map((category) => (
+                  <SelectItem key={category.id} value={category.id} className="text-popover-foreground">
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Size *</label>
+            <Select value={formData.sizeId} onValueChange={(value) => setFormData({ ...formData, sizeId: value })} disabled={!formData.categoryId} required>
+              <SelectTrigger className="bg-background border-input text-foreground">
+                <SelectValue placeholder="Select size" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                {filteredSizes.map((size) => (
+                  <SelectItem key={size.id} value={size.id} className="text-popover-foreground">
+                    {size.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Stock Quantity *</label>
+            <Input
+              type="number"
+              placeholder="Enter stock"
+              value={formData.stock}
+              onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+              required
+              className="bg-background border-input text-foreground"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Location {!product && '*'}</label>
+            <Select value={formData.locationId} onValueChange={(value) => setFormData({ ...formData, locationId: value })} required={!product}>
+              <SelectTrigger className="bg-background border-input text-foreground">
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border">
+                {locations.map((location) => (
+                  <SelectItem key={location.id} value={location.id} className="text-popover-foreground">
+                    {location.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Batch Name {!product && '*'}</label>
+            <Input
+              placeholder="Enter batch name"
+              value={formData.batchName}
+              onChange={(e) => setFormData({ ...formData, batchName: e.target.value })}
+              required={!product}
+              className="bg-background border-input text-foreground"
+            />
+          </div>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Item Code *</label>
-          <Input
-            placeholder="Enter item code"
-            value={formData.code}
-            onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-            required
-            className="h-8 text-sm"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Brand *</label>
-          <Select value={formData.brandId} onValueChange={(value) => {
-            setFormData({ ...formData, brandId: value, categoryId: '', sizeId: '' })
-          }} required>
-            <SelectTrigger className="bg-white h-8 text-sm">
-              <SelectValue placeholder="Select brand" />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              {brands.map((brand) => (
-                <SelectItem key={brand.id} value={brand.id}>
-                  {brand.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Category *</label>
-          <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value, sizeId: '' })} disabled={!formData.brandId} required>
-            <SelectTrigger className="bg-white h-8 text-sm">
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              {filteredCategories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Size *</label>
-          <Select value={formData.sizeId} onValueChange={(value) => setFormData({ ...formData, sizeId: value })} disabled={!formData.categoryId} required>
-            <SelectTrigger className="bg-white h-8 text-sm">
-              <SelectValue placeholder="Select size" />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              {filteredSizes.map((size) => (
-                <SelectItem key={size.id} value={size.id}>
-                  {size.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Stock Quantity *</label>
-          <Input
-            type="number"
-            placeholder="Enter stock"
-            value={formData.stock}
-            onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-            required
-            className="h-8 text-sm"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Location {!product && '*'}</label>
-          <Select value={formData.locationId} onValueChange={(value) => setFormData({ ...formData, locationId: value })} required={!product}>
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="Select location" />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              {locations.map((location) => (
-                <SelectItem key={location.id} value={location.id}>
-                  {location.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs font-medium">Batch Name {!product && '*'}</label>
-          <Input
-            placeholder="Enter batch name"
-            value={formData.batchName}
-            onChange={(e) => setFormData({ ...formData, batchName: e.target.value })}
-            required={!product}
-            className="h-8 text-sm"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-1">
-        <label className="text-xs font-medium">Tile Image</label>
-        <Input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setFormData({ ...formData, image: e.target.files?.[0] || null })}
-          className="h-8 text-xs"
+        <ImageUpload 
+          onImageUploaded={handleImageUploaded}
+          currentImage={formData.imageUrl}
         />
-        {formData.image && (
-          <p className="text-xs text-gray-500">Selected: {formData.image.name}</p>
-        )}
-      </div>
 
-      <div className="flex gap-2 pt-2">
-        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 h-8 text-sm" disabled={loading}>
-          {loading ? (product ? 'Updating...' : 'Creating...') : (product ? 'Update' : 'Create')}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => onSuccess()} className="h-8 text-sm">
-          Cancel
-        </Button>
-      </div>
-    </form>
+        <div className="flex gap-2 pt-4">
+          <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90" disabled={loading}>
+            {loading ? (product ? 'Updating...' : 'Creating...') : (product ? 'Update' : 'Create')}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => onSuccess()} className="border-border text-foreground hover:bg-accent">
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </div>
   )
 }

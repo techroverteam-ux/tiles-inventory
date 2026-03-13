@@ -3,12 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   password  String
   name      String?
@@ -21,7 +21,7 @@ model User {
 }
 
 model Brand {
-  id             String          @id @default(cuid())
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
   name           String
   description    String?
   contactInfo    String?
@@ -37,10 +37,10 @@ model Brand {
 }
 
 model Category {
-  id          String    @id @default(cuid())
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String?
-  brandId     String
+  brandId     String    @db.ObjectId
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -52,12 +52,13 @@ model Category {
 }
 
 model Size {
-  id          String    @id @default(cuid())
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
   name        String
-  length      Float
-  width       Float
-  brandId     String
-  categoryId  String
+  description String?
+  length      Float?
+  width       Float?
+  brandId     String    @db.ObjectId
+  categoryId  String    @db.ObjectId
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -69,7 +70,7 @@ model Size {
 }
 
 model FinishType {
-  id          String    @id @default(cuid())
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String?
   isActive    Boolean   @default(true)
@@ -81,14 +82,14 @@ model FinishType {
 }
 
 model Product {
-  id            String        @id @default(cuid())
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   code          String
   description   String?
-  brandId       String
-  categoryId    String
-  sizeId        String?
-  finishTypeId  String
+  brandId       String        @db.ObjectId
+  categoryId    String        @db.ObjectId
+  sizeId        String?       @db.ObjectId
+  finishTypeId  String        @db.ObjectId
   length        Float?
   width         Float?
   thickness     Float?
@@ -112,7 +113,7 @@ model Product {
 }
 
 model Location {
-  id            String         @id @default(cuid())
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   address       String?
   isActive      Boolean        @default(true)
@@ -126,15 +127,17 @@ model Location {
 }
 
 model Batch {
-  id            String   @id @default(cuid())
-  productId     String
-  locationId    String
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId     String   @db.ObjectId
+  locationId    String   @db.ObjectId
   batchNumber   String
   shade         String?
   quantity      Int
-  purchasePrice Float
-  sellingPrice  Float
+  purchasePrice Float?
+  sellingPrice  Float?
+  receivedDate  DateTime?
   expiryDate    DateTime?
+  isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
@@ -143,14 +146,13 @@ model Batch {
   
   salesItems    SalesItem[]
 
-  @@unique([productId, locationId, batchNumber])
   @@map("batches")
 }
 
 model PurchaseOrder {
-  id            String         @id @default(cuid())
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
   orderNumber   String         @unique
-  brandId       String
+  brandId       String         @db.ObjectId
   orderDate     DateTime
   expectedDate  DateTime?
   receivedDate  DateTime?
@@ -167,10 +169,10 @@ model PurchaseOrder {
 }
 
 model PurchaseItem {
-  id              String        @id @default(cuid())
-  purchaseOrderId String
-  productId       String
-  locationId      String
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  purchaseOrderId String        @db.ObjectId
+  productId       String        @db.ObjectId
+  locationId      String        @db.ObjectId
   batchNumber     String
   shade           String?
   quantity        Int
@@ -188,9 +190,9 @@ model PurchaseItem {
 }
 
 model SalesOrder {
-  id           String      @id @default(cuid())
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
   orderNumber  String      @unique
-  customerName String
+  customerName String?
   customerPhone String?
   orderDate    DateTime
   deliveryDate DateTime?
@@ -208,10 +210,10 @@ model SalesOrder {
 }
 
 model SalesItem {
-  id           String     @id @default(cuid())
-  salesOrderId String
-  productId    String
-  batchId      String
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  salesOrderId String     @db.ObjectId
+  productId    String     @db.ObjectId
+  batchId      String     @db.ObjectId
   quantity     Int
   unitPrice    Float
   totalPrice   Float
