@@ -220,6 +220,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initializeSession = async () => {
       try {
+        console.log('🔄 SessionContext: Initializing session...')
         setIsLoading(true)
         
         // Check localStorage for existing session
@@ -231,6 +232,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           
           // If more than 20 minutes have passed, clear session
           if (timeSinceLastActivity > IDLE_TIMEOUT) {
+            console.log('⏰ SessionContext: Session expired, clearing data')
             localStorage.removeItem('user')
             localStorage.removeItem('lastActivity')
             setIsLoading(false)
@@ -244,17 +246,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           setIsAuthenticated(true)
           resetIdleTimer()
         } else {
-          // No stored session
-          setIsLoading(false)
+          console.log('❌ SessionContext: No stored session found')
         }
       } catch (error) {
-        console.error('Session initialization error:', error)
+        console.error('💥 SessionContext: Session initialization error:', error)
+      } finally {
         setIsLoading(false)
       }
     }
 
     initializeSession()
-  }, [refreshSession])
+  }, []) // Remove refreshSession dependency to prevent loop
 
   // Set up activity listeners
   useEffect(() => {
