@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { verifyToken } from '@/lib/auth'
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -36,22 +35,11 @@ export function middleware(request: NextRequest) {
     debugger // Debug point 13: No token redirect
     return NextResponse.redirect(new URL('/login', request.url))
   }
-  
-  // Verify token
-  const user = verifyToken(token)
-  console.log('👤 Middleware: Token verification result:', !!user)
-  debugger // Debug point 14: Token verification
-  
-  if (!user) {
-    console.log('❌ Middleware: Invalid token, redirecting to login')
-    // Clear invalid token
-    const response = NextResponse.redirect(new URL('/login', request.url))
-    response.cookies.delete('auth-token')
-    return response
-  }
-  
-  console.log('✅ Middleware: Valid token, allowing access to:', pathname)
-  debugger // Debug point 15: Access granted
+
+  // Middleware runs on Edge runtime. Keep it lightweight and cookie-presence based.
+  // Token validity is enforced by server API routes (e.g., /api/auth/verify).
+  console.log('✅ Middleware: Auth cookie present, allowing access to:', pathname)
+  debugger // Debug point 14: Access granted by cookie presence
   return NextResponse.next()
 }
 

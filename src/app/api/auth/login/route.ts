@@ -63,10 +63,12 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    const isProduction = process.env.NODE_ENV === 'production'
+
     const cookieOptions = {
       httpOnly: true,
-      secure: true,
-      sameSite: 'lax' as const,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' as const : 'lax' as const,
       maxAge: 86400,
       path: '/'
     }
