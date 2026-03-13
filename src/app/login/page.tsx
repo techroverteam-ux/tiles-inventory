@@ -17,13 +17,13 @@ export default function LoginPage() {
   const router = useRouter()
   const { login, isLoading, isAuthenticated } = useSession()
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      console.log('🚀 Auth state changed: redirecting to dashboard')
-      router.replace('/dashboard')
-    }
-  }, [isAuthenticated, isLoading, router])
+  // Remove automatic redirect to prevent loops
+  // useEffect(() => {
+  //   if (isAuthenticated && !isLoading) {
+  //     console.log('🚀 Auth state changed: redirecting to dashboard')
+  //     router.replace('/dashboard')
+  //   }
+  // }, [isAuthenticated, isLoading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,8 +39,8 @@ export default function LoginPage() {
       
       if (success) {
         console.log('🚀 Login successful, redirecting to dashboard...')
-        // Force immediate redirect without delay
-        router.replace('/dashboard')
+        // Use window.location for immediate redirect
+        window.location.href = '/dashboard'
       } else {
         console.log('❌ Login failed')
         setError('Invalid credentials. Please try again.')
