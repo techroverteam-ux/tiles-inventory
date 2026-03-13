@@ -23,8 +23,8 @@ interface SessionContextType {
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined)
 
-const IDLE_TIMEOUT = 20 * 60 * 1000 // 20 minutes in milliseconds
-const WARNING_TIMEOUT = 18 * 60 * 1000 // 18 minutes - show warning 2 minutes before logout
+const IDLE_TIMEOUT = 5 * 60 * 1000 // 5 minutes in milliseconds
+const WARNING_TIMEOUT = 4 * 60 * 1000 // 4 minutes - show warning 1 minute before logout
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -59,20 +59,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setShowIdleWarning(false)
   }, [idleTimer, warningTimer])
 
+  const updateLastActivity = useCallback(() => {
+    localStorage.setItem('lastActivity', Date.now().toString())
+  }, [])
+
   // Reset idle timer
   const resetIdleTimer = useCallback(() => {
     clearTimers()
     
     if (isAuthenticated) {
-      // Set warning timer (18 minutes)
+      updateLastActivity()
+
+      // Set warning timer (4 minutes)
       const newWarningTimer = setTimeout(() => {
         setShowIdleWarning(true)
         if (showToast) {
-          showToast('Your session will expire in 2 minutes due to inactivity', 'warning')
+          showToast('Your session will expire in 1 minute due to inactivity', 'warning')
         }
       }, WARNING_TIMEOUT)
       
-      // Set logout timer (20 minutes)
+      // Set logout timer (5 minutes)
       const newIdleTimer = setTimeout(async () => {
         console.log('Session expired due to inactivity')
         await logout()
@@ -84,7 +90,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setWarningTimer(newWarningTimer)
       setIdleTimer(newIdleTimer)
     }
-  }, [isAuthenticated, clearTimers, showToast])
+  }, [isAuthenticated, clearTimers, showToast, updateLastActivity])
 
   // Activity event handlers
   const handleActivity = useCallback(() => {
@@ -230,7 +236,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (storedUser && lastActivity) {
           const timeSinceLastActivity = Date.now() - parseInt(lastActivity)
           
-          // If more than 20 minutes have passed, clear session
+          // If more than 5 minutes have passed, clear session
           if (timeSinceLastActivity > IDLE_TIMEOUT) {
             console.log('⏰ SessionContext: Session expired, clearing data')
             localStorage.removeItem('user')
@@ -336,7 +342,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-foreground">Session Expiring</h3>
-                <p className="text-sm text-muted-foreground">Your session will expire in 2 minutes</p>
+                <p className="text-sm text-muted-foreground">Your session will expire in 1 minute</p>
               </div>
             </div>
             <p className="text-sm text-muted-foreground mb-6">

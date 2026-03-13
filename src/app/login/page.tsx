@@ -42,10 +42,7 @@ export default function LoginPage() {
       debugger // Debug point 2: After login attempt
       
       if (success) {
-        console.log('🚀 Login successful, redirecting to dashboard...')
-        debugger // Debug point 3: Before redirect
-        // Use window.location for immediate redirect
-        window.location.href = '/dashboard'
+        router.replace('/dashboard')
       } else {
         console.log('❌ Login failed')
         setError('Invalid credentials. Please try again.')
