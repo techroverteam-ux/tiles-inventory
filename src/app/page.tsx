@@ -24,16 +24,28 @@ export default function Dashboard() {
   const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
+  console.log('🏠 Dashboard: Component mounted')
+  debugger // Debug point 4: Dashboard component loaded
+
   useEffect(() => {
+    console.log('🏠 Dashboard: useEffect triggered')
+    debugger // Debug point 5: Dashboard useEffect
     fetchDashboardData()
   }, [])
 
   const fetchDashboardData = async () => {
+    console.log('📊 Dashboard: Starting data fetch')
+    debugger // Debug point 6: Before API calls
+    
     try {
       // Fetch stats
+      console.log('📊 Dashboard: Fetching stats...')
       const statsResponse = await fetch('/api/dashboard/stats')
+      console.log('📊 Dashboard: Stats response status:', statsResponse.status)
+      
       if (statsResponse.ok) {
         const statsData = await statsResponse.json()
+        console.log('📊 Dashboard: Stats data:', statsData)
         setStats(statsData)
       }
 

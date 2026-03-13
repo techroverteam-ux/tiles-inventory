@@ -97,6 +97,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
       console.log('🔄 SessionContext: Starting login...')
+      debugger // Debug point 7: SessionContext login start
+      
       setIsLoading(true)
       
       const response = await fetch('/api/auth/login', {
@@ -109,12 +111,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       })
 
       console.log('📞 SessionContext: Login response status:', response.status)
+      debugger // Debug point 8: After login API call
 
       if (response.ok) {
         const data = await response.json()
         const userData = data.user
         
         console.log('👤 SessionContext: User data received:', userData)
+        debugger // Debug point 9: User data received
         
         // Set state synchronously
         setUser(userData)
@@ -130,6 +134,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         resetIdleTimer()
         
         console.log('✅ SessionContext: Login successful, authentication state updated')
+        debugger // Debug point 10: Before returning success
         
         // Show toast if available
         if (showToast) {

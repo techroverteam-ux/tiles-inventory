@@ -29,6 +29,7 @@ model Brand {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   categories     Category[]
+  collections    Collection[]
   sizes          Size[]
   products       Product[]
   purchaseOrders PurchaseOrder[]
@@ -47,8 +48,25 @@ model Category {
   brand       Brand     @relation(fields: [brandId], references: [id])
   sizes       Size[]
   products    Product[]
+  collections Collection[]
 
   @@map("categories")
+}
+
+model Collection {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  brandId     String    @db.ObjectId
+  categoryId  String?   @db.ObjectId
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  brand       Brand     @relation(fields: [brandId], references: [id])
+  category    Category? @relation(fields: [categoryId], references: [id])
+  products    Product[]
+
+  @@map("collections")
 }
 
 model Size {
@@ -88,6 +106,7 @@ model Product {
   description   String?
   brandId       String        @db.ObjectId
   categoryId    String        @db.ObjectId
+  collectionId  String?       @db.ObjectId
   sizeId        String?       @db.ObjectId
   finishTypeId  String        @db.ObjectId
   length        Float?
@@ -102,6 +121,7 @@ model Product {
   
   brand         Brand         @relation(fields: [brandId], references: [id])
   category      Category      @relation(fields: [categoryId], references: [id])
+  collection    Collection?   @relation(fields: [collectionId], references: [id])
   size          Size?         @relation(fields: [sizeId], references: [id])
   finishType    FinishType    @relation(fields: [finishTypeId], references: [id])
   

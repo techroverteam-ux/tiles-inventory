@@ -6,6 +6,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
   console.log('🔍 Middleware: Processing request for:', pathname)
+  debugger // Debug point 11: Middleware entry
   
   // Public routes that don't require authentication
   const publicRoutes = ['/login', '/api/auth/login', '/api/auth/logout', '/api/auth/verify']
@@ -28,14 +29,19 @@ export function middleware(request: NextRequest) {
   // Check authentication for protected routes
   const token = request.cookies.get('auth-token')?.value
   console.log('🍪 Middleware: Auth token present:', !!token)
+  debugger // Debug point 12: Token check
   
   if (!token) {
     console.log('❌ Middleware: No token, redirecting to login')
+    debugger // Debug point 13: No token redirect
     return NextResponse.redirect(new URL('/login', request.url))
   }
   
   // Verify token
   const user = verifyToken(token)
+  console.log('👤 Middleware: Token verification result:', !!user)
+  debugger // Debug point 14: Token verification
+  
   if (!user) {
     console.log('❌ Middleware: Invalid token, redirecting to login')
     // Clear invalid token
@@ -45,6 +51,7 @@ export function middleware(request: NextRequest) {
   }
   
   console.log('✅ Middleware: Valid token, allowing access to:', pathname)
+  debugger // Debug point 15: Access granted
   return NextResponse.next()
 }
 
