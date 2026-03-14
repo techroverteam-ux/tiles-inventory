@@ -1,9 +1,17 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useSession } from '@/contexts/SessionContext'
 
 export default function AuthDebug() {
   const { user, isAuthenticated, isLoading } = useSession()
+  const [hasLocalUser, setHasLocalUser] = useState(false)
+  const [currentPath, setCurrentPath] = useState('')
+
+  useEffect(() => {
+    setHasLocalUser(!!localStorage.getItem('user'))
+    setCurrentPath(window.location.pathname)
+  }, [])
 
   if (process.env.NODE_ENV !== 'development') {
     return null
@@ -24,8 +32,8 @@ export default function AuthDebug() {
         </div>
       )}
       <div className="mt-2">
-        <div>LocalStorage User: {localStorage.getItem('user') ? '✅' : '❌'}</div>
-        <div>Current Path: {window.location.pathname}</div>
+        <div>LocalStorage User: {hasLocalUser ? '✅' : '❌'}</div>
+        <div>Current Path: {currentPath || 'N/A'}</div>
       </div>
     </div>
   )

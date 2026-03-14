@@ -23,8 +23,8 @@ interface SessionContextType {
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined)
 
-const IDLE_TIMEOUT = 20 * 60 * 1000 // 20 minutes in milliseconds
-const WARNING_TIMEOUT = 18 * 60 * 1000 // 18 minutes - show warning 2 minutes before logout
+const IDLE_TIMEOUT = 5 * 60 * 1000 // 5 minutes in milliseconds
+const WARNING_TIMEOUT = 4 * 60 * 1000 // 4 minutes - show warning 1 minute before logout
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -59,20 +59,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setShowIdleWarning(false)
   }, [idleTimer, warningTimer])
 
+  const updateLastActivity = useCallback(() => {
+    localStorage.setItem('lastActivity', Date.now().toString())
+  }, [])
+
   // Reset idle timer
   const resetIdleTimer = useCallback(() => {
     clearTimers()
     
     if (isAuthenticated) {
-      // Set warning timer (18 minutes)
+      updateLastActivity()
+
+      // Set warning timer (4 minutes)
       const newWarningTimer = setTimeout(() => {
         setShowIdleWarning(true)
         if (showToast) {
-          showToast('Your session will expire in 2 minutes due to inactivity', 'warning')
+          showToast('Your session will expire in 1 minute due to inactivity', 'warning')
         }
       }, WARNING_TIMEOUT)
       
-      // Set logout timer (20 minutes)
+      // Set logout timer (5 minutes)
       const newIdleTimer = setTimeout(async () => {
         console.log('Session expired due to inactivity')
         await logout()
@@ -84,7 +90,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setWarningTimer(newWarningTimer)
       setIdleTimer(newIdleTimer)
     }
-  }, [isAuthenticated, clearTimers, showToast])
+  }, [isAuthenticated, clearTimers, showToast, updateLastActivity])
 
   // Activity event handlers
   const handleActivity = useCallback(() => {
@@ -120,16 +126,31 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         console.log('👤 SessionContext: User data received:', userData)
         debugger // Debug point 9: User data received
         
-        // Set state synchronously
-        setUser(userData)
+        // Immediately verify session to ensure auth cookie is actually persisted.
+        const verifyResponse = await fetch('/api/auth/verify', {
+          method: 'GET',
+          credentials: 'include'
+        })
+
+        if (!verifyResponse.ok) {
+          console.log('❌ SessionContext: Login API succeeded but verify failed')
+          if (showToast) {
+            showToast('Session could not be established. Please try again.', 'error')
+          }
+          return false
+        }
+
+        const verifyData = await verifyResponse.json()
+
+        // Set authenticated state from server-verified user data
+        setUser(verifyData.user)
         setIsAuthenticated(true)
         setIsLoading(false)
-        
-        console.log('💾 SessionContext: Storing user data in localStorage')
-        // Store user data in localStorage for persistence
-        localStorage.setItem('user', JSON.stringify(userData))
+
+        console.log('💾 SessionContext: Storing verified user data in localStorage')
+        localStorage.setItem('user', JSON.stringify(verifyData.user))
         localStorage.setItem('lastActivity', Date.now().toString())
-        
+
         // Start idle timer
         resetIdleTimer()
         
@@ -216,40 +237,39 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [resetIdleTimer, logout])
 
-  // Initialize session on mount
+  // Initialize session on mount (server-verified)
   useEffect(() => {
     const initializeSession = async () => {
       try {
         console.log('🔄 SessionContext: Initializing session...')
         setIsLoading(true)
-        
-        // Check localStorage for existing session
-        const storedUser = localStorage.getItem('user')
-        const lastActivity = localStorage.getItem('lastActivity')
-        
-        if (storedUser && lastActivity) {
-          const timeSinceLastActivity = Date.now() - parseInt(lastActivity)
-          
-          // If more than 20 minutes have passed, clear session
-          if (timeSinceLastActivity > IDLE_TIMEOUT) {
-            console.log('⏰ SessionContext: Session expired, clearing data')
-            localStorage.removeItem('user')
-            localStorage.removeItem('lastActivity')
-            setIsLoading(false)
-            return
-          }
-          
-          // Use stored user data instead of verifying with server
-          console.log('💾 SessionContext: Using stored user data')
-          const userData = JSON.parse(storedUser)
-          setUser(userData)
+
+        const verifyResponse = await fetch('/api/auth/verify', {
+          method: 'GET',
+          credentials: 'include'
+        })
+
+        if (verifyResponse.ok) {
+          const data = await verifyResponse.json()
+          console.log('✅ SessionContext: Server session verified')
+          setUser(data.user)
           setIsAuthenticated(true)
+          localStorage.setItem('user', JSON.stringify(data.user))
+          localStorage.setItem('lastActivity', Date.now().toString())
           resetIdleTimer()
         } else {
-          console.log('❌ SessionContext: No stored session found')
+          console.log('❌ SessionContext: No valid server session found')
+          localStorage.removeItem('user')
+          localStorage.removeItem('lastActivity')
+          setUser(null)
+          setIsAuthenticated(false)
         }
       } catch (error) {
         console.error('💥 SessionContext: Session initialization error:', error)
+        localStorage.removeItem('user')
+        localStorage.removeItem('lastActivity')
+        setUser(null)
+        setIsAuthenticated(false)
       } finally {
         setIsLoading(false)
       }
@@ -336,7 +356,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-foreground">Session Expiring</h3>
-                <p className="text-sm text-muted-foreground">Your session will expire in 2 minutes</p>
+                <p className="text-sm text-muted-foreground">Your session will expire in 1 minute</p>
               </div>
             </div>
             <p className="text-sm text-muted-foreground mb-6">
