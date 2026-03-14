@@ -1,31 +1,193 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = await params
-    const data = await request.json()
-    const size = await prisma.finishType.update({
-      where: { id },
-      data: { name: data.name },
+    const size = await prisma.size.findUnique({
+      where: { id: params.id },
+      include: {
+        brand: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            products: true,
+          },
+        },
+        createdBy: {
+          select: {
+            name: true,
+            email: true
+          }
+        },
+        updatedBy: {
+          select: {
+            name: true,
+            email: true
+          }
+        }
+      },
     })
-    return NextResponse.json(size)
+
+    if (!size) {
+      return NextResponse.json(
+        { error: 'Size not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({ size })
   } catch (error) {
-    console.error('Size update error:', error)
-    return NextResponse.json({ error: 'Failed to update size' }, { status: 500 })
+    console.error('Size fetch error:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch size' },
+      { status: 500 }
+    )
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = await params
-    await prisma.finishType.update({
-      where: { id },
-      data: { isActive: false },
+    const data = await request.json()
+    const { name, description, length, width, brandId, categoryId, isActive } = data
+
+    // Validate required fields
+    if (!name || !name.trim() || !brandId || !categoryId) {
+      return NextResponse.json(
+        { error: 'Size name, brand, and category are required' },
+        { status: 400 }
+      )
+    }
+
+    // Check if size exists
+    const existingSize = await prisma.size.findUnique({
+      where: { id: params.id }
     })
-    return NextResponse.json({ success: true })
+
+    if (!existingSize) {
+      return NextResponse.json(
+        { error: 'Size not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check if name is already taken by another size in the same brand and category
+    const duplicateSize = await prisma.size.findFirst({
+      where: {
+        name: { equals: name.trim(), mode: 'insensitive' },
+        brandId: brandId,
+        categoryId: categoryId,
+        id: { not: params.id }
+      }
+    })
+
+    if (duplicateSize) {
+      return NextResponse.json(
+        { error: 'Size name already exists for this brand and category' },
+        { status: 400 }
+      )
+    }
+
+    const size = await prisma.size.update({
+      where: { id: params.id },
+      data: {
+        name: name.trim(),
+        description: description?.trim() || null,
+        length: length ? parseFloat(length) : null,
+        width: width ? parseFloat(width) : null,
+        brandId: brandId,
+        categoryId: categoryId,
+        isActive: Boolean(isActive),
+        updatedAt: new Date()
+      },
+      include: {
+        brand: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            products: true,
+          },
+        }
+      }
+    })
+
+    return NextResponse.json({ size })
   } catch (error) {
-    console.error('Size delete error:', error)
-    return NextResponse.json({ error: 'Failed to delete size' }, { status: 500 })
+    console.error('Size update error:', error)
+    return NextResponse.json(
+      { error: 'Failed to update size' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Check if size exists
+    const existingSize = await prisma.size.findUnique({
+      where: { id: params.id },
+      include: {
+        _count: {
+          select: {
+            products: true,
+          },
+        }
+      }
+    })
+
+    if (!existingSize) {
+      return NextResponse.json(
+        { error: 'Size not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check if size has associated products
+    if (existingSize._count.products > 0) {
+      return NextResponse.json(
+        { error: 'Cannot delete size with associated products. Please remove them first.' },
+        { status: 400 }
+      )
+    }
+
+    await prisma.size.delete({
+      where: { id: params.id }
+    })
+
+    return NextResponse.json({ message: 'Size deleted successfully' })
+  } catch (error) {
+    console.error('Size deletion error:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete size' },
+      { status: 500 }
+    )
   }
 }

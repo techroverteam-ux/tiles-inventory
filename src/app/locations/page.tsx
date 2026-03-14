@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/contexts/ToastContext'
 import { DataView } from '@/components/ui/data-view'
@@ -9,6 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { ConfirmationDialog, useDeleteConfirmation } from '@/components/ui/confirmation-dialog'
+import { Pagination, usePagination } from '@/components/ui/pagination'
+import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/table-filters'
+import { ExportButton, commonColumns } from '@/lib/excel-export'
+import { LoadingPage } from '@/components/ui/skeleton'
+import { Plus, Edit, Trash2 } from 'lucide-react'
 
 interface Location {
   id: string
@@ -16,6 +22,15 @@ interface Location {
   address?: string
   isActive: boolean
   createdAt: string
+  updatedAt: string
+  createdBy?: {
+    name: string
+    email: string
+  }
+  updatedBy?: {
+    name: string
+    email: string
+  }
   _count?: {
     batches: number
   }
@@ -24,33 +39,83 @@ interface Location {
 interface FormData {
   name: string
   address: string
+  isActive: boolean
+}
+
+interface ApiResponse {
+  locations: Location[]
+  totalCount: number
+  totalPages: number
+  currentPage: number
 }
 
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [view, setView] = useState<'grid' | 'list'>('list') // Default to list for desktop
   const [showForm, setShowForm] = useState(false)
   const [editingLocation, setEditingLocation] = useState<Location | null>(null)
+  const [deleteLocation, setDeleteLocation] = useState<Location | null>(null)
   const [formData, setFormData] = useState<FormData>({
     name: '',
-    address: ''
+    address: '',
+    isActive: true
   })
   const [submitting, setSubmitting] = useState(false)
+  const [totalCount, setTotalCount] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
   
   const { showToast } = useToast()
   const router = useRouter()
+  const deleteConfirmation = useDeleteConfirmation()
+  
+  // Pagination
+  const {
+    currentPage,
+    itemsPerPage,
+    handlePageChange,
+    handleItemsPerPageChange
+  } = usePagination(1, 25)
+  
+  // Filters
+  const {
+    filters,
+    search,
+    updateFilters,
+    updateSearch
+  } = useTableFilters()
 
-  useEffect(() => {
-    fetchLocations()
-  }, [])
+  // Filter configurations
+  const filterConfigs: FilterConfig[] = useMemo(() => [
+    {
+      key: 'isActive',
+      label: 'Status',
+      type: 'select',
+      options: [
+        { value: 'true', label: 'Active' },
+        { value: 'false', label: 'Inactive' }
+      ],
+      placeholder: 'All Status'
+    }
+  ], [])
 
-  const fetchLocations = async () => {
+  // Fetch locations with pagination and filters
+  const fetchLocations = useCallback(async () => {
+    setLoading(true)
     try {
-      const response = await fetch('/api/locations')
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString(),
+        search: search || '',
+        ...filters
+      })
+
+      const response = await fetch(`/api/locations?${params}`)
       if (response.ok) {
-        const data = await response.json()
+        const data: ApiResponse = await response.json()
         setLocations(data.locations || [])
+        setTotalCount(data.totalCount || 0)
+        setTotalPages(data.totalPages || 0)
       } else {
         showToast('Failed to fetch locations', 'error')
       }
@@ -59,7 +124,11 @@ export default function LocationsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, itemsPerPage, search, filters, showToast])
+
+  useEffect(() => {
+    fetchLocations()
+  }, [fetchLocations])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,7 +155,7 @@ export default function LocationsPage() {
         )
         setShowForm(false)
         setEditingLocation(null)
-        setFormData({ name: '', address: '' })
+        resetForm()
         fetchLocations()
       } else {
         const errorData = await response.json()
@@ -99,25 +168,35 @@ export default function LocationsPage() {
     }
   }
 
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      address: '',
+      isActive: true
+    })
+  }
+
   const handleEdit = (location: Location) => {
     setEditingLocation(location)
     setFormData({
       name: location.name,
-      address: location.address || ''
+      address: location.address || '',
+      isActive: location.isActive
     })
     setShowForm(true)
   }
 
-  const handleDelete = async (location: Location) => {
-    if (!confirm(`Are you sure you want to delete "${location.name}"?`)) return
+  const handleDeleteConfirm = async () => {
+    if (!deleteLocation) return
 
     try {
-      const response = await fetch(`/api/locations/${location.id}`, {
+      const response = await fetch(`/api/locations/${deleteLocation.id}`, {
         method: 'DELETE'
       })
 
       if (response.ok) {
         showToast('Location deleted successfully!', 'success')
+        setDeleteLocation(null)
         fetchLocations()
       } else {
         const errorData = await response.json()
@@ -128,7 +207,16 @@ export default function LocationsPage() {
     }
   }
 
-  const renderGridItem = (location: Location) => (
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    })
+  }
+
+  const renderGridItem = useCallback((location: Location) => (
     <Card className="h-full hover:shadow-lg transition-shadow bg-card border-border">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -148,37 +236,47 @@ export default function LocationsPage() {
       <CardContent className="pt-0">
         <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
           <span>Inventory Batches: {location._count?.batches || 0}</span>
-          <span>Created: {new Date(location.createdAt).toLocaleDateString()}</span>
+        </div>
+        <div className="text-xs text-muted-foreground mb-4 space-y-1">
+          <div>Created: {formatDate(location.createdAt)}</div>
+          {location.updatedAt && location.updatedAt !== location.createdAt && (
+            <div>Updated: {formatDate(location.updatedAt)}</div>
+          )}
+          {location.createdBy && (
+            <div>By: {location.createdBy.name}</div>
+          )}
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => handleEdit(location)}
-            className="flex-1 border-border text-foreground hover:bg-accent"
+            className="flex-1 border-border text-foreground hover:bg-accent gap-1"
           >
+            <Edit className="h-3 w-3" />
             Edit
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleDelete(location)}
-            className="flex-1 text-destructive hover:text-destructive border-border hover:bg-destructive/10"
+            onClick={() => setDeleteLocation(location)}
+            className="flex-1 text-destructive hover:text-destructive border-border hover:bg-destructive/10 gap-1"
           >
+            <Trash2 className="h-3 w-3" />
             Delete
           </Button>
         </div>
       </CardContent>
     </Card>
-  )
+  ), [formatDate])
 
-  const renderListRow = (location: Location) => (
+  const renderListRow = useCallback((location: Location) => (
     <>
       <td className="px-4 py-3">
         <div className="font-medium text-foreground">{location.name}</div>
       </td>
       <td className="px-4 py-3">
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm text-muted-foreground max-w-xs truncate">
           {location.address || 'No address'}
         </div>
       </td>
@@ -191,7 +289,22 @@ export default function LocationsPage() {
         {location._count?.batches || 0}
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
-        {new Date(location.createdAt).toLocaleDateString()}
+        <div>{formatDate(location.createdAt)}</div>
+        {location.createdBy && (
+          <div className="text-xs">{location.createdBy.name}</div>
+        )}
+      </td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">
+        {location.updatedAt && location.updatedAt !== location.createdAt ? (
+          <div>
+            <div>{formatDate(location.updatedAt)}</div>
+            {location.updatedBy && (
+              <div className="text-xs">{location.updatedBy.name}</div>
+            )}
+          </div>
+        ) : (
+          <span className="text-xs">-</span>
+        )}
       </td>
       <td className="px-4 py-3">
         <div className="flex gap-2">
@@ -199,109 +312,170 @@ export default function LocationsPage() {
             variant="ghost"
             size="sm"
             onClick={() => handleEdit(location)}
-            className="text-foreground hover:bg-accent"
+            className="text-foreground hover:bg-accent gap-1"
           >
+            <Edit className="h-3 w-3" />
             Edit
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleDelete(location)}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => setDeleteLocation(location)}
+            className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
           >
+            <Trash2 className="h-3 w-3" />
             Delete
           </Button>
         </div>
       </td>
     </>
-  )
+  ), [formatDate])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading locations...</p>
-        </div>
-      </div>
-    )
+  if (loading && locations.length === 0) {
+    return <LoadingPage view={view} title="Locations" />
   }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Filters */}
+      <TableFilters
+        filters={filterConfigs}
+        values={filters}
+        onFiltersChange={updateFilters}
+        searchValue={search}
+        onSearchChange={updateSearch}
+        searchPlaceholder="Search locations..."
+        loading={loading}
+      />
+
+      {/* Data View */}
       <DataView
         items={locations}
         view={view}
         onViewChange={setView}
+        loading={loading}
+        autoResponsive={true}
         title="Locations"
         actions={
-          <Dialog open={showForm} onOpenChange={setShowForm}>
-            <DialogTrigger asChild>
-              <Button 
-                onClick={() => {
-                  setEditingLocation(null)
-                  setFormData({ name: '', address: '' })
-                }}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
-              >
-                Add Location
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-card border-border">
-              <DialogHeader>
-                <DialogTitle className="text-card-foreground font-semibold">
-                  {editingLocation ? 'Edit Location' : 'Add New Location'}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-foreground">Name *</label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter location name"
-                    required
-                    className="bg-background border-input text-foreground"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-foreground">Address</label>
-                  <Input
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="Enter address (optional)"
-                    className="bg-background border-input text-foreground"
-                  />
-                </div>
-                <div className="flex gap-2 pt-4">
-                  <Button 
-                    type="submit" 
-                    disabled={submitting} 
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
-                  >
-                    {submitting ? 'Saving...' : editingLocation ? 'Update' : 'Create'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowForm(false)}
-                    className="border-border text-foreground hover:bg-accent font-medium"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-2">
+            <ExportButton
+              data={locations}
+              columns={commonColumns.location}
+              filename="locations-export"
+              reportTitle="Locations Report"
+              onExportComplete={(result) => {
+                if (result.success) {
+                  showToast(`Exported ${locations.length} locations successfully!`, 'success')
+                } else {
+                  showToast(result.error || 'Export failed', 'error')
+                }
+              }}
+              disabled={locations.length === 0}
+            />
+            <Dialog open={showForm} onOpenChange={setShowForm}>
+              <DialogTrigger asChild>
+                <Button 
+                  onClick={() => {
+                    setEditingLocation(null)
+                    resetForm()
+                  }}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Location
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-card border-border max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-card-foreground font-semibold">
+                    {editingLocation ? 'Edit Location' : 'Add New Location'}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Name *</label>
+                    <Input
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Enter location name"
+                      required
+                      className="bg-background border-input text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Address</label>
+                    <Input
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      placeholder="Enter address (optional)"
+                      className="bg-background border-input text-foreground"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={formData.isActive}
+                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                      className="rounded border-input"
+                    />
+                    <label htmlFor="isActive" className="text-sm font-medium text-foreground">
+                      Active
+                    </label>
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    <Button 
+                      type="submit" 
+                      disabled={submitting} 
+                      className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+                    >
+                      {submitting ? 'Saving...' : editingLocation ? 'Update' : 'Create'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowForm(false)}
+                      className="border-border text-foreground hover:bg-accent font-medium"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         }
         gridProps={{
           renderItem: renderGridItem,
           columns: 3
         }}
         listProps={{
-          headers: ['Name', 'Address', 'Status', 'Batches', 'Created', 'Actions'],
+          headers: ['Name', 'Address', 'Status', 'Batches', 'Created', 'Updated', 'Actions'],
           renderRow: renderListRow
         }}
+      />
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalCount}
+        itemsPerPage={itemsPerPage}
+        onPageChange={handlePageChange}
+        onItemsPerPageChange={handleItemsPerPageChange}
+        loading={loading}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={!!deleteLocation}
+        onOpenChange={(open) => !open && setDeleteLocation(null)}
+        title={deleteConfirmation.title}
+        description={`Are you sure you want to delete "${deleteLocation?.name}"? This action cannot be undone.`}
+        confirmText={deleteConfirmation.confirmText}
+        variant={deleteConfirmation.variant}
+        onConfirm={handleDeleteConfirm}
+        icon={deleteConfirmation.icon}
       />
     </div>
   )

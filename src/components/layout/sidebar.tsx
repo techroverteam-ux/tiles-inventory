@@ -26,15 +26,15 @@ interface SidebarProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Brands', href: '/brands', icon: Users },
+  { name: 'Categories', href: '/categories', icon: Palette },
+  { name: 'Sizes', href: '/sizes', icon: Ruler },
   { name: 'Products', href: '/products', icon: Package },
   { name: 'Purchase Orders', href: '/purchase-orders', icon: ShoppingCart },
   { name: 'Sales Orders', href: '/sales-orders', icon: TrendingUp },
   { name: 'Inventory', href: '/inventory', icon: Layers },
-  { name: 'Reports', href: '/reports', icon: FileText },
-  { name: 'Brands', href: '/brands', icon: Users },
-  { name: 'Categories', href: '/categories', icon: Palette },
-  { name: 'Sizes', href: '/sizes', icon: Ruler },
   { name: 'Locations', href: '/locations', icon: MapPin },
+  { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 

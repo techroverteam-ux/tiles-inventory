@@ -1,15 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { LoadingPage } from '@/components/ui/skeleton'
 
 interface ViewToggleProps {
   currentView: 'grid' | 'list'
   onViewChange: (view: 'grid' | 'list') => void
+  forceView?: 'grid' | 'list' | null
 }
 
-export function ViewToggle({ currentView, onViewChange }: ViewToggleProps) {
+export function ViewToggle({ currentView, onViewChange, forceView }: ViewToggleProps) {
+  // Don't show toggle if view is forced
+  if (forceView) return null
+
   return (
     <div className="flex items-center space-x-2 bg-muted rounded-lg p-1">
       <Button
@@ -42,14 +47,19 @@ interface GridViewProps {
   items: any[]
   renderItem: (item: any) => React.ReactNode
   columns?: number
+  loading?: boolean
 }
 
-export function GridView({ items, renderItem, columns = 3 }: GridViewProps) {
+export function GridView({ items, renderItem, columns = 3, loading = false }: GridViewProps) {
   const gridCols = {
     1: 'grid-cols-1',
     2: 'grid-cols-1 md:grid-cols-2',
     3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
     4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+  }
+
+  if (loading) {
+    return <LoadingPage view="grid" showHeader={false} items={6} columns={columns} />
   }
 
   return (
@@ -67,12 +77,17 @@ interface ListViewProps {
   items: any[]
   headers: string[]
   renderRow: (item: any) => React.ReactNode
+  loading?: boolean
 }
 
-export function ListView({ items, headers, renderRow }: ListViewProps) {
+export function ListView({ items, headers, renderRow, loading = false }: ListViewProps) {
+  if (loading) {
+    return <LoadingPage view="list" showHeader={false} items={8} />
+  }
+
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto mobile-table-scroll">
         <table className="w-full">
           <thead className="bg-muted/50">
             <tr>
@@ -102,6 +117,23 @@ export function ListView({ items, headers, renderRow }: ListViewProps) {
   )
 }
 
+// Hook to detect screen size and determine default view
+function useResponsiveView() {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768) // md breakpoint
+    }
+
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    return () => window.removeEventListener('resize', checkScreenSize)
+  }, [])
+
+  return isMobile
+}
+
 interface DataViewProps {
   items: any[]
   view: 'grid' | 'list'
@@ -116,6 +148,8 @@ interface DataViewProps {
   }
   title?: string
   actions?: React.ReactNode
+  loading?: boolean
+  autoResponsive?: boolean // New prop to enable automatic responsive behavior
 }
 
 export function DataView({
@@ -125,26 +159,38 @@ export function DataView({
   gridProps,
   listProps,
   title,
-  actions
+  actions,
+  loading = false,
+  autoResponsive = true
 }: DataViewProps) {
+  const isMobile = useResponsiveView()
+  
+  // Determine the actual view to use
+  const actualView = autoResponsive ? (isMobile ? 'grid' : view) : view
+  const forceView = autoResponsive ? (isMobile ? 'grid' : null) : null
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
           {title && (
             <h2 className="text-2xl font-bold text-foreground">{title}</h2>
           )}
           <div className="text-sm text-muted-foreground">
-            {items.length} {items.length === 1 ? 'item' : 'items'}
+            {loading ? 'Loading...' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`}
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          {actions}
-          <ViewToggle currentView={view} onViewChange={onViewChange} />
+        <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <div className="flex-1 sm:flex-none">
+            {actions}
+          </div>
+          <ViewToggle currentView={view} onViewChange={onViewChange} forceView={forceView} />
         </div>
       </div>
 
-      {items.length === 0 ? (
+      {loading ? (
+        <LoadingPage view={actualView} showHeader={false} items={actualView === 'grid' ? 6 : 8} />
+      ) : items.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <div className="text-muted-foreground text-center">
@@ -156,17 +202,19 @@ export function DataView({
             </div>
           </CardContent>
         </Card>
-      ) : view === 'grid' && gridProps ? (
+      ) : actualView === 'grid' && gridProps ? (
         <GridView
           items={items}
           renderItem={gridProps.renderItem}
           columns={gridProps.columns}
+          loading={loading}
         />
-      ) : view === 'list' && listProps ? (
+      ) : actualView === 'list' && listProps ? (
         <ListView
           items={items}
           headers={listProps.headers}
           renderRow={listProps.renderRow}
+          loading={loading}
         />
       ) : (
         <div className="text-center py-8 text-muted-foreground">

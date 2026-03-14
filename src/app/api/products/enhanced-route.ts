@@ -4,75 +4,73 @@ import { prisma } from '@/lib/prisma'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
+    
+    // Pagination parameters
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '25')
+    const skip = (page - 1) * limit
+    
+    // Search parameter
     const search = searchParams.get('search') || ''
+    
+    // Filter parameters
     const brandId = searchParams.get('brandId')
     const categoryId = searchParams.get('categoryId')
+    const sizeId = searchParams.get('sizeId')
     const isActive = searchParams.get('isActive')
-
-    const skip = (page - 1) * limit
-
+    
+    // Build where clause
     const where: any = {}
     
     // Search across multiple fields
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } },
         { brand: { name: { contains: search, mode: 'insensitive' } } },
         { category: { name: { contains: search, mode: 'insensitive' } } }
       ]
     }
     
-    // Filter by brand
+    // Apply filters
     if (brandId) {
       where.brandId = brandId
     }
     
-    // Filter by category
     if (categoryId) {
       where.categoryId = categoryId
     }
     
-    // Filter by status
+    if (sizeId) {
+      where.sizeId = sizeId
+    }
+    
     if (isActive !== null && isActive !== undefined && isActive !== '') {
       where.isActive = isActive === 'true'
     }
-
+    
     // Get total count for pagination
-    const totalCount = await prisma.size.count({ where })
-
-    const sizes = await prisma.size.findMany({
+    const totalCount = await prisma.product.count({ where })
+    
+    // Get products with pagination
+    const products = await prisma.product.findMany({
       where,
       include: {
         brand: {
-          select: {
-            id: true,
-            name: true,
-          },
+          select: { name: true }
         },
         category: {
-          select: {
-            id: true,
-            name: true,
-          },
+          select: { name: true }
+        },
+        size: {
+          select: { name: true }
+        },
+        finishType: {
+          select: { name: true }
         },
         _count: {
           select: {
-            products: true,
-          },
-        },
-        createdBy: {
-          select: {
-            name: true,
-            email: true
-          }
-        },
-        updatedBy: {
-          select: {
-            name: true,
-            email: true
+            batches: true
           }
         }
       },
@@ -81,13 +79,13 @@ export async function GET(request: NextRequest) {
         { createdAt: 'desc' }
       ],
       skip,
-      take: limit,
+      take: limit
     })
-
+    
     const totalPages = Math.ceil(totalCount / limit)
-
+    
     return NextResponse.json({
-      sizes,
+      products,
       totalCount,
       totalPages,
       currentPage: page,
@@ -95,10 +93,11 @@ export async function GET(request: NextRequest) {
       hasNextPage: page < totalPages,
       hasPreviousPage: page > 1
     })
+    
   } catch (error) {
-    console.error('Sizes fetch error:', error)
+    console.error('Error fetching products:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch sizes' },
+      { error: 'Failed to fetch products' },
       { status: 500 }
     )
   }
@@ -106,70 +105,75 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json()
+    const body = await request.json()
     
-    const { name, description, length, width, brandId, categoryId, isActive = true } = data
+    const {
+      name,
+      code,
+      brandId,
+      categoryId,
+      sizeId,
+      finishTypeId,
+      sqftPerBox,
+      pcsPerBox,
+      imageUrl
+    } = body
     
     // Validate required fields
-    if (!name || !name.trim() || !brandId || !categoryId) {
+    if (!name || !code || !brandId || !categoryId || !finishTypeId) {
       return NextResponse.json(
-        { error: 'Size name, brand, and category are required' },
+        { error: 'Missing required fields' },
         { status: 400 }
       )
     }
     
-    // Check if size name already exists for this brand and category
-    const existingSize = await prisma.size.findFirst({
-      where: {
-        name: { equals: name.trim(), mode: 'insensitive' },
-        brandId: brandId,
-        categoryId: categoryId
-      }
+    // Check if product code already exists
+    const existingProduct = await prisma.product.findFirst({
+      where: { code }
     })
     
-    if (existingSize) {
+    if (existingProduct) {
       return NextResponse.json(
-        { error: 'Size name already exists for this brand and category' },
+        { error: 'Product code already exists' },
         { status: 400 }
       )
     }
     
-    const size = await prisma.size.create({
+    const product = await prisma.product.create({
       data: {
-        name: name.trim(),
-        description: description?.trim() || null,
-        length: length ? parseFloat(length) : null,
-        width: width ? parseFloat(width) : null,
-        brandId: brandId,
-        categoryId: categoryId,
-        isActive: Boolean(isActive)
+        name,
+        code,
+        brandId,
+        categoryId,
+        sizeId: sizeId || null,
+        finishTypeId,
+        sqftPerBox: sqftPerBox || 1,
+        pcsPerBox: pcsPerBox || 1,
+        imageUrl: imageUrl || null,
+        isActive: true
       },
       include: {
         brand: {
-          select: {
-            id: true,
-            name: true,
-          },
+          select: { name: true }
         },
         category: {
-          select: {
-            id: true,
-            name: true,
-          },
+          select: { name: true }
         },
-        _count: {
-          select: {
-            products: true,
-          },
+        size: {
+          select: { name: true }
+        },
+        finishType: {
+          select: { name: true }
         }
-      },
+      }
     })
-
-    return NextResponse.json({ size }, { status: 201 })
+    
+    return NextResponse.json({ product }, { status: 201 })
+    
   } catch (error) {
-    console.error('Size creation error:', error)
+    console.error('Error creating product:', error)
     return NextResponse.json(
-      { error: 'Failed to create size' },
+      { error: 'Failed to create product' },
       { status: 500 }
     )
   }

@@ -202,6 +202,23 @@ export default function ProductsPage() {
     fetchDropdownData()
   }, [fetchDropdownData])
 
+  // Fetch filtered categories and sizes based on brand selection
+  useEffect(() => {
+    if (formData.brandId) {
+      fetchCategoriesByBrand(formData.brandId)
+    } else {
+      setFilteredCategories([])
+    }
+  }, [formData.brandId])
+
+  useEffect(() => {
+    if (formData.brandId && formData.categoryId) {
+      fetchSizesByBrandAndCategory(formData.brandId, formData.categoryId)
+    } else {
+      setFilteredSizes([])
+    }
+  }, [formData.brandId, formData.categoryId])
+
   const fetchCategoriesByBrand = async (brandId: string) => {
     try {
       const response = await fetch(`/api/categories?brandId=${brandId}`)
@@ -296,16 +313,17 @@ export default function ProductsPage() {
     setShowForm(true)
   }
 
-  const handleDelete = async (product: Product) => {
-    if (!confirm(`Are you sure you want to delete "${product.name}"?`)) return
+  const handleDeleteConfirm = async () => {
+    if (!deleteProduct) return
 
     try {
-      const response = await fetch(`/api/products/${product.id}`, {
+      const response = await fetch(`/api/products/${deleteProduct.id}`, {
         method: 'DELETE'
       })
 
       if (response.ok) {
         showToast('Product deleted successfully!', 'success')
+        setDeleteProduct(null)
         fetchProducts()
       } else {
         const errorData = await response.json()
@@ -320,7 +338,7 @@ export default function ProductsPage() {
     setFormData({ ...formData, imageUrl: url })
   }
 
-  const renderGridItem = (product: Product) => (
+  const renderGridItem = useCallback((product: Product) => (
     <Card className="h-full hover:shadow-lg transition-shadow">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -359,24 +377,26 @@ export default function ProductsPage() {
             variant="outline"
             size="sm"
             onClick={() => handleEdit(product)}
-            className="flex-1"
+            className="flex-1 gap-1"
           >
+            <Edit className="h-3 w-3" />
             Edit
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleDelete(product)}
-            className="flex-1 text-destructive hover:text-destructive"
+            onClick={() => setDeleteProduct(product)}
+            className="flex-1 gap-1 text-destructive hover:text-destructive"
           >
+            <Trash2 className="h-3 w-3" />
             Delete
           </Button>
         </div>
       </CardContent>
     </Card>
-  )
+  ), [])
 
-  const renderListRow = (product: Product) => (
+  const renderListRow = useCallback((product: Product) => (
     <>
       <td className="px-4 py-3">
         <div className="flex items-center space-x-3">
@@ -420,196 +440,222 @@ export default function ProductsPage() {
             variant="ghost"
             size="sm"
             onClick={() => handleEdit(product)}
+            className="gap-1"
           >
+            <Edit className="h-3 w-3" />
             Edit
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleDelete(product)}
-            className="text-destructive hover:text-destructive"
+            onClick={() => setDeleteProduct(product)}
+            className="gap-1 text-destructive hover:text-destructive"
           >
+            <Trash2 className="h-3 w-3" />
             Delete
           </Button>
         </div>
       </td>
     </>
-  )
+  ), [])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading products...</p>
-        </div>
-      </div>
-    )
+  if (loading && products.length === 0) {
+    return <LoadingPage view={view} title="Products" />
   }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Filters */}
+      <TableFilters
+        filters={filterConfigs}
+        values={filters}
+        onFiltersChange={updateFilters}
+        searchValue={search}
+        onSearchChange={updateSearch}
+        searchPlaceholder="Search products..."
+        loading={loading}
+      />
+
+      {/* Data View */}
       <DataView
         items={products}
         view={view}
         onViewChange={setView}
+        loading={loading}
+        autoResponsive={true}
         title="Products"
         actions={
-          <Dialog open={showForm} onOpenChange={setShowForm}>
-            <DialogTrigger asChild>
-              <Button onClick={() => {
-                setEditingProduct(null)
-                resetForm()
-              }}>
-                Add Product
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-card-foreground">
-                  {editingProduct ? 'Edit Product' : 'Add New Product'}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Name *</label>
-                    <Input
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Enter product name"
-                      required
-                      className="bg-background border-input text-foreground"
-                    />
+          <div className="flex items-center gap-2">
+            <ExportButton
+              data={products}
+              columns={commonColumns.product}
+              filename="products-export"
+              onExportComplete={(result) => {
+                if (result.success) {
+                  showToast(`Exported ${products.length} products successfully!`, 'success')
+                } else {
+                  showToast(result.error || 'Export failed', 'error')
+                }
+              }}
+              disabled={products.length === 0}
+            />
+            <Dialog open={showForm} onOpenChange={setShowForm}>
+              <DialogTrigger asChild>
+                <Button onClick={() => {
+                  setEditingProduct(null)
+                  resetForm()
+                }} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Product
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-card-foreground">
+                    {editingProduct ? 'Edit Product' : 'Add New Product'}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Name *</label>
+                      <Input
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Enter product name"
+                        required
+                        className="bg-background border-input text-foreground"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Code *</label>
+                      <Input
+                        value={formData.code}
+                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                        placeholder="Enter product code"
+                        required
+                        className="bg-background border-input text-foreground"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Code *</label>
-                    <Input
-                      value={formData.code}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      placeholder="Enter product code"
-                      required
-                      className="bg-background border-input text-foreground"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Brand *</label>
-                    <select
-                      value={formData.brandId}
-                      onChange={(e) => setFormData({ ...formData, brandId: e.target.value, categoryId: '', sizeId: '' })}
-                      required
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Brand *</label>
+                      <select
+                        value={formData.brandId}
+                        onChange={(e) => setFormData({ ...formData, brandId: e.target.value, categoryId: '', sizeId: '' })}
+                        required
+                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                      >
+                        <option value="">Select a brand</option>
+                        {brands.map((brand) => (
+                          <option key={brand.id} value={brand.id}>
+                            {brand.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Category *</label>
+                      <select
+                        value={formData.categoryId}
+                        onChange={(e) => setFormData({ ...formData, categoryId: e.target.value, sizeId: '' })}
+                        disabled={!formData.brandId}
+                        required
+                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground disabled:opacity-50"
+                      >
+                        <option value="">Select a category</option>
+                        {filteredCategories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Size</label>
+                      <select
+                        value={formData.sizeId}
+                        onChange={(e) => setFormData({ ...formData, sizeId: e.target.value })}
+                        disabled={!formData.categoryId}
+                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground disabled:opacity-50"
+                      >
+                        <option value="">Select a size</option>
+                        {filteredSizes.map((size) => (
+                          <option key={size.id} value={size.id}>
+                            {size.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Finish Type *</label>
+                      <select
+                        value={formData.finishTypeId}
+                        onChange={(e) => setFormData({ ...formData, finishTypeId: e.target.value })}
+                        required
+                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                      >
+                        <option value="">Select finish type</option>
+                        {finishTypes.map((finish) => (
+                          <option key={finish.id} value={finish.id}>
+                            {finish.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Sq Ft per Box</label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={formData.sqftPerBox}
+                        onChange={(e) => setFormData({ ...formData, sqftPerBox: e.target.value })}
+                        placeholder="Enter sq ft per box"
+                        className="bg-background border-input text-foreground"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Pieces per Box</label>
+                      <Input
+                        type="number"
+                        value={formData.pcsPerBox}
+                        onChange={(e) => setFormData({ ...formData, pcsPerBox: e.target.value })}
+                        placeholder="Enter pieces per box"
+                        className="bg-background border-input text-foreground"
+                      />
+                    </div>
+                  </div>
+
+                  <ImageUpload 
+                    onImageUploaded={handleImageUploaded}
+                    currentImage={formData.imageUrl}
+                  />
+
+                  <div className="flex gap-2 pt-4">
+                    <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground">
+                      {submitting ? 'Saving...' : editingProduct ? 'Update' : 'Create'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowForm(false)}
+                      className="border-border text-foreground"
                     >
-                      <option value="">Select a brand</option>
-                      {brands.map((brand) => (
-                        <option key={brand.id} value={brand.id}>
-                          {brand.name}
-                        </option>
-                      ))}
-                    </select>
+                      Cancel
+                    </Button>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Category *</label>
-                    <select
-                      value={formData.categoryId}
-                      onChange={(e) => setFormData({ ...formData, categoryId: e.target.value, sizeId: '' })}
-                      disabled={!formData.brandId}
-                      required
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground disabled:opacity-50"
-                    >
-                      <option value="">Select a category</option>
-                      {filteredCategories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Size</label>
-                    <select
-                      value={formData.sizeId}
-                      onChange={(e) => setFormData({ ...formData, sizeId: e.target.value })}
-                      disabled={!formData.categoryId}
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground disabled:opacity-50"
-                    >
-                      <option value="">Select a size</option>
-                      {filteredSizes.map((size) => (
-                        <option key={size.id} value={size.id}>
-                          {size.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Finish Type *</label>
-                    <select
-                      value={formData.finishTypeId}
-                      onChange={(e) => setFormData({ ...formData, finishTypeId: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                    >
-                      <option value="">Select finish type</option>
-                      {finishTypes.map((finish) => (
-                        <option key={finish.id} value={finish.id}>
-                          {finish.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Sq Ft per Box</label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={formData.sqftPerBox}
-                      onChange={(e) => setFormData({ ...formData, sqftPerBox: e.target.value })}
-                      placeholder="Enter sq ft per box"
-                      className="bg-background border-input text-foreground"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Pieces per Box</label>
-                    <Input
-                      type="number"
-                      value={formData.pcsPerBox}
-                      onChange={(e) => setFormData({ ...formData, pcsPerBox: e.target.value })}
-                      placeholder="Enter pieces per box"
-                      className="bg-background border-input text-foreground"
-                    />
-                  </div>
-                </div>
-
-                <ImageUpload 
-                  onImageUploaded={handleImageUploaded}
-                  currentImage={formData.imageUrl}
-                />
-
-                <div className="flex gap-2 pt-4">
-                  <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground">
-                    {submitting ? 'Saving...' : editingProduct ? 'Update' : 'Create'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowForm(false)}
-                    className="border-border text-foreground"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         }
         gridProps={{
           renderItem: renderGridItem,
@@ -619,6 +665,29 @@ export default function ProductsPage() {
           headers: ['Product', 'Brand & Category', 'Size', 'Finish', 'Box Info', 'Status', 'Actions'],
           renderRow: renderListRow
         }}
+      />
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalCount}
+        itemsPerPage={itemsPerPage}
+        onPageChange={handlePageChange}
+        onItemsPerPageChange={handleItemsPerPageChange}
+        loading={loading}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={!!deleteProduct}
+        onOpenChange={(open) => !open && setDeleteProduct(null)}
+        title={deleteConfirmation.title}
+        description={`Are you sure you want to delete "${deleteProduct?.name}"? This action cannot be undone.`}
+        confirmText={deleteConfirmation.confirmText}
+        variant={deleteConfirmation.variant}
+        onConfirm={handleDeleteConfirm}
+        icon={deleteConfirmation.icon}
       />
     </div>
   )

@@ -55,7 +55,7 @@ export default function Layout({ children }: LayoutProps) {
         <SessionProvider>
           <ProtectedRoute>
             <NotificationProvider>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16 md:pb-0">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
           {/* Header */}
           <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between fixed top-0 left-0 right-0 z-50 shadow-sm">
             <div className="flex items-center gap-3">
@@ -120,15 +120,20 @@ export default function Layout({ children }: LayoutProps) {
             </div>
           </header>
 
-          <div className="flex pt-16 sm:pt-20">
+          <div className="flex flex-1 pt-16 sm:pt-20">
             {/* Desktop Sidebar */}
             <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             {/* Main Content */}
-            <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'} min-h-screen`}>
-              <div className="p-3 sm:p-4 md:p-6">
+            <main className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'} flex flex-col`}>
+              <div className="flex-1 p-3 sm:p-4 md:p-6 pb-20 md:pb-6">
                 {children}
               </div>
+              
+              {/* Footer - Sticky at bottom */}
+              <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 md:px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400 hidden md:block mt-auto">
+                © 2026 Tiles Inventory Management System. All rights reserved.
+              </footer>
             </main>
           </div>
 
@@ -137,11 +142,6 @@ export default function Layout({ children }: LayoutProps) {
           
           {/* Mobile Quick Actions */}
           <MobileQuickActions />
-
-          {/* Footer - Hidden on mobile */}
-          <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 md:px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400 hidden md:block">
-            © 2026 Tiles Inventory Management System. All rights reserved.
-          </footer>
         </div>
             </NotificationProvider>
           </ProtectedRoute>

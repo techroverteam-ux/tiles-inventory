@@ -5,47 +5,71 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const limit = parseInt(searchParams.get('limit') || '25')
     const search = searchParams.get('search') || ''
     const isActive = searchParams.get('isActive')
 
     const skip = (page - 1) * limit
 
-    const where: any = {
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
-      ...(isActive !== null && { isActive: isActive === 'true' }),
+    const where: any = {}
+    
+    // Search across multiple fields
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { contactInfo: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+    
+    // Filter by status
+    if (isActive !== null && isActive !== undefined && isActive !== '') {
+      where.isActive = isActive === 'true'
     }
 
-    const [brands, total] = await Promise.all([
-      prisma.brand.findMany({
-        where,
-        include: {
-          _count: {
-            select: {
-              products: true,
-            },
+    // Get total count for pagination
+    const totalCount = await prisma.brand.count({ where })
+
+    const brands = await prisma.brand.findMany({
+      where,
+      include: {
+        _count: {
+          select: {
+            categories: true,
+            products: true,
           },
         },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      prisma.brand.count({ where }),
-    ])
+        createdBy: {
+          select: {
+            name: true,
+            email: true
+          }
+        },
+        updatedBy: {
+          select: {
+            name: true,
+            email: true
+          }
+        }
+      },
+      orderBy: [
+        { isActive: 'desc' },
+        { createdAt: 'desc' }
+      ],
+      skip,
+      take: limit,
+    })
+
+    const totalPages = Math.ceil(totalCount / limit)
 
     return NextResponse.json({
       brands,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      totalCount,
+      totalPages,
+      currentPage: page,
+      itemsPerPage: limit,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1
     })
   } catch (error) {
     console.error('Brands fetch error:', error)
@@ -60,13 +84,46 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     
+    const { name, description, contactInfo, isActive = true } = data
+    
+    // Validate required fields
+    if (!name || !name.trim()) {
+      return NextResponse.json(
+        { error: 'Brand name is required' },
+        { status: 400 }
+      )
+    }
+    
+    // Check if brand name already exists
+    const existingBrand = await prisma.brand.findFirst({
+      where: { name: { equals: name.trim(), mode: 'insensitive' } }
+    })
+    
+    if (existingBrand) {
+      return NextResponse.json(
+        { error: 'Brand name already exists' },
+        { status: 400 }
+      )
+    }
+    
     const brand = await prisma.brand.create({
       data: {
-        name: data.name,
+        name: name.trim(),
+        description: description?.trim() || null,
+        contactInfo: contactInfo?.trim() || null,
+        isActive: Boolean(isActive)
       },
+      include: {
+        _count: {
+          select: {
+            categories: true,
+            products: true,
+          },
+        }
+      }
     })
 
-    return NextResponse.json(brand, { status: 201 })
+    return NextResponse.json({ brand }, { status: 201 })
   } catch (error) {
     console.error('Brand creation error:', error)
     return NextResponse.json(
