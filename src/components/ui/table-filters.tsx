@@ -155,4 +155,138 @@ export function TableFilters({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Search and Filter Toggle */}\n      <div className=\"flex items-center gap-2\">\n        <div className=\"relative flex-1 max-w-sm\">\n          <Search className=\"absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4\" />\n          <Input\n            placeholder={searchPlaceholder}\n            value={localSearch}\n            onChange={(e) => setLocalSearch(e.target.value)}\n            className=\"pl-10 h-9\"\n            disabled={loading}\n          />\n          {localSearch && (\n            <Button\n              variant=\"ghost\"\n              size=\"sm\"\n              onClick={() => setLocalSearch('')}\n              className=\"absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0\"\n            >\n              <X className=\"h-3 w-3\" />\n            </Button>\n          )}\n        </div>\n\n        <Button\n          variant=\"outline\"\n          size=\"sm\"\n          onClick={() => setShowFilters(!showFilters)}\n          className=\"h-9 gap-2\"\n          disabled={loading}\n        >\n          <Filter className=\"h-4 w-4\" />\n          Filters\n          {getActiveFiltersCount() > 0 && (\n            <Badge variant=\"secondary\" className=\"ml-1 h-5 min-w-5 text-xs\">\n              {getActiveFiltersCount()}\n            </Badge>\n          )}\n        </Button>\n\n        {getActiveFiltersCount() > 0 && (\n          <Button\n            variant=\"ghost\"\n            size=\"sm\"\n            onClick={clearAllFilters}\n            className=\"h-9 gap-2 text-muted-foreground\"\n            disabled={loading}\n          >\n            <RotateCcw className=\"h-4 w-4\" />\n            Clear\n          </Button>\n        )}\n      </div>\n\n      {/* Filter Controls */}\n      {showFilters && (\n        <div className=\"flex flex-wrap items-center gap-2 p-4 bg-muted/30 rounded-lg border\">\n          {filters.map(renderFilter)}\n        </div>\n      )}\n\n      {/* Active Filters */}\n      {getActiveFiltersCount() > 0 && (\n        <div className=\"flex flex-wrap items-center gap-2\">\n          <span className=\"text-sm text-muted-foreground\">Active filters:</span>\n          \n          {searchValue && (\n            <Badge variant=\"secondary\" className=\"gap-1\">\n              Search: {searchValue}\n              <Button\n                variant=\"ghost\"\n                size=\"sm\"\n                onClick={() => setLocalSearch('')}\n                className=\"h-4 w-4 p-0 hover:bg-transparent\"\n              >\n                <X className=\"h-3 w-3\" />\n              </Button>\n            </Badge>\n          )}\n          \n          {Object.entries(values).map(([key, value]) => {\n            if (!value || (Array.isArray(value) && value.length === 0)) return null\n            \n            const filter = filters.find(f => f.key === key)\n            if (!filter) return null\n            \n            const displayValue = Array.isArray(value) \n              ? `${value.length} selected`\n              : filter.options?.find(opt => opt.value === value)?.label || value\n            \n            return (\n              <Badge key={key} variant=\"secondary\" className=\"gap-1\">\n                {filter.label}: {displayValue}\n                <Button\n                  variant=\"ghost\"\n                  size=\"sm\"\n                  onClick={() => clearFilter(key)}\n                  className=\"h-4 w-4 p-0 hover:bg-transparent\"\n                >\n                  <X className=\"h-3 w-3\" />\n                </Button>\n              </Badge>\n            )\n          })}\n        </div>\n      )}\n    </div>\n  )\n}\n\n// Hook for managing filter state\nexport function useTableFilters(initialFilters: FilterState = {}, initialSearch = '') {\n  const [filters, setFilters] = useState<FilterState>(initialFilters)\n  const [search, setSearch] = useState(initialSearch)\n\n  const updateFilters = (newFilters: FilterState) => {\n    setFilters(newFilters)\n  }\n\n  const updateSearch = (newSearch: string) => {\n    setSearch(newSearch)\n  }\n\n  const reset = () => {\n    setFilters({})\n    setSearch('')\n  }\n\n  return {\n    filters,\n    search,\n    updateFilters,\n    updateSearch,\n    reset\n  }\n}
+      {/* Search and Filter Toggle */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder={searchPlaceholder}
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
+            className="pl-10 h-9"
+            disabled={loading}
+          />
+          {localSearch && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocalSearch('')}
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowFilters(!showFilters)}
+          className="h-9 gap-2"
+          disabled={loading}
+        >
+          <Filter className="h-4 w-4" />
+          Filters
+          {getActiveFiltersCount() > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs">
+              {getActiveFiltersCount()}
+            </Badge>
+          )}
+        </Button>
+
+        {getActiveFiltersCount() > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearAllFilters}
+            className="h-9 gap-2 text-muted-foreground"
+            disabled={loading}
+          >
+            <RotateCcw className="h-4 w-4" />
+            Clear
+          </Button>
+        )}
+      </div>
+
+      {/* Filter Controls */}
+      {showFilters && (
+        <div className="flex flex-wrap items-center gap-2 p-4 bg-muted/30 rounded-lg border">
+          {filters.map(renderFilter)}
+        </div>
+      )}
+
+      {/* Active Filters */}
+      {getActiveFiltersCount() > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-muted-foreground">Active filters:</span>
+
+          {searchValue && (
+            <Badge variant="secondary" className="gap-1">
+              Search: {searchValue}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocalSearch('')}
+                className="h-4 w-4 p-0 hover:bg-transparent"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
+
+          {Object.entries(values).map(([key, value]) => {
+            if (!value || (Array.isArray(value) && value.length === 0)) return null
+
+            const filter = filters.find((f) => f.key === key)
+            if (!filter) return null
+
+            const displayValue = Array.isArray(value)
+              ? `${value.length} selected`
+              : filter.options?.find((opt) => opt.value === value)?.label || value
+
+            return (
+              <Badge key={key} variant="secondary" className="gap-1">
+                {filter.label}: {displayValue}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => clearFilter(key)}
+                  className="h-4 w-4 p-0 hover:bg-transparent"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Hook for managing filter state
+export function useTableFilters(initialFilters: FilterState = {}, initialSearch = '') {
+  const [filters, setFilters] = useState<FilterState>(initialFilters)
+  const [search, setSearch] = useState(initialSearch)
+
+  const updateFilters = (newFilters: FilterState) => {
+    setFilters(newFilters)
+  }
+
+  const updateSearch = (newSearch: string) => {
+    setSearch(newSearch)
+  }
+
+  const reset = () => {
+    setFilters({})
+    setSearch('')
+  }
+
+  return {
+    filters,
+    search,
+    updateFilters,
+    updateSearch,
+    reset
+  }
+}

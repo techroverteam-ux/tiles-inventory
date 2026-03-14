@@ -104,3 +104,10 @@ Thumbs.db
 
 # Prisma
 prisma/migrations/
+
+# Local MongoDB runtime data
+.mongodb/
+
+# Uploaded assets generated at runtime
+public/uploads/*
+!public/uploads/.gitkeep

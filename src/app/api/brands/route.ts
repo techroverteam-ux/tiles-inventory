@@ -38,18 +38,6 @@ export async function GET(request: NextRequest) {
             categories: true,
             products: true,
           },
-        },
-        createdBy: {
-          select: {
-            name: true,
-            email: true
-          }
-        },
-        updatedBy: {
-          select: {
-            name: true,
-            email: true
-          }
         }
       },
       orderBy: [

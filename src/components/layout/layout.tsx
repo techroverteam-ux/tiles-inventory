@@ -57,7 +57,7 @@ export default function Layout({ children }: LayoutProps) {
             <NotificationProvider>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
           {/* Header */}
-          <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between fixed top-0 left-0 right-0 z-50 shadow-sm">
+          <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 md:px-6 h-16 sm:h-20 flex items-center justify-between fixed top-0 left-0 right-0 z-50 shadow-sm">
             <div className="flex items-center gap-3">
               {/* Mobile Hamburger Menu */}
               <Button

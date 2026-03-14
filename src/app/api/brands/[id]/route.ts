@@ -14,18 +14,6 @@ export async function GET(
             categories: true,
             products: true,
           },
-        },
-        createdBy: {
-          select: {
-            name: true,
-            email: true
-          }
-        },
-        updatedBy: {
-          select: {
-            name: true,
-            email: true
-          }
         }
       },
     })
