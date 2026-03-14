@@ -10,13 +10,13 @@ export default function ThemeToggle() {
   const getIcon = () => {
     switch (theme) {
       case 'light':
-        return <Sun className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+        return <Sun className="h-5 w-5 text-muted-foreground" />
       case 'dark':
-        return <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+        return <Moon className="h-5 w-5 text-muted-foreground" />
       case 'system':
-        return <Monitor className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+        return <Monitor className="h-5 w-5 text-muted-foreground" />
       default:
-        return <Sun className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+        return <Sun className="h-5 w-5 text-muted-foreground" />
     }
   }
 

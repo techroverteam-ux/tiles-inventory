@@ -79,7 +79,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Package className="h-8 w-8 animate-spin text-gray-400 dark:text-gray-500" />
+        <Package className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -87,8 +87,8 @@ export default function Dashboard() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400 md:hidden">Overview of your inventory</p>
+        <h1 className="text-xl md:text-3xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted-foreground md:hidden">Overview of your inventory</p>
       </div>
 
       {/* Mobile Stats Cards */}
@@ -97,7 +97,7 @@ export default function Dashboard() {
           title="Products"
           value={stats.totalProducts.toLocaleString()}
           subtitle="Active items"
-          icon={<Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
+          icon={<Package className="h-4 w-4 text-primary" />}
         />
         <MobileStatsCard
           title="Sales"
@@ -121,56 +121,56 @@ export default function Dashboard() {
 
       {/* Desktop Stats Cards */}
       <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Products</CardTitle>
-            <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Products</CardTitle>
+            <Package className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalProducts.toLocaleString()}</div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Active products</p>
+            <div className="text-2xl font-bold text-foreground">{stats.totalProducts.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Active products</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Monthly Sales</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Sales</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">₹{stats.monthlySales.toLocaleString()}</div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">This month</p>
+            <div className="text-2xl font-bold text-foreground">₹{stats.monthlySales.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">This month</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Purchase Orders</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Purchase Orders</CardTitle>
             <ShoppingCart className="h-4 w-4 text-purple-600 dark:text-purple-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.purchaseOrders}</div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Active orders</p>
+            <div className="text-2xl font-bold text-foreground">{stats.purchaseOrders}</div>
+            <p className="text-xs text-muted-foreground">Active orders</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Low Stock Items</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Low Stock Items</CardTitle>
             <AlertTriangle className="h-4 w-4 text-red-500 dark:text-red-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.lowStockItems}</div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Requires attention</p>
+            <p className="text-xs text-muted-foreground">Requires attention</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Sales Chart */}
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-base md:text-lg text-gray-900 dark:text-gray-100">Sales vs Purchases</CardTitle>
+            <CardTitle className="text-base md:text-lg text-foreground">Sales vs Purchases</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -187,9 +187,9 @@ export default function Dashboard() {
         </Card>
 
         {/* Low Stock Alert */}
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base md:text-lg text-gray-900 dark:text-gray-100">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg text-foreground">
               <AlertTriangle className="h-4 w-4 text-red-500 dark:text-red-400" />
               Low Stock Alert
             </CardTitle>
@@ -197,13 +197,13 @@ export default function Dashboard() {
           <CardContent>
             <div className="space-y-3">
               {lowStockItems.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm">No low stock items</p>
+                <p className="text-muted-foreground text-center py-4 text-sm">No low stock items</p>
               ) : (
                 lowStockItems.map((item, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{item.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Min stock: {item.minStock}</p>
+                      <p className="font-medium text-sm text-foreground truncate">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">Min stock: {item.minStock}</p>
                     </div>
                     <Badge variant="destructive" className="text-xs ml-2">{item.stock} left</Badge>
                   </div>
@@ -216,11 +216,11 @@ export default function Dashboard() {
 
       {/* Recent Orders - Mobile Optimized */}
       <div className="md:hidden">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Recent Orders</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-3">Recent Orders</h2>
         <div className="space-y-3">
           {recentOrders.length === 0 ? (
             <MobileCard>
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4 text-sm">No recent orders</p>
+              <p className="text-muted-foreground text-center py-4 text-sm">No recent orders</p>
             </MobileCard>
           ) : (
             recentOrders.map((order) => (
@@ -245,35 +245,35 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Orders - Desktop */}
-      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hidden md:block">
+      <Card className="bg-card border-border hidden md:block">
         <CardHeader>
-          <CardTitle className="text-lg text-gray-900 dark:text-gray-100">Recent Orders</CardTitle>
+          <CardTitle className="text-lg text-foreground">Recent Orders</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {recentOrders.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">No recent orders</p>
+              <p className="text-muted-foreground text-center py-4">No recent orders</p>
             ) : (
               recentOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div key={order.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
                   <div className="flex items-center gap-4">
                     <div className={`p-2 rounded-full ${
                       order.type === 'Purchase' ? 'bg-green-100 dark:bg-green-900/20' : 'bg-blue-100 dark:bg-blue-900/20'
                     }`}>
                       {order.type === 'Purchase' ? 
                         <ShoppingCart className="h-4 w-4 text-green-600 dark:text-green-400" /> : 
-                        <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <TrendingUp className="h-4 w-4 text-primary" />
                       }
                     </div>
                     <div>
-                      <p className="font-medium text-base text-gray-900 dark:text-gray-100">{order.id}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="font-medium text-base text-foreground">{order.id}</p>
+                      <p className="text-sm text-muted-foreground">
                         {order.type === 'Purchase' ? order.brand : order.customer}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium text-base text-gray-900 dark:text-gray-100">₹{order.amount.toLocaleString()}</p>
+                    <p className="font-medium text-base text-foreground">₹{order.amount.toLocaleString()}</p>
                     <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'} className="text-xs">
                       {order.status}
                     </Badge>

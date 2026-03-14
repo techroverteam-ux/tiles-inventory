@@ -12,7 +12,7 @@ const MobileCard = React.forwardRef<HTMLDivElement, MobileCardProps>(
     <div
       ref={ref}
       className={cn(
-        "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-3 shadow-sm",
+        "bg-card text-card-foreground rounded-lg border border-border p-4 mb-3 shadow-sm",
         className
       )}
       {...props}
@@ -34,16 +34,16 @@ const MobileCardHeader = React.forwardRef<HTMLDivElement, MobileCardHeaderProps>
   ({ className, title, subtitle, badge, actions, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("flex items-start justify-between mb-3 pb-3 border-b border-gray-100 dark:border-gray-700", className)}
+      className={cn("flex items-start justify-between mb-3 pb-3 border-b border-border", className)}
       {...props}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{title}</h3>
+          <h3 className="font-semibold text-foreground truncate">{title}</h3>
           {badge}
         </div>
         {subtitle && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{subtitle}</p>
+          <p className="text-sm text-muted-foreground truncate">{subtitle}</p>
         )}
       </div>
       {actions && (
@@ -68,15 +68,15 @@ const MobileCardField = React.forwardRef<HTMLDivElement, MobileCardFieldProps>(
       ref={ref}
       className={cn(
         fullWidth 
-          ? "py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-          : "flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0", 
+          ? "py-2 border-b border-border last:border-b-0"
+          : "flex justify-between items-center py-2 border-b border-border last:border-b-0", 
         className
       )}
       {...props}
     >
-      <span className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{label}:</span>
+      <span className="text-sm font-medium text-muted-foreground mb-1">{label}:</span>
       <span className={cn(
-        "text-sm text-gray-900 dark:text-gray-100",
+        "text-sm text-foreground",
         fullWidth ? "block" : "text-right"
       )}>{value}</span>
     </div>
@@ -92,7 +92,7 @@ const MobileCardActions = React.forwardRef<HTMLDivElement, MobileCardActionsProp
   ({ className, children, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("flex items-center justify-end gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700", className)}
+      className={cn("flex items-center justify-end gap-2 mt-3 pt-3 border-t border-border", className)}
       {...props}
     >
       {children}
@@ -117,17 +117,17 @@ const MobileStatsCard = React.forwardRef<HTMLDivElement, MobileStatsCardProps>(
     <div
       ref={ref}
       className={cn(
-        "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm",
+        "bg-card text-card-foreground rounded-lg border border-border p-4 shadow-sm",
         className
       )}
       {...props}
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{value}</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
+          <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
           {subtitle && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>
+            <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
           )}
           {trend && (
             <div className={cn(
@@ -139,7 +139,7 @@ const MobileStatsCard = React.forwardRef<HTMLDivElement, MobileStatsCardProps>(
           )}
         </div>
         {icon && (
-          <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div className="p-2 bg-muted rounded-lg">
             {icon}
           </div>
         )}

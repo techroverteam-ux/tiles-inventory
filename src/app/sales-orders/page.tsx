@@ -120,24 +120,24 @@ export default function SalesOrdersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Sales Orders</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your sales orders</p>
+          <h1 className="text-3xl font-bold text-foreground">Sales Orders</h1>
+          <p className="text-muted-foreground mt-1">Manage your sales orders</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
+            <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
             Filters
           </Button>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button className="bg-primary hover:bg-primary/90">
                 <Plus className="h-4 w-4 mr-2" />
                 New Order
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl bg-white dark:bg-gray-800">
+            <DialogContent className="max-w-4xl bg-card">
               <DialogHeader>
-                <DialogTitle className="text-gray-900 dark:text-gray-100">Create Sales Order</DialogTitle>
+                <DialogTitle className="text-foreground">Create Sales Order</DialogTitle>
               </DialogHeader>
               <SalesOrderForm onSuccess={() => {
                 setShowAddDialog(false)
@@ -150,50 +150,50 @@ export default function SalesOrdersPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{orders.length}</div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
+            <div className="text-2xl font-bold text-foreground">{orders.length}</div>
+            <p className="text-sm text-muted-foreground">Total Orders</p>
           </CardContent>
         </Card>
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardContent className="p-4">
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
               {orders.filter(o => o.status === 'DELIVERED').length}
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Sold</p>
+            <p className="text-sm text-muted-foreground">Sold</p>
           </CardContent>
         </Card>
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <div className="text-2xl font-bold text-foreground">
               ₹{orders.reduce((sum, o) => sum + o.totalAmount, 0).toLocaleString()}
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Value</p>
+            <p className="text-sm text-muted-foreground">Total Value</p>
           </CardContent>
         </Card>
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <div className="text-2xl font-bold text-foreground">
               {orders.reduce((sum, o) => sum + o.items?.reduce((s, i) => s + (i.quantity || 0), 0), 0)}
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Total Units</p>
+            <p className="text-sm text-muted-foreground">Total Units</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
       {showFilters && (
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-lg text-gray-900 dark:text-gray-100">Filters</CardTitle>
+            <CardTitle className="text-lg text-foreground">Filters</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
+                <label className="text-sm font-medium text-muted-foreground">Search</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search orders..."
                     value={filters.search}
@@ -204,7 +204,7 @@ export default function SalesOrdersPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Brand</label>
+                <label className="text-sm font-medium text-muted-foreground">Brand</label>
                 <Select value={filters.brandId} onValueChange={(value) => setFilters({ ...filters, brandId: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="All brands" />
@@ -231,57 +231,57 @@ export default function SalesOrdersPage() {
       )}
 
       {/* Orders Table */}
-      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="text-gray-900 dark:text-gray-100">Sales Orders ({orders.length})</CardTitle>
+          <CardTitle className="text-foreground">Sales Orders ({orders.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <ShoppingCart className="h-8 w-8 animate-spin text-gray-400 dark:text-gray-500" />
+              <ShoppingCart className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-gray-200 dark:border-gray-700">
-                    <TableHead className="text-gray-900 dark:text-gray-100">Order #</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Brand</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Batch Name</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Quantity</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Category</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Dimensions</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Location</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Sold Date</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Status</TableHead>
-                    <TableHead className="text-gray-900 dark:text-gray-100">Sale Price</TableHead>
-                    <TableHead className="text-right text-gray-900 dark:text-gray-100">Actions</TableHead>
+                  <TableRow className="border-b border-border">
+                    <TableHead className="text-foreground">Order #</TableHead>
+                    <TableHead className="text-foreground">Brand</TableHead>
+                    <TableHead className="text-foreground">Batch Name</TableHead>
+                    <TableHead className="text-foreground">Quantity</TableHead>
+                    <TableHead className="text-foreground">Category</TableHead>
+                    <TableHead className="text-foreground">Dimensions</TableHead>
+                    <TableHead className="text-foreground">Location</TableHead>
+                    <TableHead className="text-foreground">Sold Date</TableHead>
+                    <TableHead className="text-foreground">Status</TableHead>
+                    <TableHead className="text-foreground">Sale Price</TableHead>
+                    <TableHead className="text-right text-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {orders.map((order) => (
-                    <TableRow key={order.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <TableRow key={order.id} className="border-b border-border hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <TableCell>
-                        <div className="font-medium text-gray-900 dark:text-gray-100">{order.orderNumber}</div>
+                        <div className="font-medium text-foreground">{order.orderNumber}</div>
                       </TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100">{order.brand?.name || 'N/A'}</TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100">
+                      <TableCell className="text-foreground">{order.brand?.name || 'N/A'}</TableCell>
+                      <TableCell className="text-foreground">
                         {order.items?.[0]?.batch?.batchNumber || 'N/A'}
                       </TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100">
+                      <TableCell className="text-foreground">
                         {order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0}
                       </TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100">
+                      <TableCell className="text-foreground">
                         {order.items?.[0]?.product?.category?.name || 'N/A'}
                       </TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100">
+                      <TableCell className="text-foreground">
                         {order.items?.[0]?.product?.size?.name || 'N/A'}
                       </TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100">
+                      <TableCell className="text-foreground">
                         {order.items?.[0]?.batch?.location?.name || 'N/A'}
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm text-gray-900 dark:text-gray-100">
+                        <div className="text-sm text-foreground">
                           {new Date(order.orderDate).toLocaleDateString()}
                         </div>
                       </TableCell>
@@ -291,20 +291,20 @@ export default function SalesOrdersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                        <div className="font-medium text-foreground">
                           ₹{order.totalAmount.toLocaleString()}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Button variant="ghost" size="sm" onClick={() => handleView(order)}>
-                            <Eye className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                            <Eye className="h-4 w-4 text-muted-foreground" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(order)}>
-                            <Edit className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                            <Edit className="h-4 w-4 text-muted-foreground" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleDelete(order.id)}>
-                            <Trash2 className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                            <Trash2 className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         </div>
                       </TableCell>
@@ -319,17 +319,17 @@ export default function SalesOrdersPage() {
 
       {/* View Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="bg-white dark:bg-gray-800">
+        <DialogContent className="bg-card">
           <DialogHeader>
-            <DialogTitle className="text-gray-900 dark:text-gray-100">View Sales Order</DialogTitle>
+            <DialogTitle className="text-foreground">View Sales Order</DialogTitle>
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-4">
-              <div className="text-gray-900 dark:text-gray-100"><strong>Order Number:</strong> {selectedOrder.orderNumber}</div>
-              <div className="text-gray-900 dark:text-gray-100"><strong>Brand:</strong> {selectedOrder.brand?.name}</div>
-              <div className="text-gray-900 dark:text-gray-100"><strong>Order Date:</strong> {new Date(selectedOrder.orderDate).toLocaleDateString()}</div>
-              <div className="text-gray-900 dark:text-gray-100"><strong>Status:</strong> SOLD</div>
-              <div className="text-gray-900 dark:text-gray-100"><strong>Sale Price:</strong> ₹{selectedOrder.totalAmount.toLocaleString()}</div>
+              <div className="text-foreground"><strong>Order Number:</strong> {selectedOrder.orderNumber}</div>
+              <div className="text-foreground"><strong>Brand:</strong> {selectedOrder.brand?.name}</div>
+              <div className="text-foreground"><strong>Order Date:</strong> {new Date(selectedOrder.orderDate).toLocaleDateString()}</div>
+              <div className="text-foreground"><strong>Status:</strong> SOLD</div>
+              <div className="text-foreground"><strong>Sale Price:</strong> ₹{selectedOrder.totalAmount.toLocaleString()}</div>
             </div>
           )}
         </DialogContent>
@@ -337,9 +337,9 @@ export default function SalesOrdersPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-4xl bg-white dark:bg-gray-800">
+        <DialogContent className="max-w-4xl bg-card">
           <DialogHeader>
-            <DialogTitle className="text-gray-900 dark:text-gray-100">Edit Sales Order</DialogTitle>
+            <DialogTitle className="text-foreground">Edit Sales Order</DialogTitle>
           </DialogHeader>
           {selectedOrder && (
             <SalesOrderForm 

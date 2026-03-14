@@ -13,11 +13,9 @@ import {
   MapPin,
   Layers,
   Palette,
-  Ruler,
-  X
+  Ruler
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 
 interface SidebarProps {
   isOpen: boolean
@@ -53,7 +51,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       
       {/* Sidebar */}
       <aside className={cn(
-        "fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 z-40 flex flex-col",
+        "fixed left-0 top-16 sm:top-20 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] bg-card border-r border-border transition-all duration-300 z-40 flex flex-col",
         isOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full md:w-16 md:translate-x-0"
       )}>
         <nav className="p-4 space-y-2 flex-1">
@@ -65,21 +63,23 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   href={item.href}
                   onClick={() => onClose()}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors relative",
+                    "relative flex items-center gap-3 text-sm font-medium transition-all duration-200",
+                    "h-11 px-3 rounded-xl",
+                    !isOpen && "md:mx-auto md:h-10 md:w-10 md:justify-center md:rounded-lg md:px-0",
                     isActive 
-                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-r-2 border-blue-700 dark:border-blue-400" 
-                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                      ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   )}
                 >
-                  <item.icon className="h-5 w-5 flex-shrink-0" />
-                  <span className={cn(isOpen ? "block" : "hidden md:hidden")}>{item.name}</span>
+                  <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-primary-foreground")} />
+                  <span className={cn(isOpen ? "block" : "hidden")}>{item.name}</span>
                 </Link>
                 
                 {/* Tooltip for collapsed sidebar */}
                 {!isOpen && (
-                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-200 text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2">
+                  <div className="absolute left-full ml-2 hidden md:block px-2 py-1 bg-popover text-popover-foreground border border-border text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 top-1/2 transform -translate-y-1/2 shadow-md">
                     {item.name}
-                    <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-gray-900 dark:border-r-gray-700"></div>
+                    <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-popover"></div>
                   </div>
                 )}
               </div>
@@ -87,7 +87,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           })}
         </nav>
         
-        <div className={cn("p-4 border-t border-gray-200 dark:border-gray-700 md:hidden", isOpen ? "block" : "hidden")}>
+        <div className={cn("p-4 border-t border-border md:hidden", isOpen ? "block" : "hidden")}>
           <button
             onClick={() => {
               onClose()

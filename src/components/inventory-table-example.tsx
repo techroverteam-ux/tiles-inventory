@@ -88,7 +88,7 @@ export function InventoryTable({ data }: { data: InventoryItem[] }) {
         columns={columns}
         data={data}
         onRowClick={handleRowClick}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-sm"
+        className="bg-card rounded-lg shadow-sm"
       />
     </div>
   )

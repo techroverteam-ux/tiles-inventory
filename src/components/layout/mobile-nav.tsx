@@ -23,7 +23,7 @@ export default function MobileNav() {
   const pathname = usePathname()
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 md:hidden">
       <div className="grid grid-cols-5 h-16">
         {mobileNavigation.map((item) => {
           const isActive = pathname === item.href
@@ -34,8 +34,8 @@ export default function MobileNav() {
               className={cn(
                 "flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors",
                 isActive 
-                  ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20" 
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                  ? "text-primary bg-primary/10" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <item.icon className="h-5 w-5" />

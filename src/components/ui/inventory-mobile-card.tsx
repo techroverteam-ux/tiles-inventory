@@ -29,10 +29,10 @@ export function InventoryMobileCard({
 }: InventoryMobileCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'in-stock': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-      case 'low-stock': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-      case 'out-of-stock': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+      case 'in-stock': return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+      case 'low-stock': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+      case 'out-of-stock': return 'bg-red-500/15 text-red-600 dark:text-red-400'
+      default: return 'bg-muted text-muted-foreground'
     }
   }
 
@@ -44,18 +44,18 @@ export function InventoryMobileCard({
 
   return (
     <div className={cn(
-      "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-shadow",
+      "bg-card text-card-foreground rounded-lg border border-border p-4 shadow-sm hover:shadow-md transition-shadow",
       className
     )}>
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Package className="h-5 w-5 text-gray-400" />
+          <Package className="h-5 w-5 text-muted-foreground" />
           <div>
-            <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm leading-tight">
+            <h3 className="font-medium text-foreground text-sm leading-tight">
               {item.name}
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {item.category}
             </p>
           </div>
@@ -68,22 +68,22 @@ export function InventoryMobileCard({
       {/* Details */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Stock</p>
+          <p className="text-xs text-muted-foreground">Stock</p>
           <p className={cn("text-lg font-semibold", getStockColor(item.stock))}>
             {item.stock}
           </p>
         </div>
         <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Price</p>
-          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <p className="text-xs text-muted-foreground">Price</p>
+          <p className="text-lg font-semibold text-foreground">
             ₹{item.price.toLocaleString()}
           </p>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
-        <p className="text-xs text-gray-400">
+      <div className="flex justify-between items-center pt-3 border-t border-border">
+        <p className="text-xs text-muted-foreground">
           Updated: {new Date(item.lastUpdated).toLocaleDateString()}
         </p>
         <div className="flex gap-1">

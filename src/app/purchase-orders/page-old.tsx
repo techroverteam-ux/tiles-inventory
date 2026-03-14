@@ -78,7 +78,7 @@ export default function PurchaseOrdersPage() {
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+          <Button size="sm" className="bg-primary hover:bg-primary/90">
             <Plus className="h-4 w-4 mr-2" />
             New Purchase Order
           </Button>

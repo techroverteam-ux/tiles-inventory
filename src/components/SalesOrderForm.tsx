@@ -265,7 +265,7 @@ export default function SalesOrderForm({ onSuccess, order }: SalesOrderFormProps
       </div>
 
       <div className="flex gap-2 pt-4">
-        <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={loading}>
+        <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={loading}>
           {loading ? (order ? 'Updating...' : 'Creating...') : (order ? 'Update Order' : 'Create Order')}
         </Button>
         <Button type="button" variant="outline" onClick={() => onSuccess()}>
@@ -275,3 +275,4 @@ export default function SalesOrderForm({ onSuccess, order }: SalesOrderFormProps
     </form>
   )
 }
+

@@ -17,7 +17,7 @@ interface QuickAction {
   title: string
   description: string
   icon: React.ReactNode
-  color: string
+  iconClassName: string
   action: () => void
 }
 
@@ -30,7 +30,7 @@ export default function MobileQuickActions() {
       title: 'Add Product',
       description: 'Create new product',
       icon: <Package className="h-6 w-6" />,
-      color: 'bg-blue-500',
+      iconClassName: 'bg-primary/15 text-primary',
       action: () => {
         setShowActions(false)
         // Navigate to add product
@@ -41,7 +41,7 @@ export default function MobileQuickActions() {
       title: 'Add Stock',
       description: 'Add inventory batch',
       icon: <Plus className="h-6 w-6" />,
-      color: 'bg-green-500',
+      iconClassName: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
       action: () => {
         setShowActions(false)
         // Navigate to add stock
@@ -52,7 +52,7 @@ export default function MobileQuickActions() {
       title: 'Purchase Order',
       description: 'Create purchase order',
       icon: <ShoppingCart className="h-6 w-6" />,
-      color: 'bg-purple-500',
+      iconClassName: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
       action: () => {
         setShowActions(false)
         // Navigate to purchase order
@@ -63,7 +63,7 @@ export default function MobileQuickActions() {
       title: 'Sales Order',
       description: 'Create sales order',
       icon: <TrendingUp className="h-6 w-6" />,
-      color: 'bg-orange-500',
+      iconClassName: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400',
       action: () => {
         setShowActions(false)
         // Navigate to sales order
@@ -74,7 +74,7 @@ export default function MobileQuickActions() {
       title: 'Scan Barcode',
       description: 'Quick product lookup',
       icon: <Scan className="h-6 w-6" />,
-      color: 'bg-indigo-500',
+      iconClassName: 'bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400',
       action: () => {
         setShowActions(false)
         // Open barcode scanner
@@ -87,7 +87,7 @@ export default function MobileQuickActions() {
       {/* Floating Action Button */}
       <Button
         onClick={() => setShowActions(true)}
-        className="fixed bottom-20 right-4 h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg z-40 md:hidden"
+        className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40 md:hidden"
       >
         <Plus className="h-6 w-6" />
       </Button>
@@ -114,16 +114,16 @@ export default function MobileQuickActions() {
               <button
                 key={action.id}
                 onClick={action.action}
-                className="flex flex-col items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="flex flex-col items-center gap-3 p-4 rounded-xl bg-muted/50 hover:bg-accent transition-colors"
               >
-                <div className={`p-3 rounded-full ${action.color} text-white`}>
+                <div className={`p-3 rounded-full ${action.iconClassName}`}>
                   {action.icon}
                 </div>
                 <div className="text-center">
-                  <p className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                  <p className="font-medium text-sm text-foreground">
                     {action.title}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {action.description}
                   </p>
                 </div>
@@ -131,7 +131,7 @@ export default function MobileQuickActions() {
             ))}
           </div>
           
-          <div className="h-6 bg-gray-50 dark:bg-gray-800 rounded-b-2xl" />
+          <div className="h-6 bg-muted/50 rounded-b-2xl" />
         </DialogContent>
       </Dialog>
     </>
