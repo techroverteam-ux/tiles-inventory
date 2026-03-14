@@ -49,18 +49,6 @@ export async function GET(request: NextRequest) {
           select: {
             products: true,
           },
-        },
-        createdBy: {
-          select: {
-            name: true,
-            email: true
-          }
-        },
-        updatedBy: {
-          select: {
-            name: true,
-            email: true
-          }
         }
       },
       orderBy: [

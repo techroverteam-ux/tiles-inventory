@@ -53,8 +53,12 @@ export function exportToExcel({
       return row
     })
 
-    // Create worksheet with data
-    const worksheet = XLSX.utils.json_to_sheet(exportData, { origin: 'A4' })
+    // Create worksheet and place table data starting at row 4
+    const worksheet = XLSX.utils.aoa_to_sheet([])
+    XLSX.utils.sheet_add_json(worksheet, exportData, {
+      origin: 'A4',
+      skipHeader: false
+    })
 
     // Add company header
     XLSX.utils.sheet_add_aoa(worksheet, [

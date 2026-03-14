@@ -3,11 +3,12 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const brand = await prisma.brand.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: {
@@ -37,9 +38,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const data = await request.json()
     const { name, description, contactInfo, isActive } = data
 
@@ -53,7 +55,7 @@ export async function PUT(
 
     // Check if brand exists
     const existingBrand = await prisma.brand.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existingBrand) {
@@ -67,7 +69,7 @@ export async function PUT(
     const duplicateBrand = await prisma.brand.findFirst({
       where: {
         name: { equals: name.trim(), mode: 'insensitive' },
-        id: { not: params.id }
+        id: { not: id }
       }
     })
 
@@ -79,7 +81,7 @@ export async function PUT(
     }
 
     const brand = await prisma.brand.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name: name.trim(),
         description: description?.trim() || null,
@@ -109,12 +111,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     // Check if brand exists
     const existingBrand = await prisma.brand.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: {
@@ -141,7 +144,7 @@ export async function DELETE(
     }
 
     await prisma.brand.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
     return NextResponse.json({ message: 'Brand deleted successfully' })
