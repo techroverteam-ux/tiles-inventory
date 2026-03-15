@@ -15,7 +15,7 @@ export interface FilterOption {
 export interface FilterConfig {
   key: string
   label: string
-  type: 'select' | 'multiselect' | 'search'
+  type: 'select' | 'multiselect' | 'search' | 'dateRange'
   options?: FilterOption[]
   placeholder?: string
 }
@@ -73,10 +73,11 @@ export function TableFilters({
   }
 
   const getActiveFiltersCount = () => {
-    return Object.keys(values).filter(key => {
+    const filterCount = Object.keys(values).filter(key => {
       const value = values[key]
       return value && (Array.isArray(value) ? value.length > 0 : value !== '')
-    }).length + (searchValue ? 1 : 0)
+    }).length
+    return filterCount + (searchValue ? 1 : 0)
   }
 
   const renderFilter = (filter: FilterConfig) => {
@@ -145,6 +146,42 @@ export function TableFilters({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        )
+
+      case 'dateRange':
+        const fromKey = `${filter.key}From`
+        const toKey = `${filter.key}To`
+        return (
+          <div key={filter.key} className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground whitespace-nowrap">{filter.label}:</span>
+            <div className="flex items-center gap-1">
+              <Input
+                type="date"
+                value={(values[fromKey] as string) || ''}
+                onChange={(e) => {
+                  const newFilters = { ...values, [fromKey]: e.target.value }
+                  if (!e.target.value) delete newFilters[fromKey]
+                  onFiltersChange(newFilters)
+                }}
+                className="h-9 w-36 text-sm"
+                placeholder="From"
+                disabled={loading}
+              />
+              <span className="text-muted-foreground">–</span>
+              <Input
+                type="date"
+                value={(values[toKey] as string) || ''}
+                onChange={(e) => {
+                  const newFilters = { ...values, [toKey]: e.target.value }
+                  if (!e.target.value) delete newFilters[toKey]
+                  onFiltersChange(newFilters)
+                }}
+                className="h-9 w-36 text-sm"
+                placeholder="To"
+                disabled={loading}
+              />
+            </div>
           </div>
         )
 
@@ -237,16 +274,28 @@ export function TableFilters({
           {Object.entries(values).map(([key, value]) => {
             if (!value || (Array.isArray(value) && value.length === 0)) return null
 
-            const filter = filters.find((f) => f.key === key)
+            // Find matching filter – also handles dateRange sub-keys (e.g. "createdAtFrom")
+            const filter = filters.find((f) => {
+              if (f.type === 'dateRange') {
+                return key === `${f.key}From` || key === `${f.key}To`
+              }
+              return f.key === key
+            })
             if (!filter) return null
 
-            const displayValue = Array.isArray(value)
-              ? `${value.length} selected`
-              : filter.options?.find((opt) => opt.value === value)?.label || value
+            let displayLabel = filter.label
+            let displayValue = value as string
+            if (filter.type === 'dateRange') {
+              displayLabel = key.endsWith('From') ? `${filter.label} From` : `${filter.label} To`
+            } else {
+              displayValue = Array.isArray(value)
+                ? `${value.length} selected`
+                : filter.options?.find((opt) => opt.value === value)?.label || (value as string)
+            }
 
             return (
               <Badge key={key} variant="secondary" className="gap-1">
-                {filter.label}: {displayValue}
+                {displayLabel}: {displayValue}
                 <Button
                   variant="ghost"
                   size="sm"

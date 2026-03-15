@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getAuthUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,6 +11,8 @@ export async function GET(request: NextRequest) {
     const brandId = searchParams.get('brandId')
     const categoryId = searchParams.get('categoryId')
     const isActive = searchParams.get('isActive')
+    const dateFrom = searchParams.get('dateFrom') || searchParams.get('createdAtFrom')
+    const dateTo = searchParams.get('dateTo') || searchParams.get('createdAtTo')
 
     const skip = (page - 1) * limit
 
@@ -40,6 +43,17 @@ export async function GET(request: NextRequest) {
       where.isActive = isActive === 'true'
     }
 
+    // Filter by date range
+    if (dateFrom || dateTo) {
+      where.createdAt = {}
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom)
+      if (dateTo) {
+        const toDate = new Date(dateTo)
+        toDate.setHours(23, 59, 59, 999)
+        where.createdAt.lte = toDate
+      }
+    }
+
     const totalCount = await prisma.size.count({ where })
 
     const sizes = await prisma.size.findMany({
@@ -56,8 +70,15 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(totalCount / limit)
 
+    // Attach createdBy/updatedBy from stored name fields
+    const sizesWithMeta = (sizes as any[]).map(s => ({
+      ...s,
+      createdBy: s.createdByName ? { name: s.createdByName, email: '' } : null,
+      updatedBy: s.updatedByName ? { name: s.updatedByName, email: '' } : null,
+    }))
+
     return NextResponse.json({
-      sizes,
+      sizes: sizesWithMeta,
       totalCount,
       totalPages,
       currentPage: page,
@@ -74,7 +95,7 @@ export async function GET(request: NextRequest) {
         totalCount: 0,
         totalPages: 0,
         currentPage: 1,
-        itemsPerPage: limit,
+        itemsPerPage: 25,
         hasNextPage: false,
         hasPreviousPage: false
       })
@@ -88,6 +109,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const authUser = getAuthUser(request)
     const data = await request.json()
     
     const { name, description, length, width, brandId, categoryId, isActive = true } = data
@@ -115,8 +137,15 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Resolve creator name
+    let createdByName: string | null = null
+    if (authUser?.userId) {
+      const user = await prisma.user.findUnique({ where: { id: authUser.userId }, select: { name: true, email: true } })
+      createdByName = user?.name || user?.email || null
+    }
     
-    const size = await prisma.size.create({
+    const size = await (prisma as any).size.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
@@ -124,7 +153,8 @@ export async function POST(request: NextRequest) {
         width: width ? parseFloat(width) : null,
         brandId: brandId,
         categoryId: categoryId,
-        isActive: Boolean(isActive)
+        isActive: Boolean(isActive),
+        ...(createdByName ? { createdByName } : {}),
       },
       include: {
         brand: {
