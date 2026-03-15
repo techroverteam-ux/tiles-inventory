@@ -15,6 +15,10 @@ interface QuickAddPanelProps {
   onSuccess?: (type: EntityType, data: any) => void
 }
 
+function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
 export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
   const [open, setOpen] = useState(false)
   const [activeType, setActiveType] = useState<EntityType>(null)
@@ -131,7 +135,7 @@ export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
       })
       const data = await res.json()
       if (res.ok) {
-        setSuccess(`${activeType?.charAt(0).toUpperCase()}${activeType?.slice(1)} "${name}" created!`)
+        setSuccess(`${capitalize(activeType ?? '')} "${name}" created!`)
         resetForm()
         onSuccess?.(activeType, data)
       } else {
@@ -189,7 +193,7 @@ export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
               </Button>
             )}
             <h2 className="text-lg font-semibold text-foreground">
-              {activeType ? `Add ${activeType.charAt(0).toUpperCase()}${activeType.slice(1)}` : 'Quick Add'}
+              {activeType ? `Add ${capitalize(activeType)}` : 'Quick Add'}
             </h2>
           </div>
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setOpen(false)}>

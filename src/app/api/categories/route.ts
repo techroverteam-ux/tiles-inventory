@@ -41,20 +41,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Build pipeline stages
-    const pipeline: any[] = [
+    // Build base pipeline stages (brand join + optional search)
+    const basePipeline: any[] = [
       { $match: initialMatch },
       { $lookup: { from: 'brands', localField: 'brandId', foreignField: '_id', as: 'brand' } },
       { $unwind: { path: '$brand', preserveNullAndEmptyArrays: false } },
-      // Count products linked to this category
-      { $lookup: { from: 'products', localField: '_id', foreignField: 'categoryId', as: '_products' } },
-      { $addFields: { productCount: { $size: '$_products' } } },
-      { $project: { _products: 0 } },
     ]
 
     // Apply search filter AFTER brand lookup so we can also search by brand name
     if (search) {
-      pipeline.push({
+      basePipeline.push({
         $match: {
           $or: [
             { name: { $regex: search, $options: 'i' } },
@@ -65,8 +61,8 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Count total matching records (same pipeline without skip/limit)
-    const countPipeline = [...pipeline, { $count: 'total' }]
+    // Count total matching records using the lightweight base pipeline (no product lookup needed)
+    const countPipeline = [...basePipeline, { $count: 'total' }]
     const countResult = await (prisma as any).$runCommandRaw({
       aggregate: 'categories',
       pipeline: countPipeline,
@@ -74,12 +70,16 @@ export async function GET(request: NextRequest) {
     })
     const totalCount = countResult?.cursor?.firstBatch?.[0]?.total || 0
 
-    // Fetch paginated results
+    // Fetch paginated results with product count
     const dataPipeline = [
-      ...pipeline,
+      ...basePipeline,
       { $sort: { isActive: -1, createdAt: -1 } },
       { $skip: skip },
       { $limit: limit },
+      // Count products linked to this category (only for the paginated set)
+      { $lookup: { from: 'products', localField: '_id', foreignField: 'categoryId', as: '_products' } },
+      { $addFields: { productCount: { $size: '$_products' } } },
+      { $project: { _products: 0 } },
     ]
     const rawCategories = await (prisma as any).$runCommandRaw({
       aggregate: 'categories',
