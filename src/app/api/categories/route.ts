@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getAuthUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,44 +10,80 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const isActive = searchParams.get('isActive')
     const brandId = searchParams.get('brandId')
+    const dateFrom = searchParams.get('dateFrom') || searchParams.get('createdAtFrom')
+    const dateTo = searchParams.get('dateTo') || searchParams.get('createdAtTo')
 
     const skip = (page - 1) * limit
 
-    const where: any = {}
-    
-    // Search across multiple fields
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { brand: { name: { contains: search, mode: 'insensitive' } } }
-      ]
+    // Build the initial $match stage – filter out records with null/missing brandId
+    const initialMatch: any = {
+      brandId: { $ne: null, $exists: true, $type: 'objectId' }
     }
-    
-    // Filter by brand
+
+    // Filter by specific brand
     if (brandId) {
-      where.brandId = brandId
+      initialMatch.brandId = { $oid: brandId }
     }
-    
-    // Filter by status
+
+    // Filter by active status
     if (isActive !== null && isActive !== undefined && isActive !== '') {
-      where.isActive = isActive === 'true'
+      initialMatch.isActive = isActive === 'true'
     }
 
-    // Get total count for pagination
-    const totalCount = await prisma.category.count({ where })
+    // Filter by date range (createdAt)
+    if (dateFrom || dateTo) {
+      initialMatch.createdAt = {}
+      if (dateFrom) initialMatch.createdAt.$gte = { $date: new Date(dateFrom).toISOString() }
+      if (dateTo) {
+        const toDate = new Date(dateTo)
+        toDate.setHours(23, 59, 59, 999)
+        initialMatch.createdAt.$lte = { $date: toDate.toISOString() }
+      }
+    }
 
-    // Use aggregation to skip documents with null brandId
+    // Build base pipeline stages (brand join + optional search)
+    const basePipeline: any[] = [
+      { $match: initialMatch },
+      { $lookup: { from: 'brands', localField: 'brandId', foreignField: '_id', as: 'brand' } },
+      { $unwind: { path: '$brand', preserveNullAndEmptyArrays: false } },
+    ]
+
+    // Apply search filter AFTER brand lookup so we can also search by brand name
+    if (search) {
+      basePipeline.push({
+        $match: {
+          $or: [
+            { name: { $regex: search, $options: 'i' } },
+            { description: { $regex: search, $options: 'i' } },
+            { 'brand.name': { $regex: search, $options: 'i' } },
+          ]
+        }
+      })
+    }
+
+    // Count total matching records using the lightweight base pipeline (no product lookup needed)
+    const countPipeline = [...basePipeline, { $count: 'total' }]
+    const countResult = await (prisma as any).$runCommandRaw({
+      aggregate: 'categories',
+      pipeline: countPipeline,
+      cursor: {}
+    })
+    const totalCount = countResult?.cursor?.firstBatch?.[0]?.total || 0
+
+    // Fetch paginated results with product count
+    const dataPipeline = [
+      ...basePipeline,
+      { $sort: { isActive: -1, createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+      // Count products linked to this category (only for the paginated set)
+      { $lookup: { from: 'products', localField: '_id', foreignField: 'categoryId', as: '_products' } },
+      { $addFields: { productCount: { $size: '$_products' } } },
+      { $project: { _products: 0 } },
+    ]
     const rawCategories = await (prisma as any).$runCommandRaw({
       aggregate: 'categories',
-      pipeline: [
-        { $match: { brandId: { $ne: null, $exists: true, $type: 'objectId' } } },
-        { $lookup: { from: 'brands', localField: 'brandId', foreignField: '_id', as: 'brand' } },
-        { $unwind: { path: '$brand', preserveNullAndEmptyArrays: false } },
-        { $sort: { isActive: -1, createdAt: -1 } },
-        { $skip: skip },
-        { $limit: limit }
-      ],
+      pipeline: dataPipeline,
       cursor: {}
     })
 
@@ -54,8 +91,17 @@ export async function GET(request: NextRequest) {
       ...c,
       id: c._id?.$oid || c._id?.toString() || String(c._id),
       brandId: c.brandId?.$oid || c.brandId?.toString() || String(c.brandId),
-      brand: c.brand ? { ...c.brand, id: c.brand._id?.$oid || c.brand._id?.toString() || String(c.brand._id) } : null,
-      _count: { products: 0 }
+      createdAt: c.createdAt?.$date || c.createdAt,
+      updatedAt: c.updatedAt?.$date || c.updatedAt,
+      brand: c.brand
+        ? {
+            ...c.brand,
+            id: c.brand._id?.$oid || c.brand._id?.toString() || String(c.brand._id),
+          }
+        : null,
+      createdBy: c.createdByName ? { name: c.createdByName, email: '' } : null,
+      updatedBy: c.updatedByName ? { name: c.updatedByName, email: '' } : null,
+      _count: { products: c.productCount || 0 },
     }))
 
     const totalPages = Math.ceil(totalCount / limit)
@@ -80,6 +126,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const authUser = getAuthUser(request)
     const data = await request.json()
     
     const { name, description, brandId, isActive = true } = data
@@ -106,13 +153,21 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Resolve creator name
+    let createdByName: string | null = null
+    if (authUser?.userId) {
+      const user = await prisma.user.findUnique({ where: { id: authUser.userId }, select: { name: true, email: true } })
+      createdByName = user?.name || user?.email || null
+    }
     
-    const category = await prisma.category.create({
+    const category = await (prisma as any).category.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
         brandId: brandId,
-        isActive: Boolean(isActive)
+        isActive: Boolean(isActive),
+        ...(createdByName ? { createdByName } : {}),
       },
       include: {
         brand: {

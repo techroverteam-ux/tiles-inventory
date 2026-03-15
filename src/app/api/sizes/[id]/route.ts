@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getAuthUser } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
@@ -93,7 +94,14 @@ export async function PUT(
       )
     }
 
-    const size = await prisma.size.update({
+    const authUser = getAuthUser(request)
+    let updatedByName: string | null = null
+    if (authUser?.userId) {
+      const user = await prisma.user.findUnique({ where: { id: authUser.userId }, select: { name: true, email: true } })
+      updatedByName = user?.name || user?.email || null
+    }
+
+    const size = await (prisma as any).size.update({
       where: { id },
       data: {
         name: name.trim(),
@@ -103,7 +111,8 @@ export async function PUT(
         brandId: brandId,
         categoryId: categoryId,
         isActive: Boolean(isActive),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        ...(updatedByName ? { updatedByName } : {}),
       },
       include: {
         brand: {

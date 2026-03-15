@@ -139,6 +139,11 @@ export default function SizesPage() {
         { value: 'false', label: 'Inactive' }
       ],
       placeholder: 'All Status'
+    },
+    {
+      key: 'createdAt',
+      label: 'Created Date',
+      type: 'dateRange',
     }
   ], [brands, categories])
 
@@ -150,7 +155,10 @@ export default function SizesPage() {
         page: currentPage.toString(),
         limit: itemsPerPage.toString(),
         search: search || '',
-        ...filters
+      })
+      // Append all filters except empty values
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value && value !== '') params.append(key, value as string)
       })
 
       const response = await fetch(`/api/sizes?${params}`)
