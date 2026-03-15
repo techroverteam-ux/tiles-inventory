@@ -186,7 +186,7 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
             <SelectTrigger>
               <SelectValue placeholder="Select brand" />
             </SelectTrigger>
-            <SelectContent className="bg-white">
+            <SelectContent>
               {brands.map((brand) => (
                 <SelectItem key={brand.id} value={brand.id}>
                   {brand.name}
@@ -221,7 +221,7 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
             <SelectTrigger>
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
-            <SelectContent className="bg-white">
+            <SelectContent>
               {filteredCategories.map((category) => (
                 <SelectItem key={category.id} value={category.id}>
                   {category.name}
@@ -237,7 +237,7 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
             <SelectTrigger>
               <SelectValue placeholder="Select size" />
             </SelectTrigger>
-            <SelectContent className="bg-white">
+            <SelectContent>
               {filteredSizes.map((size) => (
                 <SelectItem key={size.id} value={size.id}>
                   {size.name}
@@ -279,7 +279,7 @@ export default function PurchaseOrderForm({ onSuccess, order }: PurchaseOrderFor
       </div>
 
       <div className="flex gap-2 pt-4">
-        <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={loading}>
+        <Button type="submit" disabled={loading}>
           {loading ? (order ? 'Updating...' : 'Creating...') : (order ? 'Update Order' : 'Create Order')}
         </Button>
         <Button type="button" variant="outline" onClick={() => onSuccess()}>

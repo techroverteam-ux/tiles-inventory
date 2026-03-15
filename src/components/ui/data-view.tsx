@@ -77,24 +77,33 @@ interface ListViewProps {
   items: any[]
   headers: string[]
   renderRow: (item: any) => React.ReactNode
+  tableMinWidthClass?: string
+  tableMaxHeightClass?: string
   loading?: boolean
 }
 
-export function ListView({ items, headers, renderRow, loading = false }: ListViewProps) {
+export function ListView({
+  items,
+  headers,
+  renderRow,
+  tableMinWidthClass = 'min-w-[900px]',
+  tableMaxHeightClass = 'max-h-[65vh]',
+  loading = false
+}: ListViewProps) {
   if (loading) {
     return <LoadingPage view="list" showHeader={false} items={8} />
   }
 
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
-      <div className="overflow-x-auto mobile-table-scroll">
-        <table className="w-full">
-          <thead className="bg-muted/50">
+      <div className={`mobile-table-scroll overflow-auto overscroll-contain ${tableMaxHeightClass}`}>
+        <table className={`w-full ${tableMinWidthClass}`}>
+          <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/75">
             <tr>
               {headers.map((header, index) => (
                 <th
                   key={index}
-                  className="px-4 py-3 text-left text-sm font-medium text-muted-foreground uppercase tracking-wider"
+                  className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-muted-foreground uppercase tracking-wider"
                 >
                   {header}
                 </th>
@@ -145,6 +154,8 @@ interface DataViewProps {
   listProps?: {
     headers: string[]
     renderRow: (item: any) => React.ReactNode
+    tableMinWidthClass?: string
+    tableMaxHeightClass?: string
   }
   title?: string
   actions?: React.ReactNode
@@ -214,6 +225,8 @@ export function DataView({
           items={items}
           headers={listProps.headers}
           renderRow={listProps.renderRow}
+          tableMinWidthClass={listProps.tableMinWidthClass}
+          tableMaxHeightClass={listProps.tableMaxHeightClass}
           loading={loading}
         />
       ) : (

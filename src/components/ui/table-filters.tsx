@@ -156,8 +156,8 @@ export function TableFilters({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Search and Filter Toggle */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-0 flex-1 max-w-full sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder={searchPlaceholder}
@@ -182,7 +182,7 @@ export function TableFilters({
           variant="outline"
           size="sm"
           onClick={() => setShowFilters(!showFilters)}
-          className="h-9 gap-2"
+          className="h-9 gap-2 whitespace-nowrap"
           disabled={loading}
         >
           <Filter className="h-4 w-4" />
@@ -199,7 +199,7 @@ export function TableFilters({
             variant="ghost"
             size="sm"
             onClick={clearAllFilters}
-            className="h-9 gap-2 text-muted-foreground"
+            className="h-9 gap-2 whitespace-nowrap text-muted-foreground"
             disabled={loading}
           >
             <RotateCcw className="h-4 w-4" />

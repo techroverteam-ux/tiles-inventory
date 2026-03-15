@@ -87,7 +87,7 @@ export default function MobileQuickActions() {
       {/* Floating Action Button */}
       <Button
         onClick={() => setShowActions(true)}
-        className="fixed bottom-20 right-4 h-14 w-14 rounded-full bg-blue-600 hover:bg-blue-700 shadow-lg z-40 md:hidden"
+        className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40 md:hidden"
       >
         <Plus className="h-6 w-6" />
       </Button>
@@ -114,16 +114,16 @@ export default function MobileQuickActions() {
               <button
                 key={action.id}
                 onClick={action.action}
-                className="flex flex-col items-center gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="flex flex-col items-center gap-3 p-4 rounded-xl bg-muted/40 hover:bg-accent transition-colors"
               >
                 <div className={`p-3 rounded-full ${action.color} text-white`}>
                   {action.icon}
                 </div>
                 <div className="text-center">
-                  <p className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                  <p className="font-medium text-sm text-foreground">
                     {action.title}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {action.description}
                   </p>
                 </div>
@@ -131,7 +131,7 @@ export default function MobileQuickActions() {
             ))}
           </div>
           
-          <div className="h-6 bg-gray-50 dark:bg-gray-800 rounded-b-2xl" />
+          <div className="h-6 bg-muted/30 rounded-b-2xl" />
         </DialogContent>
       </Dialog>
     </>

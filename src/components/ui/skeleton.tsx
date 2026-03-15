@@ -114,9 +114,9 @@ function TableSkeleton({
 }) {
   return (
     <div className={cn("bg-card rounded-lg border border-border overflow-hidden", className)}>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
+      <div className="mobile-table-scroll overflow-auto overscroll-contain max-h-[65vh]">
+        <table className="w-full min-w-[900px]">
+          <thead className="sticky top-0 z-10 bg-muted/95">
             <TableHeaderSkeleton columns={columns} />
           </thead>
           <tbody>

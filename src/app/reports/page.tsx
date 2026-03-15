@@ -41,29 +41,29 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Reports</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Analytics and insights</p>
+          <h1 className="text-3xl font-bold text-foreground">Reports</h1>
+          <p className="text-muted-foreground mt-1">Analytics and insights</p>
         </div>
         <Button variant="outline">
-          <Download className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
+          <Download className="h-4 w-4 mr-2 text-muted-foreground" />
           Export All
         </Button>
       </div>
 
       {/* Date Range Filter */}
-      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+      <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-            <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <CardTitle className="flex items-center gap-2 text-foreground">
+            <Calendar className="h-5 w-5 text-primary" />
             Date Range Filter
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">From Date</label>
+              <label className="text-sm font-medium text-foreground">From Date</label>
               <Input
                 type="date"
                 value={dateFrom}
@@ -73,7 +73,7 @@ export default function ReportsPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">To Date</label>
+              <label className="text-sm font-medium text-foreground">To Date</label>
               <Input
                 type="date"
                 value={dateTo}
@@ -87,15 +87,15 @@ export default function ReportsPage() {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-              <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <BarChart3 className="h-5 w-5 text-primary" />
               Sales Report
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">Monthly sales performance and trends</p>
+            <p className="text-muted-foreground mb-4">Monthly sales performance and trends</p>
             <Button 
               className="w-full" 
               onClick={() => generateReport('Sales')}
@@ -106,15 +106,15 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-              <PieChart className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <PieChart className="h-5 w-5 text-primary" />
               Inventory Report
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">Stock levels, movement and valuation</p>
+            <p className="text-muted-foreground mb-4">Stock levels, movement and valuation</p>
             <Button 
               className="w-full" 
               onClick={() => generateReport('Inventory')}
@@ -125,15 +125,15 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-              <TrendingUp className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <TrendingUp className="h-5 w-5 text-primary" />
               Purchase Report
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">Purchase order analysis and vendor performance</p>
+            <p className="text-muted-foreground mb-4">Purchase order analysis and vendor performance</p>
             <Button 
               className="w-full" 
               onClick={() => generateReport('Purchase')}
