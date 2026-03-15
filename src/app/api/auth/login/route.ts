@@ -48,11 +48,6 @@ export async function POST(request: NextRequest) {
       { expiresIn: '24h' }
     )
 
-    console.log('Generated token:', token.substring(0, 50) + '...')
-    console.log('JWT Secret used:', process.env.JWT_SECRET ? 'ENV_VAR' : 'FALLBACK')
-    console.log('Environment:', process.env.NODE_ENV)
-    console.log('Setting cookie with secure:', process.env.NODE_ENV === 'production')
-
     const response = NextResponse.json({
       message: 'Login successful',
       user: {
@@ -63,35 +58,25 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    const isProduction = process.env.NODE_ENV === 'production'
+
     const cookieOptions = {
       httpOnly: true,
-      secure: true,
+      secure: isProduction,
       sameSite: 'lax' as const,
       maxAge: 86400,
       path: '/'
     }
     
-    console.log('Cookie options:', cookieOptions)
     response.cookies.set('auth-token', token, cookieOptions)
     
-    console.log('✅ Login: Cookie set successfully')
+    console.log('✅ Login successful')
 
     return response
   } catch (error) {
     console.error('Login error:', error)
-    
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    const errorStack = error instanceof Error ? error.stack : undefined
-    
-    // Log to Vercel console for debugging
-    console.log('Detailed error:', { errorMessage, errorStack, env: process.env.NODE_ENV })
-    
     return NextResponse.json(
-      { 
-        error: `Login failed: ${errorMessage}`,
-        details: errorStack,
-        env: process.env.NODE_ENV
-      },
+      { error: 'Login failed' },
       { status: 500 }
     )
   }

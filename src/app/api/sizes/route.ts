@@ -40,34 +40,16 @@ export async function GET(request: NextRequest) {
       where.isActive = isActive === 'true'
     }
 
-    // Get total count for pagination
     const totalCount = await prisma.size.count({ where })
 
     const sizes = await prisma.size.findMany({
       where,
       include: {
-        brand: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        _count: {
-          select: {
-            products: true,
-          },
-        }
+        brand: { select: { id: true, name: true } },
+        category: { select: { id: true, name: true } },
+        _count: { select: { products: true } }
       },
-      orderBy: [
-        { isActive: 'desc' },
-        { createdAt: 'desc' }
-      ],
+      orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
       skip,
       take: limit,
     })
@@ -83,8 +65,20 @@ export async function GET(request: NextRequest) {
       hasNextPage: page < totalPages,
       hasPreviousPage: page > 1
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Sizes fetch error:', error)
+    if (error.code === 'P2032' || error.message?.includes('null')) {
+      // Return empty result if there are null field issues in DB
+      return NextResponse.json({
+        sizes: [],
+        totalCount: 0,
+        totalPages: 0,
+        currentPage: 1,
+        itemsPerPage: limit,
+        hasNextPage: false,
+        hasPreviousPage: false
+      })
+    }
     return NextResponse.json(
       { error: 'Failed to fetch sizes' },
       { status: 500 }

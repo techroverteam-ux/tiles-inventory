@@ -543,11 +543,11 @@ export default function InventoryPage() {
                   title={item.product.name}
                   subtitle={`${item.product.brand.name} • ${item.product.code}`}
                   badge={
-                    <div className="flex items-center gap-2">
-                      <Badge variant={getStockBadgeVariant(item.quantity)} className="text-xs">
+                    <div className="flex items-center gap-2 flex-nowrap">
+                      <Badge variant={getStockBadgeVariant(item.quantity)} className="text-xs whitespace-nowrap">
                         {item.quantity} units
                       </Badge>
-                      {item.quantity < 10 && <AlertTriangle className="h-4 w-4 text-red-500" />}
+                      {item.quantity < 10 && <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />}
                     </div>
                   }
                   actions={
@@ -666,12 +666,12 @@ export default function InventoryPage() {
                       </TableCell>
                       <TableCell className="text-gray-900 dark:text-gray-100">{item.location.name}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={getStockBadgeVariant(item.quantity)}>
+                        <div className="flex items-center gap-2 flex-nowrap">
+                          <Badge variant={getStockBadgeVariant(item.quantity)} className="whitespace-nowrap">
                             {item.quantity} units
                           </Badge>
                           {item.quantity < 10 && (
-                            <AlertTriangle className="h-4 w-4 text-red-500" />
+                            <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
                           )}
                         </div>
                       </TableCell>

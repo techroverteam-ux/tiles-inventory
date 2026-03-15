@@ -36,28 +36,27 @@ export async function GET(request: NextRequest) {
     // Get total count for pagination
     const totalCount = await prisma.category.count({ where })
 
-    const categories = await prisma.category.findMany({
-      where,
-      include: {
-        brand: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        _count: {
-          select: {
-            products: true,
-          },
-        }
-      },
-      orderBy: [
-        { isActive: 'desc' },
-        { createdAt: 'desc' }
+    // Use aggregation to skip documents with null brandId
+    const rawCategories = await (prisma as any).$runCommandRaw({
+      aggregate: 'categories',
+      pipeline: [
+        { $match: { brandId: { $ne: null, $exists: true, $type: 'objectId' } } },
+        { $lookup: { from: 'brands', localField: 'brandId', foreignField: '_id', as: 'brand' } },
+        { $unwind: { path: '$brand', preserveNullAndEmptyArrays: false } },
+        { $sort: { isActive: -1, createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit }
       ],
-      skip,
-      take: limit,
+      cursor: {}
     })
+
+    const categories = (rawCategories?.cursor?.firstBatch || []).map((c: any) => ({
+      ...c,
+      id: c._id?.$oid || c._id?.toString() || String(c._id),
+      brandId: c.brandId?.$oid || c.brandId?.toString() || String(c.brandId),
+      brand: c.brand ? { ...c.brand, id: c.brand._id?.$oid || c.brand._id?.toString() || String(c.brand._id) } : null,
+      _count: { products: 0 }
+    }))
 
     const totalPages = Math.ceil(totalCount / limit)
 

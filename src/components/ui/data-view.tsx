@@ -65,7 +65,7 @@ export function GridView({ items, renderItem, columns = 3, loading = false }: Gr
   return (
     <div className={`grid gap-4 ${gridCols[columns as keyof typeof gridCols] || gridCols[3]}`}>
       {items.map((item, index) => (
-        <div key={item.id || index} className="h-full">
+        <div key={item.id?.toString() || index} className="h-full">
           {renderItem(item)}
         </div>
       ))}
@@ -104,7 +104,7 @@ export function ListView({ items, headers, renderRow, loading = false }: ListVie
           <tbody className="divide-y divide-border">
             {items.map((item, index) => (
               <tr
-                key={item.id || index}
+                key={item.id?.toString() || index}
                 className="hover:bg-muted/30 transition-colors"
               >
                 {renderRow(item)}
