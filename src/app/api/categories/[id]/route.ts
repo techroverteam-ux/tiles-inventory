@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthUser } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
@@ -95,15 +94,6 @@ export async function PUT(
         brandId: brandId,
         isActive: Boolean(isActive),
         updatedAt: new Date(),
-        ...(await (async () => {
-          const authUser = getAuthUser(request)
-          if (authUser?.userId) {
-            const user = await prisma.user.findUnique({ where: { id: authUser.userId }, select: { name: true, email: true } })
-            const updatedByName = user?.name || user?.email || null
-            return updatedByName ? { updatedByName } : {}
-          }
-          return {}
-        })()),
       },
       include: {
         brand: {
@@ -138,14 +128,7 @@ export async function DELETE(
     const { id } = await params
     // Check if category exists
     const existingCategory = await prisma.category.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            products: true,
-          },
-        }
-      }
+      where: { id }
     })
 
     if (!existingCategory) {
@@ -155,16 +138,35 @@ export async function DELETE(
       )
     }
 
-    // Check if category has associated products
-    if (existingCategory._count.products > 0) {
+    // Only active linked data should block deletion.
+    const [activeProductsCount, activeSizesCount] = await prisma.$transaction([
+      prisma.product.count({
+        where: {
+          categoryId: id,
+          isActive: true,
+        },
+      }),
+      prisma.size.count({
+        where: {
+          categoryId: id,
+          isActive: true,
+        },
+      }),
+    ])
+
+    if (activeProductsCount > 0 || activeSizesCount > 0) {
       return NextResponse.json(
-        { error: 'Cannot delete category with associated products. Please remove them first.' },
+        { error: 'Cannot delete category with associated active products or sizes. Please remove them first.' },
         { status: 400 }
       )
     }
 
-    await prisma.category.delete({
-      where: { id }
+    await prisma.category.update({
+      where: { id },
+      data: {
+        isActive: false,
+        updatedAt: new Date(),
+      },
     })
 
     return NextResponse.json({ message: 'Category deleted successfully' })

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthUser } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
@@ -94,13 +93,6 @@ export async function PUT(
       )
     }
 
-    const authUser = getAuthUser(request)
-    let updatedByName: string | null = null
-    if (authUser?.userId) {
-      const user = await prisma.user.findUnique({ where: { id: authUser.userId }, select: { name: true, email: true } })
-      updatedByName = user?.name || user?.email || null
-    }
-
     const size = await (prisma as any).size.update({
       where: { id },
       data: {
@@ -112,7 +104,6 @@ export async function PUT(
         categoryId: categoryId,
         isActive: Boolean(isActive),
         updatedAt: new Date(),
-        ...(updatedByName ? { updatedByName } : {}),
       },
       include: {
         brand: {
@@ -153,14 +144,7 @@ export async function DELETE(
     const { id } = await params
     // Check if size exists
     const existingSize = await prisma.size.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            products: true,
-          },
-        }
-      }
+      where: { id }
     })
 
     if (!existingSize) {
@@ -170,16 +154,27 @@ export async function DELETE(
       )
     }
 
-    // Check if size has associated products
-    if (existingSize._count.products > 0) {
+    // Only active products should block deleting a size.
+    const activeProductsCount = await prisma.product.count({
+      where: {
+        sizeId: id,
+        isActive: true,
+      },
+    })
+
+    if (activeProductsCount > 0) {
       return NextResponse.json(
         { error: 'Cannot delete size with associated products. Please remove them first.' },
         { status: 400 }
       )
     }
 
-    await prisma.size.delete({
-      where: { id }
+    await prisma.size.update({
+      where: { id },
+      data: {
+        isActive: false,
+        updatedAt: new Date(),
+      },
     })
 
     return NextResponse.json({ message: 'Size deleted successfully' })

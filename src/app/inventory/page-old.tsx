@@ -163,7 +163,7 @@ export default function InventoryPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="desktop-table-nowrap w-full">
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-4 font-medium">Product</th>

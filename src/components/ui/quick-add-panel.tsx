@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { FormEvent, useRef, useState, useCallback } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { Plus, X, ChevronRight, Users, Palette, Ruler, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useToast } from '@/contexts/ToastContext'
 
 type EntityType = 'brand' | 'category' | 'size' | 'location' | null
 
@@ -15,16 +17,47 @@ interface QuickAddPanelProps {
   onSuccess?: (type: EntityType, data: any) => void
 }
 
+const entityConfig = {
+  brand: {
+    endpoint: '/api/brands',
+    responseKey: 'brand',
+    pagePath: '/brands',
+    successLabel: 'Brand',
+  },
+  category: {
+    endpoint: '/api/categories',
+    responseKey: 'category',
+    pagePath: '/categories',
+    successLabel: 'Category',
+  },
+  size: {
+    endpoint: '/api/sizes',
+    responseKey: 'size',
+    pagePath: '/sizes',
+    successLabel: 'Size',
+  },
+  location: {
+    endpoint: '/api/locations',
+    responseKey: 'location',
+    pagePath: '/locations',
+    successLabel: 'Location',
+  },
+} as const
+
 function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
 export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
+  const formRef = useRef<HTMLFormElement>(null)
+  const router = useRouter()
+  const pathname = usePathname()
+  const { showToast } = useToast()
   const [open, setOpen] = useState(false)
   const [activeType, setActiveType] = useState<EntityType>(null)
   const [loading, setLoading] = useState(false)
+  const [optionsLoading, setOptionsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
 
   // Form fields
   const [name, setName] = useState('')
@@ -48,20 +81,33 @@ export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
     setWidth('')
     setAddress('')
     setError('')
-    setSuccess('')
+  }
+
+  const closePanel = () => {
+    setOpen(false)
+    setActiveType(null)
+    resetForm()
   }
 
   const fetchBrands = useCallback(async () => {
+    setOptionsLoading(true)
     try {
       const res = await fetch('/api/brands?limit=100&isActive=true')
       if (res.ok) {
         const data = await res.json()
         setBrands(data.brands || [])
+      } else {
+        setError('Failed to load brands')
       }
-    } catch {}
+    } catch {
+      setError('Failed to load brands')
+    } finally {
+      setOptionsLoading(false)
+    }
   }, [])
 
   const fetchCategories = useCallback(async (bId?: string) => {
+    setOptionsLoading(true)
     try {
       const params = new URLSearchParams({ limit: '200', isActive: 'true' })
       if (bId) params.set('brandId', bId)
@@ -69,8 +115,14 @@ export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
       if (res.ok) {
         const data = await res.json()
         setCategories(data.categories || [])
+      } else {
+        setError('Failed to load categories')
       }
-    } catch {}
+    } catch {
+      setError('Failed to load categories')
+    } finally {
+      setOptionsLoading(false)
+    }
   }, [])
 
   const handleOpen = async (type: EntityType) => {
@@ -79,9 +131,7 @@ export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
     if (type === 'category' || type === 'size') {
       await fetchBrands()
     }
-    if (type === 'size') {
-      await fetchCategories()
-    }
+    setCategories([])
   }
 
   const handleBrandChange = async (val: string) => {
@@ -92,34 +142,35 @@ export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
     }
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
     setError('')
-    setSuccess('')
     if (!name.trim()) {
       setError('Name is required')
       return
     }
 
-    let endpoint = ''
+    if (!activeType) {
+      setError('Select what you want to add')
+      return
+    }
+
+    const config = entityConfig[activeType]
     let body: any = { name: name.trim(), description: description.trim() || undefined, isActive: true }
 
     switch (activeType) {
       case 'brand':
-        endpoint = '/api/brands'
         break
       case 'category':
         if (!brandId) { setError('Brand is required'); return }
-        endpoint = '/api/categories'
         body = { ...body, brandId }
         break
       case 'size':
         if (!brandId) { setError('Brand is required'); return }
         if (!categoryId) { setError('Category is required'); return }
-        endpoint = '/api/sizes'
         body = { ...body, brandId, categoryId, length: length || undefined, width: width || undefined }
         break
       case 'location':
-        endpoint = '/api/locations'
         body = { ...body, address: address.trim() || undefined }
         break
       default:
@@ -128,21 +179,37 @@ export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
 
     setLoading(true)
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch(config.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
       const data = await res.json()
       if (res.ok) {
-        setSuccess(`${capitalize(activeType ?? '')} "${name}" created!`)
+        const createdItem = data[config.responseKey] || data
+        showToast(`${config.successLabel} created successfully`, 'success')
+        window.dispatchEvent(new CustomEvent('quick-add:created', {
+          detail: { type: activeType, item: createdItem }
+        }))
+        onSuccess?.(activeType, createdItem)
+
+        if (pathname === config.pagePath) {
+          window.location.reload()
+          return
+        }
+
+        router.refresh()
         resetForm()
-        onSuccess?.(activeType, data)
+        setActiveType(null)
+        setOpen(false)
       } else {
-        setError(data.error || 'Failed to create')
+        const message = data.error || data.details || 'Failed to create'
+        setError(message)
+        showToast(message, 'error')
       }
     } catch {
       setError('Network error. Please try again.')
+      showToast('Network error. Please try again.', 'error')
     } finally {
       setLoading(false)
     }
@@ -165,7 +232,7 @@ export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
       <Button
         variant="outline"
         size="sm"
-        onClick={() => { setOpen(true); setActiveType(null) }}
+        onClick={() => { setOpen(true); setActiveType(null); setError('') }}
         className="hidden sm:flex text-xs px-3 py-2 border-border text-foreground hover:bg-accent"
       >
         <Plus className="h-4 w-4 mr-1" />
@@ -176,7 +243,7 @@ export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
       {open && (
         <div
           className="fixed inset-0 bg-foreground/40 z-50"
-          onClick={() => setOpen(false)}
+          onClick={closePanel}
         />
       )}
 
@@ -196,7 +263,7 @@ export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
               {activeType ? `Add ${capitalize(activeType)}` : 'Quick Add'}
             </h2>
           </div>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setOpen(false)}>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={closePanel}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -231,102 +298,108 @@ export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
                   {error}
                 </div>
               )}
-              {success && (
-                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-sm text-green-600 dark:text-green-400">
-                  {success}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Name *</label>
-                <Input
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder={`Enter ${activeType} name`}
-                  disabled={loading}
-                />
-              </div>
-
-              {activeType !== 'location' && (
+              <form ref={formRef} className="space-y-4" onSubmit={handleSubmit}>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Description</label>
+                  <label className="text-sm font-medium text-foreground">Name *</label>
                   <Input
-                    value={description}
-                    onChange={e => setDescription(e.target.value)}
-                    placeholder="Optional description"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder={`Enter ${activeType} name`}
                     disabled={loading}
                   />
                 </div>
-              )}
 
-              {(activeType === 'category' || activeType === 'size') && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Brand *</label>
-                  <Select value={brandId} onValueChange={handleBrandChange} disabled={loading}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select brand" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {brands.map(b => (
-                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {activeType === 'size' && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Category *</label>
-                  <Select value={categoryId} onValueChange={setCategoryId} disabled={loading || !brandId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={brandId ? 'Select category' : 'Select brand first'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredCategories.map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {activeType === 'size' && (
-                <div className="grid grid-cols-2 gap-3">
+                {activeType !== 'location' && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Length (mm)</label>
+                    <label className="text-sm font-medium text-foreground">Description</label>
                     <Input
-                      type="number"
-                      value={length}
-                      onChange={e => setLength(e.target.value)}
-                      placeholder="e.g. 600"
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                      placeholder="Optional description"
                       disabled={loading}
                     />
                   </div>
+                )}
+
+                {(activeType === 'category' || activeType === 'size') && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Width (mm)</label>
+                    <label className="text-sm font-medium text-foreground">Brand *</label>
+                    <Select value={brandId} onValueChange={handleBrandChange} disabled={loading || optionsLoading}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={optionsLoading ? 'Loading brands...' : 'Select brand'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {brands.length === 0 ? (
+                          <SelectItem value="__no-brands" disabled>No brands available</SelectItem>
+                        ) : (
+                          brands.map(b => (
+                            <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {activeType === 'size' && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Category *</label>
+                    <Select value={categoryId} onValueChange={setCategoryId} disabled={loading || optionsLoading || !brandId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={brandId ? (optionsLoading ? 'Loading categories...' : 'Select category') : 'Select brand first'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredCategories.length === 0 ? (
+                          <SelectItem value="__no-categories" disabled>No categories available</SelectItem>
+                        ) : (
+                          filteredCategories.map(c => (
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {activeType === 'size' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Length (mm)</label>
+                      <Input
+                        type="number"
+                        value={length}
+                        onChange={e => setLength(e.target.value)}
+                        placeholder="e.g. 600"
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Width (mm)</label>
+                      <Input
+                        type="number"
+                        value={width}
+                        onChange={e => setWidth(e.target.value)}
+                        placeholder="e.g. 300"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {activeType === 'location' && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Address</label>
                     <Input
-                      type="number"
-                      value={width}
-                      onChange={e => setWidth(e.target.value)}
-                      placeholder="e.g. 300"
+                      value={address}
+                      onChange={e => setAddress(e.target.value)}
+                      placeholder="Optional address"
                       disabled={loading}
                     />
                   </div>
-                </div>
-              )}
+                )}
 
-              {activeType === 'location' && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Address</label>
-                  <Input
-                    value={address}
-                    onChange={e => setAddress(e.target.value)}
-                    placeholder="Optional address"
-                    disabled={loading}
-                  />
-                </div>
-              )}
+                <button type="submit" className="hidden" aria-hidden="true" />
+              </form>
             </div>
           )}
         </div>
@@ -338,14 +411,16 @@ export function QuickAddPanel({ onSuccess }: QuickAddPanelProps) {
               variant="outline"
               className="flex-1"
               onClick={() => { setActiveType(null); resetForm() }}
-              disabled={loading}
+              disabled={loading || optionsLoading}
             >
               Back
             </Button>
             <Button
               className="flex-1"
-              onClick={handleSubmit}
-              disabled={loading}
+              onClick={() => {
+                formRef.current?.requestSubmit()
+              }}
+              disabled={loading || optionsLoading}
             >
               {loading ? 'Saving…' : 'Save'}
             </Button>

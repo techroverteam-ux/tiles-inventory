@@ -8,6 +8,7 @@
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
+    scroll-behavior: smooth;
   }
 
   :root {
@@ -154,7 +155,7 @@
   @keyframes dialog-content-show {
     from {
       opacity: 0;
-      transform: translate(-50%, -48%) scale(0.96);
+      transform: translate(-50%, calc(-50% + 88px)) scale(0.96);
     }
     to {
       opacity: 1;
@@ -169,8 +170,33 @@
     }
     to {
       opacity: 0;
-      transform: translate(-50%, -48%) scale(0.96);
+      transform: translate(-50%, calc(-50% + 88px)) scale(0.96);
     }
+  }
+
+  .dialog-overlay {
+    animation-fill-mode: both;
+  }
+
+  .dialog-overlay[data-state='open'] {
+    animation: dialog-overlay-show 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .dialog-overlay[data-state='closed'] {
+    animation: dialog-overlay-hide 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .dialog-content {
+    animation-fill-mode: both;
+    will-change: transform, opacity;
+  }
+
+  .dialog-content[data-state='open'] {
+    animation: dialog-content-show 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .dialog-content[data-state='closed'] {
+    animation: dialog-content-hide 220ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   
   .dialog-overlay-animate-in {
@@ -208,6 +234,16 @@
   .mobile-table-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
+    scroll-behavior: smooth;
+  }
+
+  @media (min-width: 768px) {
+    .desktop-table-nowrap th,
+    .desktop-table-nowrap td,
+    .desktop-table-nowrap td * {
+      white-space: nowrap;
+    }
   }
   
   /* Hide scrollbars on mobile */

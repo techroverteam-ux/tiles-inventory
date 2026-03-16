@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
+    const hasExplicitPagination = searchParams.has('page') || searchParams.has('limit')
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '25')
+    const limit = parseInt(searchParams.get('limit') || (hasExplicitPagination ? '25' : '1000'))
     const search = searchParams.get('search') || ''
     const isActive = searchParams.get('isActive')
     const dateFrom = searchParams.get('dateFrom') || searchParams.get('createdAtFrom')
@@ -25,8 +25,10 @@ export async function GET(request: NextRequest) {
       ]
     }
     
-    // Filter by status
-    if (isActive !== null && isActive !== undefined && isActive !== '') {
+    // Default list behavior: show active items unless status is explicitly requested
+    if (isActive === null || isActive === undefined || isActive === '') {
+      where.isActive = true
+    } else {
       where.isActive = isActive === 'true'
     }
 
@@ -91,7 +93,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const authUser = getAuthUser(request)
     const data = await request.json()
     
     const { name, description, contactInfo, isActive = true } = data
@@ -116,20 +117,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Resolve creator name
-    let createdByName: string | null = null
-    if (authUser?.userId) {
-      const user = await prisma.user.findUnique({ where: { id: authUser.userId }, select: { name: true, email: true } })
-      createdByName = user?.name || user?.email || null
-    }
-    
     const brand = await (prisma as any).brand.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
         contactInfo: contactInfo?.trim() || null,
         isActive: Boolean(isActive),
-        ...(createdByName ? { createdByName } : {}),
       },
       include: {
         _count: {

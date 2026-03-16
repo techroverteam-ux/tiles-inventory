@@ -21,8 +21,10 @@ export async function GET(request: NextRequest) {
       ]
     }
     
-    // Filter by status
-    if (isActive !== null && isActive !== undefined && isActive !== '') {
+    // Default list behavior: show active items unless status is explicitly requested
+    if (isActive === null || isActive === undefined || isActive === '') {
+      where.isActive = true
+    } else {
       where.isActive = isActive === 'true'
     }
 

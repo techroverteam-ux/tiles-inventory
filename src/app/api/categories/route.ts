@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
+    const hasExplicitPagination = searchParams.has('page') || searchParams.has('limit')
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '25')
+    const limit = parseInt(searchParams.get('limit') || (hasExplicitPagination ? '25' : '1000'))
     const search = searchParams.get('search') || ''
     const isActive = searchParams.get('isActive')
     const brandId = searchParams.get('brandId')
@@ -15,94 +15,60 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Build the initial $match stage – filter out records with null/missing brandId
-    const initialMatch: any = {
-      brandId: { $ne: null, $exists: true, $type: 'objectId' }
+    const where: any = {}
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { brand: { is: { name: { contains: search, mode: 'insensitive' } } } },
+      ]
     }
 
-    // Filter by specific brand
     if (brandId) {
-      initialMatch.brandId = { $oid: brandId }
+      where.brandId = brandId
     }
 
-    // Filter by active status
-    if (isActive !== null && isActive !== undefined && isActive !== '') {
-      initialMatch.isActive = isActive === 'true'
+    if (isActive === null || isActive === undefined || isActive === '') {
+      where.isActive = true
+    } else {
+      where.isActive = isActive === 'true'
     }
 
-    // Filter by date range (createdAt)
     if (dateFrom || dateTo) {
-      initialMatch.createdAt = {}
-      if (dateFrom) initialMatch.createdAt.$gte = { $date: new Date(dateFrom).toISOString() }
+      where.createdAt = {}
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom)
       if (dateTo) {
         const toDate = new Date(dateTo)
         toDate.setHours(23, 59, 59, 999)
-        initialMatch.createdAt.$lte = { $date: toDate.toISOString() }
+        where.createdAt.lte = toDate
       }
     }
 
-    // Build base pipeline stages (brand join + optional search)
-    const basePipeline: any[] = [
-      { $match: initialMatch },
-      { $lookup: { from: 'brands', localField: 'brandId', foreignField: '_id', as: 'brand' } },
-      { $unwind: { path: '$brand', preserveNullAndEmptyArrays: false } },
-    ]
+    const totalCount = await prisma.category.count({ where })
 
-    // Apply search filter AFTER brand lookup so we can also search by brand name
-    if (search) {
-      basePipeline.push({
-        $match: {
-          $or: [
-            { name: { $regex: search, $options: 'i' } },
-            { description: { $regex: search, $options: 'i' } },
-            { 'brand.name': { $regex: search, $options: 'i' } },
-          ]
+    const categories = await prisma.category.findMany({
+      where,
+      include: {
+        brand: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            products: true,
+          },
         }
-      })
-    }
-
-    // Count total matching records using the lightweight base pipeline (no product lookup needed)
-    const countPipeline = [...basePipeline, { $count: 'total' }]
-    const countResult = await (prisma as any).$runCommandRaw({
-      aggregate: 'categories',
-      pipeline: countPipeline,
-      cursor: {}
+      },
+      orderBy: [
+        { isActive: 'desc' },
+        { createdAt: 'desc' }
+      ],
+      skip,
+      take: limit,
     })
-    const totalCount = countResult?.cursor?.firstBatch?.[0]?.total || 0
-
-    // Fetch paginated results with product count
-    const dataPipeline = [
-      ...basePipeline,
-      { $sort: { isActive: -1, createdAt: -1 } },
-      { $skip: skip },
-      { $limit: limit },
-      // Count products linked to this category (only for the paginated set)
-      { $lookup: { from: 'products', localField: '_id', foreignField: 'categoryId', as: '_products' } },
-      { $addFields: { productCount: { $size: '$_products' } } },
-      { $project: { _products: 0 } },
-    ]
-    const rawCategories = await (prisma as any).$runCommandRaw({
-      aggregate: 'categories',
-      pipeline: dataPipeline,
-      cursor: {}
-    })
-
-    const categories = (rawCategories?.cursor?.firstBatch || []).map((c: any) => ({
-      ...c,
-      id: c._id?.$oid || c._id?.toString() || String(c._id),
-      brandId: c.brandId?.$oid || c.brandId?.toString() || String(c.brandId),
-      createdAt: c.createdAt?.$date || c.createdAt,
-      updatedAt: c.updatedAt?.$date || c.updatedAt,
-      brand: c.brand
-        ? {
-            ...c.brand,
-            id: c.brand._id?.$oid || c.brand._id?.toString() || String(c.brand._id),
-          }
-        : null,
-      createdBy: c.createdByName ? { name: c.createdByName, email: '' } : null,
-      updatedBy: c.updatedByName ? { name: c.updatedByName, email: '' } : null,
-      _count: { products: c.productCount || 0 },
-    }))
 
     const totalPages = Math.ceil(totalCount / limit)
 
@@ -126,7 +92,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const authUser = getAuthUser(request)
     const data = await request.json()
     
     const { name, description, brandId, isActive = true } = data
@@ -154,20 +119,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Resolve creator name
-    let createdByName: string | null = null
-    if (authUser?.userId) {
-      const user = await prisma.user.findUnique({ where: { id: authUser.userId }, select: { name: true, email: true } })
-      createdByName = user?.name || user?.email || null
-    }
-    
     const category = await (prisma as any).category.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
         brandId: brandId,
         isActive: Boolean(isActive),
-        ...(createdByName ? { createdByName } : {}),
       },
       include: {
         brand: {

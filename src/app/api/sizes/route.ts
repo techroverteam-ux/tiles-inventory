@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
+    const hasExplicitPagination = searchParams.has('page') || searchParams.has('limit')
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '25')
+    const limit = parseInt(searchParams.get('limit') || (hasExplicitPagination ? '25' : '1000'))
     const search = searchParams.get('search') || ''
     const brandId = searchParams.get('brandId')
     const categoryId = searchParams.get('categoryId')
@@ -38,8 +38,10 @@ export async function GET(request: NextRequest) {
       where.categoryId = categoryId
     }
     
-    // Filter by status
-    if (isActive !== null && isActive !== undefined && isActive !== '') {
+    // Default list behavior: show active items unless status is explicitly requested
+    if (isActive === null || isActive === undefined || isActive === '') {
+      where.isActive = true
+    } else {
       where.isActive = isActive === 'true'
     }
 
@@ -109,7 +111,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const authUser = getAuthUser(request)
     const data = await request.json()
     
     const { name, description, length, width, brandId, categoryId, isActive = true } = data
@@ -138,13 +139,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Resolve creator name
-    let createdByName: string | null = null
-    if (authUser?.userId) {
-      const user = await prisma.user.findUnique({ where: { id: authUser.userId }, select: { name: true, email: true } })
-      createdByName = user?.name || user?.email || null
-    }
-    
     const size = await (prisma as any).size.create({
       data: {
         name: name.trim(),
@@ -154,7 +148,6 @@ export async function POST(request: NextRequest) {
         brandId: brandId,
         categoryId: categoryId,
         isActive: Boolean(isActive),
-        ...(createdByName ? { createdByName } : {}),
       },
       include: {
         brand: {

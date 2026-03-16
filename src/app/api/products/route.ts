@@ -1,33 +1,136 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { put } from '@vercel/blob'
+
+async function uploadImageFile(image: File | null) {
+  if (!image || image.size === 0) {
+    return null
+  }
+
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error('BLOB_READ_WRITE_TOKEN is not configured')
+  }
+
+  const safeFileName = image.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+  const blob = await put(`products/${Date.now()}-${safeFileName}`, image, {
+    access: 'public',
+    token: process.env.BLOB_READ_WRITE_TOKEN,
+  })
+
+  return blob.url
+}
+
+async function ensureProductRelations({
+  brandId,
+  categoryId,
+  sizeId,
+  finishTypeId,
+}: {
+  brandId: string
+  categoryId: string
+  sizeId?: string | null
+  finishTypeId?: string | null
+}) {
+  const [brand, category, size, finishType] = await Promise.all([
+    prisma.brand.findUnique({ where: { id: brandId } }),
+    prisma.category.findUnique({ where: { id: categoryId } }),
+    sizeId ? prisma.size.findUnique({ where: { id: sizeId } }) : null,
+    finishTypeId ? prisma.finishType.findUnique({ where: { id: finishTypeId } }) : null,
+  ])
+
+  if (!brand) {
+    return { error: NextResponse.json({ error: 'Invalid brand', details: 'The selected brand does not exist' }, { status: 400 }) }
+  }
+
+  if (!category) {
+    return { error: NextResponse.json({ error: 'Invalid category', details: 'The selected category does not exist' }, { status: 400 }) }
+  }
+
+  if (sizeId && !size) {
+    return { error: NextResponse.json({ error: 'Invalid size', details: 'The selected size does not exist' }, { status: 400 }) }
+  }
+
+  if (finishTypeId && !finishType) {
+    return { error: NextResponse.json({ error: 'Invalid finish type', details: 'The selected finish type does not exist' }, { status: 400 }) }
+  }
+
+  return { brand, category, size, finishType }
+}
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const hasExplicitPagination = searchParams.has('page') || searchParams.has('limit')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || (hasExplicitPagination ? '25' : '1000'))
+    const search = searchParams.get('search') || ''
+    const brandId = searchParams.get('brandId') || undefined
+    const categoryId = searchParams.get('categoryId') || undefined
+    const sizeId = searchParams.get('sizeId') || undefined
+    const isActive = searchParams.get('isActive')
+
+    const where: any = {}
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } },
+        { brand: { is: { name: { contains: search, mode: 'insensitive' } } } },
+        { category: { is: { name: { contains: search, mode: 'insensitive' } } } },
+        { size: { is: { name: { contains: search, mode: 'insensitive' } } } },
+        { finishType: { is: { name: { contains: search, mode: 'insensitive' } } } },
+      ]
+    }
+
+    if (brandId) where.brandId = brandId
+    if (categoryId) where.categoryId = categoryId
+    if (sizeId) where.sizeId = sizeId
+    if (isActive === null || isActive === undefined || isActive === '') {
+      where.isActive = true
+    } else {
+      where.isActive = isActive === 'true'
+    }
+
+    const skip = (page - 1) * limit
+    const totalCount = await prisma.product.count({ where })
+
     const products = await prisma.product.findMany({
-      where: { isActive: true },
+      where,
       include: {
-        brand: true,
-        category: true,
-        size: true,
-        finishType: true,
-        batches: {
-          include: {
-            location: true
-          },
-          take: 1,
-          orderBy: {
-            updatedAt: 'desc'
-          }
-        }
+        brand: { select: { id: true, name: true } },
+        category: { select: { id: true, name: true } },
+        size: { select: { id: true, name: true } },
+        finishType: { select: { id: true, name: true } },
+        _count: { select: { batches: true } }
       },
       orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
     })
+
+    const totalPages = Math.ceil(totalCount / limit)
     
-    return NextResponse.json({ products })
+    return NextResponse.json({
+      products,
+      totalCount,
+      totalPages,
+      currentPage: page,
+      itemsPerPage: limit,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    })
   } catch (error: any) {
     console.error('Products fetch error:', error)
     if (error.code === 'P2032' || error.message?.includes('null')) {
-      return NextResponse.json({ products: [] })
+      return NextResponse.json({
+        products: [],
+        totalCount: 0,
+        totalPages: 0,
+        currentPage: 1,
+        itemsPerPage: 25,
+        hasNextPage: false,
+        hasPreviousPage: false,
+      })
     }
     return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 })
   }
@@ -35,181 +138,112 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const contentType = request.headers.get('content-type') || ''
+
+    if (contentType.includes('application/json')) {
+      const data = await request.json()
+      const name = data.name?.trim()
+      const code = data.code?.trim()
+      const brandId = data.brandId
+      const categoryId = data.categoryId
+      const sizeId = data.sizeId || null
+      const finishTypeId = data.finishTypeId || null
+      const imageUrl = data.imageUrl || null
+      const sqftPerBox = Number(data.sqftPerBox) || 1
+      const pcsPerBox = Number(data.pcsPerBox) || 1
+
+      if (!name || !code || !brandId || !categoryId || !finishTypeId) {
+        return NextResponse.json({
+          error: 'Missing required fields',
+          details: 'Name, code, brand, category, and finish type are required'
+        }, { status: 400 })
+      }
+
+      const relationCheck = await ensureProductRelations({ brandId, categoryId, sizeId, finishTypeId })
+      if ('error' in relationCheck) {
+        return relationCheck.error
+      }
+
+      const product = await prisma.product.create({
+        data: {
+          name,
+          code,
+          brandId,
+          categoryId,
+          sizeId,
+          finishTypeId,
+          sqftPerBox,
+          pcsPerBox,
+          imageUrl,
+        },
+        include: {
+          brand: { select: { id: true, name: true } },
+          category: { select: { id: true, name: true } },
+          size: { select: { id: true, name: true } },
+          finishType: { select: { id: true, name: true } },
+          _count: { select: { batches: true } }
+        }
+      })
+
+      return NextResponse.json({ product }, { status: 201 })
+    }
+
     const formData = await request.formData()
-    
-    // Extract and validate required fields
-    const name = formData.get('name') as string
-    const code = formData.get('code') as string
-    const sizeId = formData.get('sizeId') as string
+    const name = (formData.get('name') as string)?.trim()
+    const code = (formData.get('code') as string)?.trim()
+    const sizeId = (formData.get('sizeId') as string) || null
     const categoryId = formData.get('categoryId') as string
     const brandId = formData.get('brandId') as string
-    const finishTypeId = formData.get('finishTypeId') as string
-    const locationId = formData.get('locationId') as string
-    const batchName = formData.get('batchName') as string
-    const stock = formData.get('stock') as string
+    const finishTypeId = (formData.get('finishTypeId') as string) || null
+    const locationId = (formData.get('locationId') as string) || null
+    const batchName = (formData.get('batchName') as string) || null
+    const stock = (formData.get('stock') as string) || null
     const sqftPerBox = formData.get('sqftPerBox') as string
     const pcsPerBox = formData.get('pcsPerBox') as string
-    const image = formData.get('image') as File
-    
-    console.log('=== POST /api/products ===')
-    console.log('Image file received:', image ? `${image.name} (${image.size} bytes)` : 'No image')
-    console.log('Creating product with:', { 
-      name, code, sizeId, categoryId, brandId, finishTypeId, 
-      locationId, batchName, stock, sqftPerBox, pcsPerBox 
-    })
-    
-    // Validate required fields
+    const existingImageUrl = (formData.get('imageUrl') as string) || null
+    const image = formData.get('image') as File | null
+
     if (!name || !code || !brandId || !categoryId) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Missing required fields',
         details: 'Name, code, brand, and category are required'
       }, { status: 400 })
     }
 
-    if (!locationId || !batchName || !stock) {
-      return NextResponse.json({ 
-        error: 'Missing inventory fields',
-        details: 'Location, batch name, and stock quantity are required'
-      }, { status: 400 })
+    const relationCheck = await ensureProductRelations({ brandId, categoryId, sizeId, finishTypeId })
+    if ('error' in relationCheck) {
+      return relationCheck.error
     }
 
-    // Validate numeric fields
-    const stockNum = parseInt(stock)
-    const sqftNum = parseFloat(sqftPerBox || '1')
-    const pcsNum = parseInt(pcsPerBox || stock || '1')
-
-    if (isNaN(stockNum) || stockNum <= 0) {
-      return NextResponse.json({ 
-        error: 'Invalid stock quantity',
-        details: 'Stock must be a positive number'
-      }, { status: 400 })
-    }
-
-    // Verify foreign key references exist
-    const [brand, category, size] = await Promise.all([
-      prisma.brand.findUnique({ where: { id: brandId } }),
-      prisma.category.findUnique({ where: { id: categoryId } }),
-      sizeId ? prisma.size.findUnique({ where: { id: sizeId } }) : null
-    ])
-
-    if (!brand) {
-      return NextResponse.json({ 
-        error: 'Invalid brand',
-        details: 'The selected brand does not exist'
-      }, { status: 400 })
-    }
-
-    if (!category) {
-      return NextResponse.json({ 
-        error: 'Invalid category',
-        details: 'The selected category does not exist'
-      }, { status: 400 })
-    }
-
-    if (sizeId && !size) {
-      return NextResponse.json({ 
-        error: 'Invalid size',
-        details: 'The selected size does not exist'
-      }, { status: 400 })
-    }
-
-    // Verify location exists
-    const location = await prisma.location.findUnique({ where: { id: locationId } })
-    if (!location) {
-      return NextResponse.json({ 
-        error: 'Invalid location',
-        details: 'The selected location does not exist'
-      }, { status: 400 })
-    }
-    
-    // Handle image upload
-    let imageUrl = null
+    let imageUrl = existingImageUrl
     if (image && image.size > 0) {
-      try {
-        const bytes = await image.arrayBuffer()
-        const buffer = Buffer.from(bytes)
-        const fileName = `${Date.now()}-${image.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
-        const fs = require('fs')
-        const path = require('path')
-        const uploadPath = path.join(process.cwd(), 'public', 'uploads', fileName)
-        
-        const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true })
-        }
-        
-        fs.writeFileSync(uploadPath, buffer)
-        imageUrl = `/uploads/${fileName}`
-      } catch (uploadError: any) {
-        console.error('Image upload error:', uploadError)
-        return NextResponse.json({ 
-          error: 'Image upload failed',
-          details: uploadError.message
-        }, { status: 500 })
-      }
+      imageUrl = await uploadImageFile(image)
     }
 
-    // Get or validate finish type
-    let actualFinishTypeId = finishTypeId || sizeId
+    let actualFinishTypeId = finishTypeId
     if (!actualFinishTypeId) {
-      const finishType = await prisma.finishType.findFirst({
-        where: { isActive: true }
-      })
-      if (!finishType) {
-        return NextResponse.json({ 
+      const defaultFinishType = await prisma.finishType.findFirst({ where: { isActive: true } })
+      if (!defaultFinishType) {
+        return NextResponse.json({
           error: 'No finish type available',
-          details: 'Please create a finish type first or select a size'
+          details: 'Please create a finish type first'
         }, { status: 400 })
       }
-      actualFinishTypeId = finishType.id
-    } else {
-      // Verify finish type exists
-      const finishType = await prisma.finishType.findUnique({ 
-        where: { id: actualFinishTypeId } 
-      })
-      if (!finishType) {
-        return NextResponse.json({ 
-          error: 'Invalid finish type',
-          details: 'The selected finish type does not exist'
-        }, { status: 400 })
-      }
+      actualFinishTypeId = defaultFinishType.id
     }
 
-    // Create product
     const product = await prisma.product.create({
       data: {
         name,
         code,
         brandId,
         categoryId,
-        sizeId: sizeId || null,
+        sizeId,
         finishTypeId: actualFinishTypeId,
-        sqftPerBox: sqftNum,
-        pcsPerBox: pcsNum,
-        imageUrl
+        sqftPerBox: parseFloat(sqftPerBox || '1') || 1,
+        pcsPerBox: parseInt(pcsPerBox || '1') || 1,
+        imageUrl,
       },
-    })
-
-    console.log('Product created with imageUrl:', product.imageUrl)
-
-    // Create batch
-    const batch = await prisma.batch.create({
-      data: {
-        productId: product.id,
-        locationId,
-        batchNumber: batchName,
-        quantity: stockNum,
-        purchasePrice: 0,
-        sellingPrice: 0,
-      },
-    })
-
-    console.log('Batch created:', batch)
-    console.log('Product created successfully:', product.id)
-    
-    // Return product with batches included
-    const productWithBatches = await prisma.product.findUnique({
-      where: { id: product.id },
       include: {
         brand: true,
         category: true,
@@ -222,8 +256,37 @@ export async function POST(request: NextRequest) {
         }
       }
     })
-    
-    return NextResponse.json(productWithBatches, { status: 201 })
+
+    if (locationId && batchName && stock) {
+      const location = await prisma.location.findUnique({ where: { id: locationId } })
+      if (!location) {
+        return NextResponse.json({
+          error: 'Invalid location',
+          details: 'The selected location does not exist'
+        }, { status: 400 })
+      }
+
+      const stockNum = parseInt(stock)
+      if (isNaN(stockNum) || stockNum <= 0) {
+        return NextResponse.json({
+          error: 'Invalid stock quantity',
+          details: 'Stock must be a positive number'
+        }, { status: 400 })
+      }
+
+      await prisma.batch.create({
+        data: {
+          productId: product.id,
+          locationId,
+          batchNumber: batchName,
+          quantity: stockNum,
+          purchasePrice: 0,
+          sellingPrice: 0,
+        },
+      })
+    }
+
+    return NextResponse.json({ product }, { status: 201 })
     
   } catch (error: any) {
     console.error('Product creation error:', error)
