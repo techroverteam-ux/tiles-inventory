@@ -22,6 +22,13 @@ import {
 import PurchaseOrderForm from '@/components/PurchaseOrderForm'
 import { useToast } from '@/contexts/ToastContext'
 
+const formatDate = (dateString: string) => {
+  const d = new Date(dateString)
+  const day = d.getDate().toString().padStart(2, '0')
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`
+}
+
 interface PurchaseOrder {
   id: string
   orderNumber: string
@@ -34,6 +41,7 @@ interface PurchaseOrder {
   notes?: string
   items: any[]
   createdAt: string
+  updatedAt?: string
 }
 
 export default function PurchaseOrdersPage() {
@@ -366,6 +374,8 @@ export default function PurchaseOrdersPage() {
                     <TableHead className="text-foreground">Order Date</TableHead>
                     <TableHead className="text-foreground">Status</TableHead>
                     <TableHead className="text-foreground">Amount</TableHead>
+                    <TableHead className="text-foreground">Created</TableHead>
+                    <TableHead className="text-foreground">Updated</TableHead>
                     <TableHead className="text-right text-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -390,7 +400,7 @@ export default function PurchaseOrdersPage() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-foreground">
-                          {new Date(order.orderDate).toLocaleDateString()}
+                          {formatDate(order.orderDate)}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -414,6 +424,15 @@ export default function PurchaseOrdersPage() {
                         <div className="font-medium text-foreground">
                           ₹{order.totalAmount.toLocaleString()}
                         </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        {formatDate(order.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        {order.updatedAt && order.updatedAt !== order.createdAt
+                          ? formatDate(order.updatedAt)
+                          : <span className="text-xs">-</span>
+                        }
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -488,8 +507,8 @@ export default function PurchaseOrdersPage() {
             <div className="space-y-4">
               <div className="text-foreground"><strong>Order Number:</strong> {selectedOrder.orderNumber}</div>
               <div className="text-foreground"><strong>Brand:</strong> {selectedOrder.brand?.name}</div>
-              <div className="text-foreground"><strong>Order Date:</strong> {new Date(selectedOrder.orderDate).toLocaleDateString()}</div>
-              <div className="text-foreground"><strong>Expected Date:</strong> {selectedOrder.expectedDate ? new Date(selectedOrder.expectedDate).toLocaleDateString() : 'Not set'}</div>
+              <div className="text-foreground"><strong>Order Date:</strong> {formatDate(selectedOrder.orderDate)}</div>
+              <div className="text-foreground"><strong>Expected Date:</strong> {selectedOrder.expectedDate ? formatDate(selectedOrder.expectedDate) : 'Not set'}</div>
               <div className="text-foreground"><strong>Status:</strong> {selectedOrder.status}</div>
               <div className="text-foreground"><strong>Amount:</strong> ₹{selectedOrder.totalAmount.toLocaleString()}</div>
               <div className="text-foreground"><strong>Notes:</strong> {selectedOrder.notes || 'No notes'}</div>

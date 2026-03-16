@@ -28,6 +28,13 @@ import {
   BarChart3
 } from 'lucide-react'
 
+const formatDate = (dateString: string) => {
+  const d = new Date(dateString)
+  const day = d.getDate().toString().padStart(2, '0')
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`
+}
+
 interface InventoryItem {
   id: string
   product: {
@@ -45,6 +52,7 @@ interface InventoryItem {
   sellingPrice: number
   expiryDate?: string
   createdAt: string
+  updatedAt?: string
 }
 
 interface Filters {
@@ -652,6 +660,8 @@ export default function InventoryPage() {
                     <TableHead className="text-foreground">Purchase Price</TableHead>
                     <TableHead className="text-foreground">Selling Price</TableHead>
                     <TableHead className="text-foreground">Value</TableHead>
+                    <TableHead className="text-foreground">Created</TableHead>
+                    <TableHead className="text-foreground">Updated</TableHead>
                     <TableHead className="text-right text-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -688,6 +698,15 @@ export default function InventoryPage() {
                       <TableCell className="text-foreground">₹{item.sellingPrice.toLocaleString()}</TableCell>
                       <TableCell className="font-medium text-foreground">
                         ₹{(item.quantity * item.sellingPrice).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        {formatDate(item.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        {item.updatedAt && item.updatedAt !== item.createdAt
+                          ? formatDate(item.updatedAt)
+                          : <span className="text-xs">-</span>
+                        }
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">

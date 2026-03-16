@@ -77,11 +77,9 @@ export default function ReportsPage() {
     if (key.toLowerCase().includes('date')) {
       const date = new Date(value)
       if (!Number.isNaN(date.getTime())) {
-        return date.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        })
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][date.getMonth()]
+        return `${day}-${month}-${date.getFullYear()}`
       }
     }
     if (typeof value === 'number' && (key.toLowerCase().includes('price') || key.toLowerCase().includes('amount') || key.toLowerCase().includes('value'))) {

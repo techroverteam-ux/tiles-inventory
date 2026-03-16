@@ -86,13 +86,13 @@ export function TableFilters({
     switch (filter.type) {
       case 'select':
         return (
-          <div key={filter.key} className="min-w-40">
+          <div key={filter.key} className="w-full sm:w-auto sm:min-w-40">
             <Select
               value={value as string || ''}
               onValueChange={(newValue) => handleFilterChange(filter.key, newValue)}
               disabled={loading}
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9 w-full">
                 <SelectValue placeholder={filter.placeholder || `Select ${filter.label}`} />
               </SelectTrigger>
               <SelectContent>
@@ -109,7 +109,7 @@ export function TableFilters({
       case 'multiselect':
         const selectedValues = (value as string[]) || []
         return (
-          <div key={filter.key} className="min-w-40">
+          <div key={filter.key} className="w-full sm:w-auto sm:min-w-40">
             <Select
               value=""
               onValueChange={(newValue) => {
@@ -153,9 +153,9 @@ export function TableFilters({
         const fromKey = `${filter.key}From`
         const toKey = `${filter.key}To`
         return (
-          <div key={filter.key} className="flex items-center gap-2">
+          <div key={filter.key} className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
             <span className="text-sm text-muted-foreground whitespace-nowrap">{filter.label}:</span>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-1 w-full sm:w-auto">
               <Input
                 type="date"
                 value={(values[fromKey] as string) || ''}
@@ -164,11 +164,11 @@ export function TableFilters({
                   if (!e.target.value) delete newFilters[fromKey]
                   onFiltersChange(newFilters)
                 }}
-                className="h-9 w-36 text-sm"
+                className="h-9 w-full sm:w-36 text-sm"
                 placeholder="From"
                 disabled={loading}
               />
-              <span className="text-muted-foreground">–</span>
+              <span className="hidden xs:block text-muted-foreground">–</span>
               <Input
                 type="date"
                 value={(values[toKey] as string) || ''}
@@ -177,7 +177,7 @@ export function TableFilters({
                   if (!e.target.value) delete newFilters[toKey]
                   onFiltersChange(newFilters)
                 }}
-                className="h-9 w-36 text-sm"
+                className="h-9 w-full sm:w-36 text-sm"
                 placeholder="To"
                 disabled={loading}
               />
@@ -247,7 +247,7 @@ export function TableFilters({
 
       {/* Filter Controls */}
       {showFilters && (
-        <div className="flex flex-wrap items-center gap-2 p-4 bg-muted/30 rounded-lg border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-start lg:items-center gap-3 p-4 bg-muted/30 rounded-lg border">
           {filters.map(renderFilter)}
         </div>
       )}
