@@ -19,6 +19,7 @@ export interface ExportOptions {
   includeTimestamp?: boolean
   companyName?: string
   reportTitle?: string
+  headerColor?: string
 }
 
 // Company brand colors (adjust these to match your logo)
@@ -30,6 +31,30 @@ const BRAND_COLORS = {
   background: 'FFF8FAFC' // Light gray
 }
 
+const TEMPLATE_STYLE = {
+  fontName: 'Calibri',
+  bodyFontSize: 11,
+  titleFontSize: 16,
+  subtitleFontSize: 13,
+  headerFontSize: 11,
+  dateFontSize: 10,
+  outerBorderColor: 'FF1E293B',
+  innerBorderColor: 'FFD1D5DB',
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function formatDateDDMMMYYYY(value: any): string {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value)
+
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = MONTHS[date.getMonth()]
+  const year = date.getFullYear()
+  return `${day}-${month}-${year}`
+}
+
 export function exportToExcel({
   filename = 'export',
   sheetName = 'Sheet1',
@@ -37,7 +62,8 @@ export function exportToExcel({
   data,
   includeTimestamp = true,
   companyName = 'Tiles Inventory Management System',
-  reportTitle = 'Data Export Report'
+  reportTitle = 'Data Export Report',
+  headerColor,
 }: ExportOptions) {
   try {
     // Create workbook
@@ -64,7 +90,7 @@ export function exportToExcel({
     XLSX.utils.sheet_add_aoa(worksheet, [
       [companyName],
       [reportTitle],
-      [includeTimestamp ? `Generated on: ${new Date().toLocaleString()}` : ''],
+      [includeTimestamp ? `Generated report date: ${formatDateDDMMMYYYY(new Date())}` : ''],
       [] // Empty row before data
     ], { origin: 'A1' })
 
@@ -80,7 +106,12 @@ export function exportToExcel({
     // Company name styling (A1)
     if (worksheet['A1']) {
       worksheet['A1'].s = {
-        font: { bold: true, sz: 16, color: { rgb: BRAND_COLORS.primary.substring(2) } },
+        font: {
+          name: TEMPLATE_STYLE.fontName,
+          bold: true,
+          sz: TEMPLATE_STYLE.titleFontSize,
+          color: { rgb: BRAND_COLORS.primary.substring(2) }
+        },
         alignment: { horizontal: 'center', vertical: 'center' },
         fill: { fgColor: { rgb: BRAND_COLORS.background.substring(2) } }
       }
@@ -89,7 +120,12 @@ export function exportToExcel({
     // Report title styling (A2)
     if (worksheet['A2']) {
       worksheet['A2'].s = {
-        font: { bold: true, sz: 14, color: { rgb: BRAND_COLORS.secondary.substring(2) } },
+        font: {
+          name: TEMPLATE_STYLE.fontName,
+          bold: true,
+          sz: TEMPLATE_STYLE.subtitleFontSize,
+          color: { rgb: BRAND_COLORS.secondary.substring(2) }
+        },
         alignment: { horizontal: 'center', vertical: 'center' }
       }
     }
@@ -97,24 +133,36 @@ export function exportToExcel({
     // Date styling (A3)
     if (worksheet['A3']) {
       worksheet['A3'].s = {
-        font: { sz: 10, color: { rgb: BRAND_COLORS.text.substring(2) } },
+        font: {
+          name: TEMPLATE_STYLE.fontName,
+          sz: TEMPLATE_STYLE.dateFontSize,
+          italic: true,
+          color: { rgb: BRAND_COLORS.text.substring(2) }
+        },
         alignment: { horizontal: 'center', vertical: 'center' }
       }
     }
+
+    const normalizedHeaderColor = (headerColor || BRAND_COLORS.primary).replace('#', '').toUpperCase()
 
     // Style header row (row 4)
     for (let col = 0; col < columns.length; col++) {
       const cellAddress = XLSX.utils.encode_cell({ r: 3, c: col })
       if (worksheet[cellAddress]) {
         worksheet[cellAddress].s = {
-          font: { bold: true, color: { rgb: 'FFFFFF' } },
-          fill: { fgColor: { rgb: BRAND_COLORS.primary.substring(2) } },
+          font: {
+            name: TEMPLATE_STYLE.fontName,
+            bold: true,
+            sz: TEMPLATE_STYLE.headerFontSize,
+            color: { rgb: 'FFFFFF' }
+          },
+          fill: { fgColor: { rgb: normalizedHeaderColor.replace(/^FF/, '') } },
           alignment: { horizontal: 'center', vertical: 'center' },
           border: {
-            top: { style: 'thin', color: { rgb: BRAND_COLORS.secondary.substring(2) } },
-            bottom: { style: 'thin', color: { rgb: BRAND_COLORS.secondary.substring(2) } },
-            left: { style: 'thin', color: { rgb: BRAND_COLORS.secondary.substring(2) } },
-            right: { style: 'thin', color: { rgb: BRAND_COLORS.secondary.substring(2) } }
+            top: { style: 'medium', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } },
+            bottom: { style: 'thin', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } },
+            left: { style: 'thin', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } },
+            right: { style: 'thin', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } }
           }
         }
       }
@@ -127,15 +175,56 @@ export function exportToExcel({
         const cellAddress = XLSX.utils.encode_cell({ r: row, c: col })
         if (worksheet[cellAddress]) {
           worksheet[cellAddress].s = {
-            font: { color: { rgb: BRAND_COLORS.text.substring(2) } },
-            fill: { fgColor: { rgb: isEvenRow ? 'FFFFFF' : 'FFF8FAFC' } },
-            alignment: { horizontal: 'left', vertical: 'center' },
+            font: {
+              name: TEMPLATE_STYLE.fontName,
+              sz: TEMPLATE_STYLE.bodyFontSize,
+              color: { rgb: BRAND_COLORS.text.substring(2) }
+            },
+            fill: { fgColor: { rgb: isEvenRow ? 'FFFFFF' : 'FFF9FAFB' } },
+            alignment: {
+              horizontal: inferAlignment(columns[col].key, getNestedValue(data[row - 4], columns[col].key)),
+              vertical: 'center'
+            },
             border: {
-              top: { style: 'thin', color: { rgb: 'FFE5E7EB' } },
-              bottom: { style: 'thin', color: { rgb: 'FFE5E7EB' } },
-              left: { style: 'thin', color: { rgb: 'FFE5E7EB' } },
-              right: { style: 'thin', color: { rgb: 'FFE5E7EB' } }
+              top: { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
+              bottom: { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
+              left: { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
+              right: { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } }
             }
+          }
+        }
+      }
+    }
+
+    // Strengthen outer border around full table (header + data)
+    if (columns.length > 0 && range.e.r >= 3) {
+      for (let row = 3; row <= range.e.r; row++) {
+        for (let col = 0; col < columns.length; col++) {
+          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col })
+          if (!worksheet[cellAddress]) continue
+
+          const isTop = row === 3
+          const isBottom = row === range.e.r
+          const isLeft = col === 0
+          const isRight = col === columns.length - 1
+
+          const existing = worksheet[cellAddress].s || {}
+          worksheet[cellAddress].s = {
+            ...existing,
+            border: {
+              top: isTop
+                ? { style: 'medium', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } }
+                : existing.border?.top || { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
+              bottom: isBottom
+                ? { style: 'medium', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } }
+                : existing.border?.bottom || { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
+              left: isLeft
+                ? { style: 'medium', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } }
+                : existing.border?.left || { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
+              right: isRight
+                ? { style: 'medium', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } }
+                : existing.border?.right || { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
+            },
           }
         }
       }
@@ -195,6 +284,16 @@ function getNestedValue(obj: any, path: string): any {
   }, obj)
 }
 
+function inferAlignment(key: string, value: any): 'left' | 'center' | 'right' {
+  const normalizedKey = key.toLowerCase()
+  if (typeof value === 'number') return 'right'
+  if (normalizedKey.includes('date')) return 'center'
+  if (normalizedKey.includes('status')) return 'center'
+  if (normalizedKey.includes('qty') || normalizedKey.includes('quantity')) return 'right'
+  if (normalizedKey.includes('price') || normalizedKey.includes('amount') || normalizedKey.includes('value')) return 'right'
+  return 'left'
+}
+
 // Export button component
 interface ExportButtonProps {
   data: any[]
@@ -209,6 +308,7 @@ interface ExportButtonProps {
   variant?: 'default' | 'outline' | 'ghost'
   size?: 'sm' | 'default' | 'lg'
   className?: string
+  headerColor?: string
 }
 
 export function ExportButton({
@@ -223,7 +323,8 @@ export function ExportButton({
   loading = false,
   variant = 'outline',
   size = 'sm',
-  className = ''
+  className = '',
+  headerColor,
 }: ExportButtonProps) {
   const handleExport = async () => {
     if (onExportStart) {
@@ -236,7 +337,8 @@ export function ExportButton({
       columns,
       data,
       includeTimestamp: true,
-      reportTitle: reportTitle || `${filename.charAt(0).toUpperCase() + filename.slice(1)} Report`
+      reportTitle: reportTitle || `${filename.charAt(0).toUpperCase() + filename.slice(1)} Report`,
+      headerColor,
     })
 
     if (onExportComplete) {
@@ -267,8 +369,8 @@ export const commonColumns = {
     { key: 'isActive', label: 'Status', width: 12, format: (value: boolean) => value ? 'Active' : 'Inactive' },
     { key: '_count.categories', label: 'Categories', width: 12, format: (value: number) => value?.toString() || '0' },
     { key: '_count.products', label: 'Products', width: 12, format: (value: number) => value?.toString() || '0' },
-    { key: 'createdAt', label: 'Created Date', width: 15, format: (value: string) => new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) },
-    { key: 'updatedAt', label: 'Updated Date', width: 15, format: (value: string) => value ? new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '' }
+    { key: 'createdAt', label: 'Created Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) },
+    { key: 'updatedAt', label: 'Updated Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) }
   ] as ExportColumn[],
 
   category: [
@@ -277,8 +379,8 @@ export const commonColumns = {
     { key: 'description', label: 'Description', width: 30 },
     { key: 'isActive', label: 'Status', width: 12, format: (value: boolean) => value ? 'Active' : 'Inactive' },
     { key: '_count.products', label: 'Products', width: 12, format: (value: number) => value?.toString() || '0' },
-    { key: 'createdAt', label: 'Created Date', width: 15, format: (value: string) => new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) },
-    { key: 'updatedAt', label: 'Updated Date', width: 15, format: (value: string) => value ? new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '' }
+    { key: 'createdAt', label: 'Created Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) },
+    { key: 'updatedAt', label: 'Updated Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) }
   ] as ExportColumn[],
 
   size: [
@@ -290,7 +392,7 @@ export const commonColumns = {
     { key: 'description', label: 'Description', width: 25 },
     { key: 'isActive', label: 'Status', width: 12, format: (value: boolean) => value ? 'Active' : 'Inactive' },
     { key: '_count.products', label: 'Products', width: 12, format: (value: number) => value?.toString() || '0' },
-    { key: 'createdAt', label: 'Created Date', width: 15, format: (value: string) => new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) }
+    { key: 'createdAt', label: 'Created Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) }
   ] as ExportColumn[],
 
   location: [
@@ -298,7 +400,7 @@ export const commonColumns = {
     { key: 'address', label: 'Address', width: 35 },
     { key: 'isActive', label: 'Status', width: 12, format: (value: boolean) => value ? 'Active' : 'Inactive' },
     { key: '_count.batches', label: 'Inventory Batches', width: 18, format: (value: number) => value?.toString() || '0' },
-    { key: 'createdAt', label: 'Created Date', width: 15, format: (value: string) => new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) }
+    { key: 'createdAt', label: 'Created Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) }
   ] as ExportColumn[],
 
   product: [
@@ -311,6 +413,6 @@ export const commonColumns = {
     { key: 'sqftPerBox', label: 'Sq Ft/Box', width: 12, format: (value: number) => value?.toString() || '0' },
     { key: 'pcsPerBox', label: 'Pcs/Box', width: 12, format: (value: number) => value?.toString() || '0' },
     { key: 'isActive', label: 'Status', width: 10, format: (value: boolean) => value ? 'Active' : 'Inactive' },
-    { key: 'createdAt', label: 'Created Date', width: 15, format: (value: string) => new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) }
+    { key: 'createdAt', label: 'Created Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) }
   ] as ExportColumn[]
 }

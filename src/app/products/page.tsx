@@ -200,6 +200,23 @@ export default function ProductsPage() {
     fetchDropdownData()
   }, [fetchDropdownData])
 
+  useEffect(() => {
+    if (formData.brandId) {
+      fetchCategoriesByBrand(formData.brandId)
+    } else {
+      setFilteredCategories([])
+      setFilteredSizes([])
+    }
+  }, [formData.brandId])
+
+  useEffect(() => {
+    if (formData.brandId && formData.categoryId) {
+      fetchSizesByBrandAndCategory(formData.brandId, formData.categoryId)
+    } else {
+      setFilteredSizes([])
+    }
+  }, [formData.brandId, formData.categoryId])
+
   const fetchCategoriesByBrand = async (brandId: string) => {
     try {
       const response = await fetch(`/api/categories?brandId=${brandId}`)

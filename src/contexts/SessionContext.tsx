@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/contexts/ToastContext'
 
@@ -30,9 +30,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [idleTimer, setIdleTimer] = useState<NodeJS.Timeout | null>(null)
-  const [warningTimer, setWarningTimer] = useState<NodeJS.Timeout | null>(null)
   const [showIdleWarning, setShowIdleWarning] = useState(false)
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const warningTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const warningToastShownRef = useRef(false)
   
   const router = useRouter()
   
@@ -48,47 +49,50 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   // Clear all timers
   const clearTimers = useCallback(() => {
-    if (idleTimer) {
-      clearTimeout(idleTimer)
-      setIdleTimer(null)
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current)
+      idleTimerRef.current = null
     }
-    if (warningTimer) {
-      clearTimeout(warningTimer)
-      setWarningTimer(null)
+    if (warningTimerRef.current) {
+      clearTimeout(warningTimerRef.current)
+      warningTimerRef.current = null
     }
+    warningToastShownRef.current = false
     setShowIdleWarning(false)
-  }, [idleTimer, warningTimer])
+  }, [])
 
   // Reset idle timer
   const resetIdleTimer = useCallback(() => {
     clearTimers()
+    localStorage.setItem('lastActivity', Date.now().toString())
     
     if (isAuthenticated) {
       // Set warning timer (18 minutes)
-      const newWarningTimer = setTimeout(() => {
+      warningTimerRef.current = setTimeout(() => {
         setShowIdleWarning(true)
-        if (showToast) {
+        if (!warningToastShownRef.current && showToast) {
+          warningToastShownRef.current = true
           showToast('Your session will expire in 2 minutes due to inactivity', 'warning')
         }
       }, WARNING_TIMEOUT)
       
       // Set logout timer (20 minutes)
-      const newIdleTimer = setTimeout(async () => {
+      idleTimerRef.current = setTimeout(async () => {
         console.log('Session expired due to inactivity')
         await logout()
         if (showToast) {
           showToast('Session expired due to inactivity. Please login again.', 'error')
         }
       }, IDLE_TIMEOUT)
-      
-      setWarningTimer(newWarningTimer)
-      setIdleTimer(newIdleTimer)
     }
   }, [isAuthenticated, clearTimers, showToast])
 
   // Activity event handlers
   const handleActivity = useCallback(() => {
-    if (isAuthenticated && !showIdleWarning) {
+    if (isAuthenticated) {
+      if (showIdleWarning) {
+        setShowIdleWarning(false)
+      }
       resetIdleTimer()
     }
   }, [isAuthenticated, showIdleWarning, resetIdleTimer])
@@ -261,7 +265,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // Set up activity listeners
   useEffect(() => {
     if (isAuthenticated) {
-      const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click']
+      const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'wheel', 'touchstart', 'touchmove', 'click', 'focus']
       
       events.forEach(event => {
         document.addEventListener(event, handleActivity, true)
