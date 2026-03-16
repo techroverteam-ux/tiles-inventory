@@ -1,162 +1,122 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { put } from '@vercel/blob'
+
+async function uploadImageFile(image: File | null) {
+  if (!image || image.size === 0) {
+    return null
+  }
+
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error('BLOB_READ_WRITE_TOKEN is not configured')
+  }
+
+  const safeFileName = image.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+  const blob = await put(`products/${Date.now()}-${safeFileName}`, image, {
+    access: 'public',
+    token: process.env.BLOB_READ_WRITE_TOKEN,
+  })
+
+  return blob.url
+}
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
+    const contentType = request.headers.get('content-type') || ''
+
+    if (contentType.includes('application/json')) {
+      const data = await request.json()
+      const name = data.name?.trim()
+      const code = data.code?.trim()
+      const brandId = data.brandId
+      const categoryId = data.categoryId
+      const sizeId = data.sizeId || null
+      const finishTypeId = data.finishTypeId || null
+
+      if (!name || !code || !brandId || !categoryId || !finishTypeId) {
+        return NextResponse.json({
+          error: 'Missing required fields',
+          details: 'Name, code, brand, category, and finish type are required'
+        }, { status: 400 })
+      }
+
+      const updateData: any = {
+        name,
+        code,
+        brandId,
+        categoryId,
+        sizeId,
+        finishTypeId,
+        sqftPerBox: Number(data.sqftPerBox) || 1,
+        pcsPerBox: Number(data.pcsPerBox) || 1,
+      }
+
+      if (typeof data.imageUrl === 'string') {
+        updateData.imageUrl = data.imageUrl || null
+      }
+
+      const product = await prisma.product.update({
+        where: { id },
+        data: updateData,
+      })
+
+      return NextResponse.json({ product })
+    }
+
     const formData = await request.formData()
-    
-    console.log('Update product ID:', id)
-    console.log('FormData entries:', Array.from(formData.entries()))
-    
-    // Extract fields
-    const name = formData.get('name') as string
-    const code = formData.get('code') as string
+    const name = (formData.get('name') as string)?.trim()
+    const code = (formData.get('code') as string)?.trim()
     const brandId = formData.get('brandId') as string
     const categoryId = formData.get('categoryId') as string
-    const sizeId = formData.get('sizeId') as string
-    const finishTypeId = formData.get('finishTypeId') as string
+    const sizeId = (formData.get('sizeId') as string) || null
+    const finishTypeId = (formData.get('finishTypeId') as string) || null
     const stock = formData.get('stock') as string
+    const pcsPerBox = formData.get('pcsPerBox') as string
     const sqftPerBox = formData.get('sqftPerBox') as string
-    const image = formData.get('image') as File
-    
-    console.log('Image file received:', image ? `${image.name} (${image.size} bytes)` : 'No image')
-    
-    // Validate required fields
-    if (!name || !code || !brandId || !categoryId || !stock) {
-      return NextResponse.json({ 
+    const image = formData.get('image') as File | null
+
+    if (!name || !code || !brandId || !categoryId) {
+      return NextResponse.json({
         error: 'Missing required fields',
-        details: 'Name, code, brand, category, and stock are required'
+        details: 'Name, code, brand, and category are required'
       }, { status: 400 })
     }
 
-    // Validate numeric fields
-    const stockNum = parseInt(stock)
-    const sqftNum = parseFloat(sqftPerBox || '1')
+    let imageUrl = await uploadImageFile(image)
 
-    if (isNaN(stockNum) || stockNum <= 0) {
-      return NextResponse.json({ 
-        error: 'Invalid stock quantity',
-        details: 'Stock must be a positive number'
-      }, { status: 400 })
-    }
-
-    // Verify foreign keys exist
-    const [brand, category, size] = await Promise.all([
-      prisma.brand.findUnique({ where: { id: brandId } }),
-      prisma.category.findUnique({ where: { id: categoryId } }),
-      sizeId ? prisma.size.findUnique({ where: { id: sizeId } }) : null
-    ])
-
-    if (!brand) {
-      return NextResponse.json({ 
-        error: 'Invalid brand',
-        details: 'The selected brand does not exist'
-      }, { status: 400 })
-    }
-
-    if (!category) {
-      return NextResponse.json({ 
-        error: 'Invalid category',
-        details: 'The selected category does not exist'
-      }, { status: 400 })
-    }
-
-    if (sizeId && !size) {
-      return NextResponse.json({ 
-        error: 'Invalid size',
-        details: 'The selected size does not exist'
-      }, { status: 400 })
-    }
-
-    // Handle image upload
-    let imageUrl = null
-    if (image && image.size > 0) {
-      try {
-        const bytes = await image.arrayBuffer()
-        const buffer = Buffer.from(bytes)
-        const fileName = `${Date.now()}-${image.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
-        const fs = require('fs')
-        const path = require('path')
-        const uploadPath = path.join(process.cwd(), 'public', 'uploads', fileName)
-        
-        const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true })
-        }
-        
-        fs.writeFileSync(uploadPath, buffer)
-        imageUrl = `/uploads/${fileName}`
-        console.log('Image uploaded:', imageUrl)
-      } catch (uploadError: any) {
-        console.error('Image upload error:', uploadError)
-        return NextResponse.json({ 
-          error: 'Image upload failed',
-          details: uploadError.message
-        }, { status: 500 })
-      }
-    }
-
-    // Handle finishTypeId - use provided finishTypeId or sizeId, or keep existing
-    let actualFinishTypeId = finishTypeId || sizeId
-    
-    if (actualFinishTypeId) {
-      // Verify the finishTypeId exists
-      const finishType = await prisma.finishType.findUnique({ 
-        where: { id: actualFinishTypeId } 
-      })
-      
-      if (!finishType) {
-        // If the ID doesn't exist as a finish type, get a default one
-        const defaultFinishType = await prisma.finishType.findFirst({
-          where: { isActive: true }
-        })
-        
-        if (!defaultFinishType) {
-          return NextResponse.json({ 
-            error: 'No finish type available',
-            details: 'Please create a finish type first'
-          }, { status: 400 })
-        }
-        
-        actualFinishTypeId = defaultFinishType.id
-      }
-    } else {
-      // No finishTypeId provided, keep the existing one (don't update it)
-      const existingProduct = await prisma.product.findUnique({ 
+    let actualFinishTypeId = finishTypeId
+    if (!actualFinishTypeId) {
+      const existingProduct = await prisma.product.findUnique({
         where: { id },
         select: { finishTypeId: true }
       })
-      
+
       if (!existingProduct) {
-        return NextResponse.json({ 
+        return NextResponse.json({
           error: 'Product not found',
           details: 'The product you are trying to update does not exist'
         }, { status: 404 })
       }
-      
+
       actualFinishTypeId = existingProduct.finishTypeId
     }
 
-    // Build update data
     const updateData: any = {
       name,
       code,
       brandId,
       categoryId,
-      sizeId: sizeId || null,
+      sizeId,
       finishTypeId: actualFinishTypeId,
-      sqftPerBox: sqftNum,
-      pcsPerBox: stockNum,
+      sqftPerBox: parseFloat(sqftPerBox || '1') || 1,
+      pcsPerBox: parseInt(pcsPerBox || stock || '1') || 1,
     }
-    
-    // Only update imageUrl if a new image was uploaded
+
     if (imageUrl) {
       updateData.imageUrl = imageUrl
     }
-    
-    console.log('Update data:', updateData)
-    
+
     const product = await prisma.product.update({
       where: { id },
       data: updateData,

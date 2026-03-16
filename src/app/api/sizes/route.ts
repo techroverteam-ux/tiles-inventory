@@ -4,12 +4,15 @@ import { prisma } from '@/lib/prisma'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
+    const hasExplicitPagination = searchParams.has('page') || searchParams.has('limit')
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '25')
+    const limit = parseInt(searchParams.get('limit') || (hasExplicitPagination ? '25' : '1000'))
     const search = searchParams.get('search') || ''
     const brandId = searchParams.get('brandId')
     const categoryId = searchParams.get('categoryId')
     const isActive = searchParams.get('isActive')
+    const dateFrom = searchParams.get('dateFrom') || searchParams.get('createdAtFrom')
+    const dateTo = searchParams.get('dateTo') || searchParams.get('createdAtTo')
 
     const skip = (page - 1) * limit
 
@@ -35,9 +38,22 @@ export async function GET(request: NextRequest) {
       where.categoryId = categoryId
     }
     
-    // Filter by status
-    if (isActive !== null && isActive !== undefined && isActive !== '') {
+    // Default list behavior: show active items unless status is explicitly requested
+    if (isActive === null || isActive === undefined || isActive === '') {
+      where.isActive = true
+    } else {
       where.isActive = isActive === 'true'
+    }
+
+    // Filter by date range
+    if (dateFrom || dateTo) {
+      where.createdAt = {}
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom)
+      if (dateTo) {
+        const toDate = new Date(dateTo)
+        toDate.setHours(23, 59, 59, 999)
+        where.createdAt.lte = toDate
+      }
     }
 
     const totalCount = await prisma.size.count({ where })
@@ -56,8 +72,15 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(totalCount / limit)
 
+    // Attach createdBy/updatedBy from stored name fields
+    const sizesWithMeta = (sizes as any[]).map(s => ({
+      ...s,
+      createdBy: s.createdByName ? { name: s.createdByName, email: '' } : null,
+      updatedBy: s.updatedByName ? { name: s.updatedByName, email: '' } : null,
+    }))
+
     return NextResponse.json({
-      sizes,
+      sizes: sizesWithMeta,
       totalCount,
       totalPages,
       currentPage: page,
@@ -74,7 +97,7 @@ export async function GET(request: NextRequest) {
         totalCount: 0,
         totalPages: 0,
         currentPage: 1,
-        itemsPerPage: limit,
+        itemsPerPage: 25,
         hasNextPage: false,
         hasPreviousPage: false
       })
@@ -115,8 +138,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
-    const size = await prisma.size.create({
+
+    const size = await (prisma as any).size.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
@@ -124,7 +147,7 @@ export async function POST(request: NextRequest) {
         width: width ? parseFloat(width) : null,
         brandId: brandId,
         categoryId: categoryId,
-        isActive: Boolean(isActive)
+        isActive: Boolean(isActive),
       },
       include: {
         brand: {

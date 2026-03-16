@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { Menu, Search, Plus } from 'lucide-react'
+import { Menu, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Sidebar from './sidebar'
 import MobileNav from './mobile-nav'
 import MobileQuickActions from './mobile-quick-actions'
+import { QuickAddPanel } from '@/components/ui/quick-add-panel'
 import NotificationDropdown from '@/components/NotificationDropdown'
 import UserDropdown from '@/components/UserDropdown'
 import { NotificationProvider } from '@/contexts/NotificationContext'
@@ -110,10 +111,7 @@ export default function Layout({ children }: LayoutProps) {
                 <Search className="h-5 w-5 text-muted-foreground" />
               </Button>
               
-              <Button variant="outline" size="sm" className="hidden sm:flex text-xs px-3 py-2 border-border text-foreground hover:bg-accent">
-                <Plus className="h-4 w-4 mr-1" />
-                <span className="hidden md:inline">Quick Add</span>
-              </Button>
+              <QuickAddPanel />
               <ThemeToggle />
               <NotificationDropdown />
               <UserDropdown />

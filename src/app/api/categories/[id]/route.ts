@@ -86,14 +86,14 @@ export async function PUT(
       )
     }
 
-    const category = await prisma.category.update({
+    const category = await (prisma as any).category.update({
       where: { id },
       data: {
         name: name.trim(),
         description: description?.trim() || null,
         brandId: brandId,
         isActive: Boolean(isActive),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       include: {
         brand: {
@@ -128,14 +128,7 @@ export async function DELETE(
     const { id } = await params
     // Check if category exists
     const existingCategory = await prisma.category.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            products: true,
-          },
-        }
-      }
+      where: { id }
     })
 
     if (!existingCategory) {
@@ -145,16 +138,35 @@ export async function DELETE(
       )
     }
 
-    // Check if category has associated products
-    if (existingCategory._count.products > 0) {
+    // Only active linked data should block deletion.
+    const [activeProductsCount, activeSizesCount] = await prisma.$transaction([
+      prisma.product.count({
+        where: {
+          categoryId: id,
+          isActive: true,
+        },
+      }),
+      prisma.size.count({
+        where: {
+          categoryId: id,
+          isActive: true,
+        },
+      }),
+    ])
+
+    if (activeProductsCount > 0 || activeSizesCount > 0) {
       return NextResponse.json(
-        { error: 'Cannot delete category with associated products. Please remove them first.' },
+        { error: 'Cannot delete category with associated active products or sizes. Please remove them first.' },
         { status: 400 }
       )
     }
 
-    await prisma.category.delete({
-      where: { id }
+    await prisma.category.update({
+      where: { id },
+      data: {
+        isActive: false,
+        updatedAt: new Date(),
+      },
     })
 
     return NextResponse.json({ message: 'Category deleted successfully' })

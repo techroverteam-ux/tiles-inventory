@@ -13,7 +13,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning') => {
     const options = {
       duration: 4000,
-      position: 'top-right' as const,
+      position: 'bottom-center' as const,
       style: {
         borderRadius: '12px',
         background: 'hsl(var(--card))',
@@ -64,7 +64,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       <Toaster
-        position="top-right"
+        position="bottom-center"
         toastOptions={{
           duration: 4000,
           style: {

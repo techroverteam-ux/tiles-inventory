@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import { 
   Plus, 
   Search, 
@@ -47,6 +48,7 @@ export default function PurchaseOrdersPage() {
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showLocationDialog, setShowLocationDialog] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null)
+  const [deleteOrder, setDeleteOrder] = useState<PurchaseOrder | null>(null)
   const [selectedLocation, setSelectedLocation] = useState('')
   const [changingStatus, setChangingStatus] = useState<string | null>(null)
   
@@ -159,18 +161,23 @@ export default function PurchaseOrdersPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this purchase order?')) {
-      try {
-        const response = await fetch(`/api/purchase-orders/${id}`, { method: 'DELETE' })
-        if (response.ok) {
-          showToast('Purchase order deleted successfully', 'success')
-          fetchOrders()
-        }
-      } catch (error) {
-        console.error('Error deleting purchase order:', error)
-        showToast('Error deleting purchase order', 'error')
+  const handleDelete = (order: PurchaseOrder) => {
+    setDeleteOrder(order)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteOrder) return
+
+    try {
+      const response = await fetch(`/api/purchase-orders/${deleteOrder.id}`, { method: 'DELETE' })
+      if (response.ok) {
+        showToast('Purchase order deleted successfully', 'success')
+        setDeleteOrder(null)
+        fetchOrders()
       }
+    } catch (error) {
+      console.error('Error deleting purchase order:', error)
+      showToast('Error deleting purchase order', 'error')
     }
   }
 
@@ -416,7 +423,7 @@ export default function PurchaseOrdersPage() {
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(order)}>
                             <Edit className="h-4 w-4 text-muted-foreground" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(order.id)}>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(order)}>
                             <Trash2 className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         </div>
@@ -508,6 +515,18 @@ export default function PurchaseOrdersPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmationDialog
+        open={!!deleteOrder}
+        onOpenChange={(open) => {
+          if (!open) setDeleteOrder(null)
+        }}
+        title="Delete Purchase Order"
+        description={deleteOrder ? `Are you sure you want to delete purchase order ${deleteOrder.orderNumber}? This action cannot be undone.` : ''}
+        onConfirm={handleDeleteConfirm}
+        confirmText="Delete"
+        variant="destructive"
+      />
     </div>
   )
 }

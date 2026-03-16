@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { ConfirmationDialog, useDeleteConfirmation } from '@/components/ui/confirmation-dialog'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import { Pagination, usePagination } from '@/components/ui/pagination'
 import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/table-filters'
 import { ExportButton, commonColumns } from '@/lib/excel-export'
@@ -88,8 +88,6 @@ export default function ProductsPage() {
   
   const { showToast } = useToast()
   const router = useRouter()
-  const deleteConfirmation = useDeleteConfirmation()
-  
   // Pagination
   const {
     currentPage,
@@ -296,16 +294,21 @@ export default function ProductsPage() {
     setShowForm(true)
   }
 
-  const handleDelete = async (product: Product) => {
-    if (!confirm(`Are you sure you want to delete "${product.name}"?`)) return
+  const handleDelete = (product: Product) => {
+    setDeleteProduct(product)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteProduct) return
 
     try {
-      const response = await fetch(`/api/products/${product.id}`, {
+      const response = await fetch(`/api/products/${deleteProduct.id}`, {
         method: 'DELETE'
       })
 
       if (response.ok) {
         showToast('Product deleted successfully!', 'success')
+        setDeleteProduct(null)
         fetchProducts()
       } else {
         const errorData = await response.json()
@@ -619,6 +622,18 @@ export default function ProductsPage() {
           headers: ['Product', 'Brand & Category', 'Size', 'Finish', 'Box Info', 'Status', 'Actions'],
           renderRow: renderListRow
         }}
+      />
+
+      <ConfirmationDialog
+        open={!!deleteProduct}
+        onOpenChange={(open) => {
+          if (!open) setDeleteProduct(null)
+        }}
+        title="Delete Product"
+        description={deleteProduct ? `Are you sure you want to delete "${deleteProduct.name}"? This action cannot be undone.` : ''}
+        onConfirm={handleDeleteConfirm}
+        confirmText="Delete"
+        variant="destructive"
       />
     </div>
   )

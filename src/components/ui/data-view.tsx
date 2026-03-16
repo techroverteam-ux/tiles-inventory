@@ -96,8 +96,8 @@ export function ListView({
 
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
-      <div className={`mobile-table-scroll overflow-auto overscroll-contain ${tableMaxHeightClass}`}>
-        <table className={`w-full ${tableMinWidthClass}`}>
+      <div className={`mobile-table-scroll overflow-auto overscroll-auto scroll-smooth ${tableMaxHeightClass}`}>
+        <table className={`desktop-table-nowrap w-full ${tableMinWidthClass}`}>
           <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/75">
             <tr>
               {headers.map((header, index) => (

@@ -93,7 +93,7 @@ export async function PUT(
       )
     }
 
-    const size = await prisma.size.update({
+    const size = await (prisma as any).size.update({
       where: { id },
       data: {
         name: name.trim(),
@@ -103,7 +103,7 @@ export async function PUT(
         brandId: brandId,
         categoryId: categoryId,
         isActive: Boolean(isActive),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       include: {
         brand: {
@@ -144,14 +144,7 @@ export async function DELETE(
     const { id } = await params
     // Check if size exists
     const existingSize = await prisma.size.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            products: true,
-          },
-        }
-      }
+      where: { id }
     })
 
     if (!existingSize) {
@@ -161,16 +154,27 @@ export async function DELETE(
       )
     }
 
-    // Check if size has associated products
-    if (existingSize._count.products > 0) {
+    // Only active products should block deleting a size.
+    const activeProductsCount = await prisma.product.count({
+      where: {
+        sizeId: id,
+        isActive: true,
+      },
+    })
+
+    if (activeProductsCount > 0) {
       return NextResponse.json(
         { error: 'Cannot delete size with associated products. Please remove them first.' },
         { status: 400 }
       )
     }
 
-    await prisma.size.delete({
-      where: { id }
+    await prisma.size.update({
+      where: { id },
+      data: {
+        isActive: false,
+        updatedAt: new Date(),
+      },
     })
 
     return NextResponse.json({ message: 'Size deleted successfully' })

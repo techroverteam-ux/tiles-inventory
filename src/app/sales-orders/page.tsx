@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import { 
   Plus, 
   Search, 
@@ -42,6 +43,7 @@ export default function SalesOrdersPage() {
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null)
+  const [deleteOrder, setDeleteOrder] = useState<SalesOrder | null>(null)
   
   const [filters, setFilters] = useState({
     search: '',
@@ -81,18 +83,23 @@ export default function SalesOrdersPage() {
     fetchBrands()
   }, [])
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this sales order?')) {
-      try {
-        const response = await fetch(`/api/sales-orders/${id}`, { method: 'DELETE' })
-        if (response.ok) {
-          showToast('Sales order deleted successfully', 'success')
-          fetchOrders()
-        }
-      } catch (error) {
-        console.error('Error deleting sales order:', error)
-        showToast('Error deleting sales order', 'error')
+  const handleDelete = (order: SalesOrder) => {
+    setDeleteOrder(order)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteOrder) return
+
+    try {
+      const response = await fetch(`/api/sales-orders/${deleteOrder.id}`, { method: 'DELETE' })
+      if (response.ok) {
+        showToast('Sales order deleted successfully', 'success')
+        setDeleteOrder(null)
+        fetchOrders()
       }
+    } catch (error) {
+      console.error('Error deleting sales order:', error)
+      showToast('Error deleting sales order', 'error')
     }
   }
 
@@ -303,7 +310,7 @@ export default function SalesOrdersPage() {
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(order)}>
                             <Edit className="h-4 w-4 text-muted-foreground" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(order.id)}>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(order)}>
                             <Trash2 className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         </div>
@@ -352,6 +359,18 @@ export default function SalesOrdersPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmationDialog
+        open={!!deleteOrder}
+        onOpenChange={(open) => {
+          if (!open) setDeleteOrder(null)
+        }}
+        title="Delete Sales Order"
+        description={deleteOrder ? `Are you sure you want to delete sales order ${deleteOrder.orderNumber}? This action cannot be undone.` : ''}
+        onConfirm={handleDeleteConfirm}
+        confirmText="Delete"
+        variant="destructive"
+      />
     </div>
   )
 }

@@ -114,14 +114,7 @@ export async function DELETE(
     const { id } = await params
     // Check if location exists
     const existingLocation = await prisma.location.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            batches: true,
-          },
-        }
-      }
+      where: { id }
     })
 
     if (!existingLocation) {
@@ -131,16 +124,27 @@ export async function DELETE(
       )
     }
 
-    // Check if location has associated batches
-    if (existingLocation._count.batches > 0) {
+    // Only active inventory batches should block deletion.
+    const activeBatchesCount = await prisma.batch.count({
+      where: {
+        locationId: id,
+        isActive: true,
+      },
+    })
+
+    if (activeBatchesCount > 0) {
       return NextResponse.json(
         { error: 'Cannot delete location with associated inventory batches. Please remove them first.' },
         { status: 400 }
       )
     }
 
-    await prisma.location.delete({
-      where: { id }
+    await prisma.location.update({
+      where: { id },
+      data: {
+        isActive: false,
+        updatedAt: new Date(),
+      },
     })
 
     return NextResponse.json({ message: 'Location deleted successfully' })

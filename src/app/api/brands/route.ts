@@ -4,10 +4,13 @@ import { prisma } from '@/lib/prisma'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
+    const hasExplicitPagination = searchParams.has('page') || searchParams.has('limit')
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '25')
+    const limit = parseInt(searchParams.get('limit') || (hasExplicitPagination ? '25' : '1000'))
     const search = searchParams.get('search') || ''
     const isActive = searchParams.get('isActive')
+    const dateFrom = searchParams.get('dateFrom') || searchParams.get('createdAtFrom')
+    const dateTo = searchParams.get('dateTo') || searchParams.get('createdAtTo')
 
     const skip = (page - 1) * limit
 
@@ -22,9 +25,22 @@ export async function GET(request: NextRequest) {
       ]
     }
     
-    // Filter by status
-    if (isActive !== null && isActive !== undefined && isActive !== '') {
+    // Default list behavior: show active items unless status is explicitly requested
+    if (isActive === null || isActive === undefined || isActive === '') {
+      where.isActive = true
+    } else {
       where.isActive = isActive === 'true'
+    }
+
+    // Filter by date range
+    if (dateFrom || dateTo) {
+      where.createdAt = {}
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom)
+      if (dateTo) {
+        const toDate = new Date(dateTo)
+        toDate.setHours(23, 59, 59, 999)
+        where.createdAt.lte = toDate
+      }
     }
 
     // Get total count for pagination
@@ -50,8 +66,15 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(totalCount / limit)
 
+    // Attach createdBy/updatedBy from stored name fields
+    const brandsWithMeta = (brands as any[]).map(b => ({
+      ...b,
+      createdBy: b.createdByName ? { name: b.createdByName, email: '' } : null,
+      updatedBy: b.updatedByName ? { name: b.updatedByName, email: '' } : null,
+    }))
+
     return NextResponse.json({
-      brands,
+      brands: brandsWithMeta,
       totalCount,
       totalPages,
       currentPage: page,
@@ -93,13 +116,13 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
-    const brand = await prisma.brand.create({
+
+    const brand = await (prisma as any).brand.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
         contactInfo: contactInfo?.trim() || null,
-        isActive: Boolean(isActive)
+        isActive: Boolean(isActive),
       },
       include: {
         _count: {

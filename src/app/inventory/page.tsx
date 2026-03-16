@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import { MobileCard, MobileCardHeader, MobileCardField, MobileStatsCard } from '@/components/ui/mobile-card'
+import { useToast } from '@/contexts/ToastContext'
 import { 
   Plus, 
   Search, 
@@ -58,6 +60,7 @@ interface Filters {
 }
 
 export default function InventoryPage() {
+  const { showToast } = useToast()
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [locations, setLocations] = useState<any[]>([])
   const [brands, setBrands] = useState<any[]>([])
@@ -67,6 +70,7 @@ export default function InventoryPage() {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
+  const [deleteItem, setDeleteItem] = useState<InventoryItem | null>(null)
   const [editFormData, setEditFormData] = useState({
     batchNumber: '',
     quantity: '',
@@ -212,23 +216,28 @@ export default function InventoryPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this batch? This will also remove all related purchase and sales records.')) {
-      try {
-        const response = await fetch(`/api/inventory/${id}`, { method: 'DELETE' })
-        const data = await response.json()
-        
-        if (response.ok) {
-          alert('Batch deleted successfully')
-          fetchInventory()
-        } else {
-          alert(`Failed to delete batch: ${data.error || 'Unknown error'}`)
-          console.error('Delete error:', data)
-        }
-      } catch (error) {
-        console.error('Error deleting batch:', error)
-        alert('Error deleting batch. Please try again.')
+  const handleDelete = (item: InventoryItem) => {
+    setDeleteItem(item)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteItem) return
+
+    try {
+      const response = await fetch(`/api/inventory/${deleteItem.id}`, { method: 'DELETE' })
+      const data = await response.json()
+
+      if (response.ok) {
+        showToast('Batch deleted successfully', 'success')
+        setDeleteItem(null)
+        fetchInventory()
+      } else {
+        showToast(`Failed to delete batch: ${data.error || 'Unknown error'}`, 'error')
+        console.error('Delete error:', data)
       }
+    } catch (error) {
+      console.error('Error deleting batch:', error)
+      showToast('Error deleting batch. Please try again.', 'error')
     }
   }
 
@@ -555,7 +564,7 @@ export default function InventoryPage() {
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)}>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(item)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </>
@@ -685,7 +694,7 @@ export default function InventoryPage() {
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
                             <Edit className="h-4 w-4 text-muted-foreground" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)}>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(item)}>
                             <Trash2 className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         </div>
@@ -790,6 +799,18 @@ export default function InventoryPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmationDialog
+        open={!!deleteItem}
+        onOpenChange={(open) => {
+          if (!open) setDeleteItem(null)
+        }}
+        title="Delete Batch"
+        description={deleteItem ? `Are you sure you want to delete batch ${deleteItem.batchNumber}? This will also remove related purchase and sales records.` : ''}
+        onConfirm={handleDeleteConfirm}
+        confirmText="Delete"
+        variant="destructive"
+      />
     </div>
   )
 }

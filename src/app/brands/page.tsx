@@ -100,6 +100,11 @@ export default function BrandsPage() {
         { value: 'false', label: 'Inactive' }
       ],
       placeholder: 'All Status'
+    },
+    {
+      key: 'createdAt',
+      label: 'Created Date',
+      type: 'dateRange',
     }
   ], [])
 
@@ -111,7 +116,10 @@ export default function BrandsPage() {
         page: currentPage.toString(),
         limit: itemsPerPage.toString(),
         search: search || '',
-        ...filters
+      })
+      // Append all filters except empty values
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value && value !== '') params.append(key, value as string)
       })
 
       const response = await fetch(`/api/brands?${params}`)

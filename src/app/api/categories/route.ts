@@ -4,59 +4,71 @@ import { prisma } from '@/lib/prisma'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
+    const hasExplicitPagination = searchParams.has('page') || searchParams.has('limit')
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '25')
+    const limit = parseInt(searchParams.get('limit') || (hasExplicitPagination ? '25' : '1000'))
     const search = searchParams.get('search') || ''
     const isActive = searchParams.get('isActive')
     const brandId = searchParams.get('brandId')
+    const dateFrom = searchParams.get('dateFrom') || searchParams.get('createdAtFrom')
+    const dateTo = searchParams.get('dateTo') || searchParams.get('createdAtTo')
 
     const skip = (page - 1) * limit
 
     const where: any = {}
-    
-    // Search across multiple fields
+
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
-        { brand: { name: { contains: search, mode: 'insensitive' } } }
+        { brand: { is: { name: { contains: search, mode: 'insensitive' } } } },
       ]
     }
-    
-    // Filter by brand
+
     if (brandId) {
       where.brandId = brandId
     }
-    
-    // Filter by status
-    if (isActive !== null && isActive !== undefined && isActive !== '') {
+
+    if (isActive === null || isActive === undefined || isActive === '') {
+      where.isActive = true
+    } else {
       where.isActive = isActive === 'true'
     }
 
-    // Get total count for pagination
+    if (dateFrom || dateTo) {
+      where.createdAt = {}
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom)
+      if (dateTo) {
+        const toDate = new Date(dateTo)
+        toDate.setHours(23, 59, 59, 999)
+        where.createdAt.lte = toDate
+      }
+    }
+
     const totalCount = await prisma.category.count({ where })
 
-    // Use aggregation to skip documents with null brandId
-    const rawCategories = await (prisma as any).$runCommandRaw({
-      aggregate: 'categories',
-      pipeline: [
-        { $match: { brandId: { $ne: null, $exists: true, $type: 'objectId' } } },
-        { $lookup: { from: 'brands', localField: 'brandId', foreignField: '_id', as: 'brand' } },
-        { $unwind: { path: '$brand', preserveNullAndEmptyArrays: false } },
-        { $sort: { isActive: -1, createdAt: -1 } },
-        { $skip: skip },
-        { $limit: limit }
+    const categories = await prisma.category.findMany({
+      where,
+      include: {
+        brand: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            products: true,
+          },
+        }
+      },
+      orderBy: [
+        { isActive: 'desc' },
+        { createdAt: 'desc' }
       ],
-      cursor: {}
+      skip,
+      take: limit,
     })
-
-    const categories = (rawCategories?.cursor?.firstBatch || []).map((c: any) => ({
-      ...c,
-      id: c._id?.$oid || c._id?.toString() || String(c._id),
-      brandId: c.brandId?.$oid || c.brandId?.toString() || String(c.brandId),
-      brand: c.brand ? { ...c.brand, id: c.brand._id?.$oid || c.brand._id?.toString() || String(c.brand._id) } : null,
-      _count: { products: 0 }
-    }))
 
     const totalPages = Math.ceil(totalCount / limit)
 
@@ -106,13 +118,13 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
-    const category = await prisma.category.create({
+
+    const category = await (prisma as any).category.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
         brandId: brandId,
-        isActive: Boolean(isActive)
+        isActive: Boolean(isActive),
       },
       include: {
         brand: {

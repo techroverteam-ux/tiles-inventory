@@ -80,14 +80,14 @@ export async function PUT(
       )
     }
 
-    const brand = await prisma.brand.update({
+    const brand = await (prisma as any).brand.update({
       where: { id },
       data: {
         name: name.trim(),
         description: description?.trim() || null,
         contactInfo: contactInfo?.trim() || null,
         isActive: Boolean(isActive),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       include: {
         _count: {
@@ -117,15 +117,7 @@ export async function DELETE(
     const { id } = await params
     // Check if brand exists
     const existingBrand = await prisma.brand.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            categories: true,
-            products: true,
-          },
-        }
-      }
+      where: { id }
     })
 
     if (!existingBrand) {
@@ -135,16 +127,41 @@ export async function DELETE(
       )
     }
 
-    // Check if brand has associated categories or products
-    if (existingBrand._count.categories > 0 || existingBrand._count.products > 0) {
+    // Only active linked records should block deleting a brand.
+    const [activeCategoriesCount, activeSizesCount, activeProductsCount] = await prisma.$transaction([
+      prisma.category.count({
+        where: {
+          brandId: id,
+          isActive: true,
+        },
+      }),
+      prisma.size.count({
+        where: {
+          brandId: id,
+          isActive: true,
+        },
+      }),
+      prisma.product.count({
+        where: {
+          brandId: id,
+          isActive: true,
+        },
+      }),
+    ])
+
+    if (activeCategoriesCount > 0 || activeSizesCount > 0 || activeProductsCount > 0) {
       return NextResponse.json(
-        { error: 'Cannot delete brand with associated categories or products. Please remove them first.' },
+        { error: 'Cannot delete brand with associated active categories, sizes, or products. Please remove them first.' },
         { status: 400 }
       )
     }
 
-    await prisma.brand.delete({
-      where: { id }
+    await prisma.brand.update({
+      where: { id },
+      data: {
+        isActive: false,
+        updatedAt: new Date(),
+      },
     })
 
     return NextResponse.json({ message: 'Brand deleted successfully' })
