@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getAuthUser } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
@@ -86,14 +87,23 @@ export async function PUT(
       )
     }
 
-    const category = await prisma.category.update({
+    const category = await (prisma as any).category.update({
       where: { id },
       data: {
         name: name.trim(),
         description: description?.trim() || null,
         brandId: brandId,
         isActive: Boolean(isActive),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        ...(await (async () => {
+          const authUser = getAuthUser(request)
+          if (authUser?.userId) {
+            const user = await prisma.user.findUnique({ where: { id: authUser.userId }, select: { name: true, email: true } })
+            const updatedByName = user?.name || user?.email || null
+            return updatedByName ? { updatedByName } : {}
+          }
+          return {}
+        })()),
       },
       include: {
         brand: {

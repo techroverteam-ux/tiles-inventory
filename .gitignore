@@ -111,3 +111,4 @@ prisma/migrations/
 # Uploaded assets generated at runtime
 public/uploads/*
 !public/uploads/.gitkeep
+tsconfig.tsbuildinfo

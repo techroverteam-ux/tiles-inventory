@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getAuthUser } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,6 +9,8 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '25')
     const search = searchParams.get('search') || ''
     const isActive = searchParams.get('isActive')
+    const dateFrom = searchParams.get('dateFrom') || searchParams.get('createdAtFrom')
+    const dateTo = searchParams.get('dateTo') || searchParams.get('createdAtTo')
 
     const skip = (page - 1) * limit
 
@@ -25,6 +28,17 @@ export async function GET(request: NextRequest) {
     // Filter by status
     if (isActive !== null && isActive !== undefined && isActive !== '') {
       where.isActive = isActive === 'true'
+    }
+
+    // Filter by date range
+    if (dateFrom || dateTo) {
+      where.createdAt = {}
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom)
+      if (dateTo) {
+        const toDate = new Date(dateTo)
+        toDate.setHours(23, 59, 59, 999)
+        where.createdAt.lte = toDate
+      }
     }
 
     // Get total count for pagination
@@ -50,8 +64,15 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(totalCount / limit)
 
+    // Attach createdBy/updatedBy from stored name fields
+    const brandsWithMeta = (brands as any[]).map(b => ({
+      ...b,
+      createdBy: b.createdByName ? { name: b.createdByName, email: '' } : null,
+      updatedBy: b.updatedByName ? { name: b.updatedByName, email: '' } : null,
+    }))
+
     return NextResponse.json({
-      brands,
+      brands: brandsWithMeta,
       totalCount,
       totalPages,
       currentPage: page,
@@ -70,6 +91,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const authUser = getAuthUser(request)
     const data = await request.json()
     
     const { name, description, contactInfo, isActive = true } = data
@@ -93,13 +115,21 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Resolve creator name
+    let createdByName: string | null = null
+    if (authUser?.userId) {
+      const user = await prisma.user.findUnique({ where: { id: authUser.userId }, select: { name: true, email: true } })
+      createdByName = user?.name || user?.email || null
+    }
     
-    const brand = await prisma.brand.create({
+    const brand = await (prisma as any).brand.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
         contactInfo: contactInfo?.trim() || null,
-        isActive: Boolean(isActive)
+        isActive: Boolean(isActive),
+        ...(createdByName ? { createdByName } : {}),
       },
       include: {
         _count: {
