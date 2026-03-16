@@ -30,9 +30,10 @@ interface Product {
   imageUrl?: string
   isActive: boolean
   createdAt: string
+  updatedAt: string
   brand: { name: string }
   category: { name: string }
-  size: { name: string }
+  size?: { name: string }
   finishType: { name: string }
   _count?: {
     batches: number
@@ -295,7 +296,7 @@ export default function ProductsPage() {
     setFilteredSizes([])
   }
 
-  const handleEdit = (product: Product) => {
+  const handleEdit = async (product: Product) => {
     setEditingProduct(product)
     setFormData({
       name: product.name,
@@ -308,6 +309,25 @@ export default function ProductsPage() {
       pcsPerBox: product.pcsPerBox.toString(),
       imageUrl: product.imageUrl || ''
     })
+    // Pre-fetch filtered categories and sizes so dropdowns show the correct values
+    if (product.brandId) {
+      try {
+        const catResponse = await fetch(`/api/categories?brandId=${product.brandId}`)
+        const catData = await catResponse.json()
+        setFilteredCategories(catData.categories?.filter((c: any) => c.isActive) || [])
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+      }
+    }
+    if (product.brandId && product.categoryId) {
+      try {
+        const sizeResponse = await fetch(`/api/sizes?brandId=${product.brandId}&categoryId=${product.categoryId}`)
+        const sizeData = await sizeResponse.json()
+        setFilteredSizes(sizeData.sizes || [])
+      } catch (error) {
+        console.error('Error fetching sizes:', error)
+      }
+    }
     setShowForm(true)
   }
 
@@ -340,6 +360,13 @@ export default function ProductsPage() {
     setFormData({ ...formData, imageUrl: url })
   }
 
+  const formatDate = (dateString: string) => {
+    const d = new Date(dateString)
+    const day = d.getDate().toString().padStart(2, '0')
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`
+  }
+
   const renderGridItem = (product: Product) => (
     <Card className="h-full hover:shadow-lg transition-shadow">
       <CardHeader className="pb-3">
@@ -367,28 +394,36 @@ export default function ProductsPage() {
             />
           </div>
         )}
-        <div className="space-y-2 text-sm text-muted-foreground mb-4">
+        <div className="space-y-2 text-sm text-muted-foreground mb-3">
           <div>Brand: {product.brand.name}</div>
           <div>Category: {product.category.name}</div>
-          <div>Size: {product.size.name}</div>
+          <div>Size: {product.size?.name || '-'}</div>
           <div>Finish: {product.finishType.name}</div>
           <div>Box: {product.pcsPerBox} pcs / {product.sqftPerBox} sqft</div>
+        </div>
+        <div className="text-xs text-muted-foreground mb-4 space-y-1">
+          <div>Created: {formatDate(product.createdAt)}</div>
+          {product.updatedAt && product.updatedAt !== product.createdAt && (
+            <div>Updated: {formatDate(product.updatedAt)}</div>
+          )}
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => handleEdit(product)}
-            className="flex-1"
+            className="flex-1 gap-1"
           >
+            <Edit className="h-3 w-3" />
             Edit
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => handleDelete(product)}
-            className="flex-1 text-destructive hover:text-destructive"
+            className="flex-1 text-destructive hover:text-destructive gap-1"
           >
+            <Trash2 className="h-3 w-3" />
             Delete
           </Button>
         </div>
@@ -420,7 +455,7 @@ export default function ProductsPage() {
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
-        {product.size.name}
+        {product.size?.name || '-'}
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
         {product.finishType.name}
@@ -434,21 +469,33 @@ export default function ProductsPage() {
           {product.isActive ? 'Active' : 'Inactive'}
         </Badge>
       </td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">
+        {formatDate(product.createdAt)}
+      </td>
+      <td className="px-4 py-3 text-sm text-muted-foreground">
+        {product.updatedAt && product.updatedAt !== product.createdAt
+          ? formatDate(product.updatedAt)
+          : <span className="text-xs">-</span>
+        }
+      </td>
       <td className="px-4 py-3">
         <div className="flex gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => handleEdit(product)}
+            className="gap-1"
           >
+            <Edit className="h-3 w-3" />
             Edit
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => handleDelete(product)}
-            className="text-destructive hover:text-destructive"
+            className="text-destructive hover:text-destructive gap-1"
           >
+            <Trash2 className="h-3 w-3" />
             Delete
           </Button>
         </div>
@@ -456,34 +503,56 @@ export default function ProductsPage() {
     </>
   )
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading products...</p>
-        </div>
-      </div>
-    )
+  if (loading && products.length === 0) {
+    return <LoadingPage view={view} title="Products" />
   }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Filters */}
+      <TableFilters
+        filters={filterConfigs}
+        values={filters}
+        onFiltersChange={updateFilters}
+        searchValue={search}
+        onSearchChange={updateSearch}
+        searchPlaceholder="Search products..."
+        loading={loading}
+      />
+
       <DataView
         items={products}
         view={view}
         onViewChange={setView}
+        loading={loading}
+        autoResponsive={true}
         title="Products"
         actions={
-          <Dialog open={showForm} onOpenChange={setShowForm}>
-            <DialogTrigger asChild>
-              <Button onClick={() => {
-                setEditingProduct(null)
-                resetForm()
-              }}>
-                Add Product
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <ExportButton
+              data={products}
+              columns={commonColumns.product}
+              filename="products-export"
+              reportTitle="Products Report"
+              onExportComplete={(result) => {
+                if (result.success) {
+                  showToast(`Exported ${products.length} products successfully!`, 'success')
+                } else {
+                  showToast(result.error || 'Export failed', 'error')
+                }
+              }}
+              disabled={products.length === 0}
+            />
+            <Dialog open={showForm} onOpenChange={setShowForm}>
+              <DialogTrigger asChild>
+                <Button onClick={() => {
+                  setEditingProduct(null)
+                  resetForm()
+                }} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Product
+                </Button>
+              </DialogTrigger>
             <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-card-foreground">
@@ -491,7 +560,7 @@ export default function ProductsPage() {
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-foreground">Name *</label>
                     <Input
@@ -514,7 +583,7 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-foreground">Brand *</label>
                     <select
@@ -550,7 +619,7 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-foreground">Size</label>
                     <select
@@ -585,7 +654,7 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-foreground">Sq Ft per Box</label>
                     <Input
@@ -629,16 +698,28 @@ export default function ProductsPage() {
                 </div>
               </form>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         }
-        gridProps={{
-          renderItem: renderGridItem,
-          columns: 3
-        }}
-        listProps={{
-          headers: ['Product', 'Brand & Category', 'Size', 'Finish', 'Box Info', 'Status', 'Actions'],
-          renderRow: renderListRow
-        }}
+          gridProps={{
+            renderItem: renderGridItem,
+            columns: 3
+          }}
+          listProps={{
+            headers: ['Product', 'Brand & Category', 'Size', 'Finish', 'Box Info', 'Status', 'Created', 'Updated', 'Actions'],
+            renderRow: renderListRow
+          }}
+        />
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalCount}
+        itemsPerPage={itemsPerPage}
+        onPageChange={handlePageChange}
+        onItemsPerPageChange={handleItemsPerPageChange}
+        loading={loading}
       />
 
       <ConfirmationDialog

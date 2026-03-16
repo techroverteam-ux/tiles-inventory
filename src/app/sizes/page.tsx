@@ -284,7 +284,7 @@ export default function SizesPage() {
     setFilteredCategories([])
   }
 
-  const handleEdit = (size: Size) => {
+  const handleEdit = async (size: Size) => {
     setEditingSize(size)
     setFormData({
       name: size.name,
@@ -295,6 +295,16 @@ export default function SizesPage() {
       categoryId: size.categoryId,
       isActive: size.isActive
     })
+    // Pre-fetch filtered categories so the dropdown shows the correct value
+    if (size.brandId) {
+      try {
+        const response = await fetch(`/api/categories?brandId=${size.brandId}`)
+        const data = await response.json()
+        setFilteredCategories(data.categories?.filter((c: any) => c.isActive) || [])
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+      }
+    }
     setShowForm(true)
   }
 
@@ -320,12 +330,10 @@ export default function SizesPage() {
   }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    })
+    const d = new Date(dateString)
+    const day = d.getDate().toString().padStart(2, '0')
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`
   }
 
   const renderGridItem = useCallback((size: Size) => (

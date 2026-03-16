@@ -254,12 +254,10 @@ export default function CategoriesPage() {
   }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    })
+    const d = new Date(dateString)
+    const day = d.getDate().toString().padStart(2, '0')
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`
   }
 
   const renderGridItem = useCallback((category: Category) => (
