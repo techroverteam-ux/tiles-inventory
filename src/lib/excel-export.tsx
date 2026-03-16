@@ -1,6 +1,6 @@
 'use client'
 
-import * as XLSX from 'xlsx'
+import * as XLSX from 'xlsx-js-style'
 import { Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -22,24 +22,29 @@ export interface ExportOptions {
   headerColor?: string
 }
 
-// Company brand colors (adjust these to match your logo)
+// ─── Theme ────────────────────────────────────────────────────────────────────
+// Matches the website logo: dark navy headings, clean white title rows
 const BRAND_COLORS = {
-  primary: 'FF2563EB', // Blue
-  secondary: 'FF1E40AF', // Darker blue
-  accent: 'FF3B82F6', // Light blue
-  text: 'FF1F2937', // Dark gray
-  background: 'FFF8FAFC' // Light gray
+  navyBg:     '1E3A8A', // Dark navy blue  — column heading background
+  navyText:   '1E3A8A', // Dark navy blue  — title row text
+  white:      'FFFFFF', // White           — col-heading text / row fills
+  bodyText:   '1F2937', // Dark gray       — data row text
 }
 
 const TEMPLATE_STYLE = {
-  fontName: 'Calibri',
-  bodyFontSize: 11,
-  titleFontSize: 16,
-  subtitleFontSize: 13,
-  headerFontSize: 11,
-  dateFontSize: 10,
-  outerBorderColor: 'FF1E293B',
-  innerBorderColor: 'FFD1D5DB',
+  fontName:        'Calibri',
+  titleFontSize:   14,
+  subtitleFontSize:12,
+  dateFontSize:    10,
+  headerFontSize:  11,
+  bodyFontSize:    11,
+  borderColor:     '1E3A8A', // thin navy border used everywhere
+}
+
+// Single thin border on all four sides
+function allBorder(color = TEMPLATE_STYLE.borderColor) {
+  const side = { style: 'thin' as const, color: { rgb: color } }
+  return { top: side, bottom: side, left: side, right: side }
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -74,7 +79,8 @@ export function exportToExcel({
       const row: any = {}
       columns.forEach(column => {
         const value = getNestedValue(item, column.key)
-        row[column.label] = column.format ? column.format(value) : value
+        const formattedValue = column.format ? column.format(value) : value
+        row[column.label] = normalizeExportValue(formattedValue)
       })
       return row
     })
@@ -86,157 +92,89 @@ export function exportToExcel({
       skipHeader: false
     })
 
-    // Add company header
+    // Add company header rows (rows 1-3)
     XLSX.utils.sheet_add_aoa(worksheet, [
       [companyName],
       [reportTitle],
-      [includeTimestamp ? `Generated report date: ${formatDateDDMMMYYYY(new Date())}` : ''],
-      [] // Empty row before data
+      [includeTimestamp ? `Generated on: ${formatDateDDMMMYYYY(new Date())}` : ''],
     ], { origin: 'A1' })
 
-    // Set column widths
-    const columnWidths = columns.map(column => ({
-      wch: column.width || Math.max(column.label.length + 2, 15)
-    }))
-    worksheet['!cols'] = columnWidths
-
-    // Style the header rows
+    // ── Compute range after adding all data ──────────────────────────────────
     const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1')
-    
-    // Company name styling (A1)
-    if (worksheet['A1']) {
-      worksheet['A1'].s = {
-        font: {
-          name: TEMPLATE_STYLE.fontName,
-          bold: true,
-          sz: TEMPLATE_STYLE.titleFontSize,
-          color: { rgb: BRAND_COLORS.primary.substring(2) }
-        },
-        alignment: { horizontal: 'center', vertical: 'center' },
-        fill: { fgColor: { rgb: BRAND_COLORS.background.substring(2) } }
+
+    // ── Row heights ──────────────────────────────────────────────────────────
+    worksheet['!rows'] = [
+      { hpt: 22 }, // Row 1 – company name
+      { hpt: 18 }, // Row 2 – report title
+      { hpt: 16 }, // Row 3 – generated date
+      { hpt: 18 }, // Row 4 – column headings
+    ]
+
+    // ── Row 4: Column headings — navy bg, white bold text, navy border ────────
+    const colBg = (headerColor || BRAND_COLORS.navyBg).replace(/^#/, '').replace(/^FF/i, '').toUpperCase()
+    for (let col = 0; col <= range.e.c; col++) {
+      const addr = XLSX.utils.encode_cell({ r: 3, c: col })
+      if (worksheet[addr]) {
+        worksheet[addr].s = {
+          font: { name: TEMPLATE_STYLE.fontName, bold: true, sz: TEMPLATE_STYLE.headerFontSize, color: { rgb: BRAND_COLORS.white } },
+          fill: { fgColor: { rgb: colBg } },
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+          border: allBorder()
+        }
       }
     }
 
-    // Report title styling (A2)
-    if (worksheet['A2']) {
-      worksheet['A2'].s = {
-        font: {
-          name: TEMPLATE_STYLE.fontName,
-          bold: true,
-          sz: TEMPLATE_STYLE.subtitleFontSize,
-          color: { rgb: BRAND_COLORS.secondary.substring(2) }
-        },
-        alignment: { horizontal: 'center', vertical: 'center' }
-      }
-    }
-
-    // Date styling (A3)
-    if (worksheet['A3']) {
-      worksheet['A3'].s = {
-        font: {
-          name: TEMPLATE_STYLE.fontName,
-          sz: TEMPLATE_STYLE.dateFontSize,
-          italic: true,
-          color: { rgb: BRAND_COLORS.text.substring(2) }
-        },
-        alignment: { horizontal: 'center', vertical: 'center' }
-      }
-    }
-
-    const normalizedHeaderColor = (headerColor || BRAND_COLORS.primary).replace('#', '').toUpperCase()
-
-    // Style header row (row 4)
-    for (let col = 0; col < columns.length; col++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: 3, c: col })
-      if (worksheet[cellAddress]) {
-        worksheet[cellAddress].s = {
-          font: {
-            name: TEMPLATE_STYLE.fontName,
-            bold: true,
-            sz: TEMPLATE_STYLE.headerFontSize,
-            color: { rgb: 'FFFFFF' }
-          },
-          fill: { fgColor: { rgb: normalizedHeaderColor.replace(/^FF/, '') } },
-          alignment: { horizontal: 'center', vertical: 'center' },
-          border: {
-            top: { style: 'medium', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } },
-            bottom: { style: 'thin', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } },
-            left: { style: 'thin', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } },
-            right: { style: 'thin', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } }
+    // ── Data rows — white bg, dark text, centered, navy border ───────────────
+    for (let row = 4; row <= range.e.r; row++) {
+      for (let col = 0; col <= range.e.c; col++) {
+        const addr = XLSX.utils.encode_cell({ r: row, c: col })
+        if (worksheet[addr]) {
+          worksheet[addr].s = {
+            font: { name: TEMPLATE_STYLE.fontName, sz: TEMPLATE_STYLE.bodyFontSize, color: { rgb: BRAND_COLORS.bodyText } },
+            fill: { fgColor: { rgb: BRAND_COLORS.white } },
+            alignment: { horizontal: 'center', vertical: 'center' },
+            border: allBorder()
           }
         }
       }
     }
 
-    // Style data rows with alternating colors and borders
-    for (let row = 4; row < range.e.r + 1; row++) {
-      const isEvenRow = (row - 4) % 2 === 0
-      for (let col = 0; col < columns.length; col++) {
-        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col })
-        if (worksheet[cellAddress]) {
-          worksheet[cellAddress].s = {
-            font: {
-              name: TEMPLATE_STYLE.fontName,
-              sz: TEMPLATE_STYLE.bodyFontSize,
-              color: { rgb: BRAND_COLORS.text.substring(2) }
-            },
-            fill: { fgColor: { rgb: isEvenRow ? 'FFFFFF' : 'FFF9FAFB' } },
-            alignment: {
-              horizontal: inferAlignment(columns[col].key, getNestedValue(data[row - 4], columns[col].key)),
-              vertical: 'center'
-            },
-            border: {
-              top: { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
-              bottom: { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
-              left: { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
-              right: { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } }
-            }
-          }
-        }
-      }
-    }
-
-    // Strengthen outer border around full table (header + data)
-    if (columns.length > 0 && range.e.r >= 3) {
-      for (let row = 3; row <= range.e.r; row++) {
-        for (let col = 0; col < columns.length; col++) {
-          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col })
-          if (!worksheet[cellAddress]) continue
-
-          const isTop = row === 3
-          const isBottom = row === range.e.r
-          const isLeft = col === 0
-          const isRight = col === columns.length - 1
-
-          const existing = worksheet[cellAddress].s || {}
-          worksheet[cellAddress].s = {
-            ...existing,
-            border: {
-              top: isTop
-                ? { style: 'medium', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } }
-                : existing.border?.top || { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
-              bottom: isBottom
-                ? { style: 'medium', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } }
-                : existing.border?.bottom || { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
-              left: isLeft
-                ? { style: 'medium', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } }
-                : existing.border?.left || { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
-              right: isRight
-                ? { style: 'medium', color: { rgb: TEMPLATE_STYLE.outerBorderColor.replace(/^FF/, '') } }
-                : existing.border?.right || { style: 'thin', color: { rgb: TEMPLATE_STYLE.innerBorderColor.replace(/^FF/, '') } },
-            },
-          }
-        }
-      }
-    }
-
-    // Merge cells for company name and title
+    // Merge cells for title rows and apply border to every cell in each merge
+    const lastCol = columns.length - 1
     if (columns.length > 1) {
       worksheet['!merges'] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: columns.length - 1 } }, // Company name
-        { s: { r: 1, c: 0 }, e: { r: 1, c: columns.length - 1 } }, // Report title
-        { s: { r: 2, c: 0 }, e: { r: 2, c: columns.length - 1 } }  // Date
+        { s: { r: 0, c: 0 }, e: { r: 0, c: lastCol } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: lastCol } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: lastCol } },
       ]
+    }
+
+    // Style every cell across merged title rows so Excel renders full-width borders cleanly
+    const titleRowStyles = [
+      { font: { name: TEMPLATE_STYLE.fontName, bold: true, sz: TEMPLATE_STYLE.titleFontSize, color: { rgb: BRAND_COLORS.navyText } }, fill: { fgColor: { rgb: BRAND_COLORS.white } }, alignment: { horizontal: 'center', vertical: 'center' } },
+      { font: { name: TEMPLATE_STYLE.fontName, bold: true, sz: TEMPLATE_STYLE.subtitleFontSize, color: { rgb: BRAND_COLORS.navyText } }, fill: { fgColor: { rgb: BRAND_COLORS.white } }, alignment: { horizontal: 'center', vertical: 'center' } },
+      { font: { name: TEMPLATE_STYLE.fontName, italic: true, sz: TEMPLATE_STYLE.dateFontSize, color: { rgb: BRAND_COLORS.bodyText } }, fill: { fgColor: { rgb: BRAND_COLORS.white } }, alignment: { horizontal: 'center', vertical: 'center' } },
+    ]
+    for (let titleRow = 0; titleRow < 3; titleRow++) {
+      for (let col = 0; col <= lastCol; col++) {
+        const addr = XLSX.utils.encode_cell({ r: titleRow, c: col })
+        if (!worksheet[addr]) {
+          worksheet[addr] = { t: 's', v: '' }
+        }
+
+        const isFirst = col === 0
+        const isLast = col === lastCol
+
+        worksheet[addr].s = {
+          ...titleRowStyles[titleRow],
+          border: {
+            top: { style: 'thin', color: { rgb: TEMPLATE_STYLE.borderColor } },
+            bottom: { style: 'thin', color: { rgb: TEMPLATE_STYLE.borderColor } },
+            left: isFirst ? { style: 'thin', color: { rgb: TEMPLATE_STYLE.borderColor } } : undefined,
+            right: isLast ? { style: 'thin', color: { rgb: TEMPLATE_STYLE.borderColor } } : undefined,
+          },
+        }
+      }
     }
 
     // Set print settings
@@ -250,8 +188,8 @@ export function exportToExcel({
       // Check data lengths
       data.forEach(item => {
         const value = getNestedValue(item, column.key)
-        const formattedValue = column.format ? column.format(value) : String(value || '')
-        maxLength = Math.max(maxLength, formattedValue.length)
+        const formattedValue = normalizeExportValue(column.format ? column.format(value) : value)
+        maxLength = Math.max(maxLength, String(formattedValue).length)
       })
       
       return { wch: Math.min(Math.max(maxLength + 2, 10), 50) }
@@ -282,6 +220,15 @@ function getNestedValue(obj: any, path: string): any {
   return path.split('.').reduce((current, key) => {
     return current && current[key] !== undefined ? current[key] : ''
   }, obj)
+}
+
+function normalizeExportValue(value: any): string | number | boolean {
+  if (value === null || value === undefined) return 'N/A'
+  if (typeof value === 'string') {
+    const trimmedValue = value.trim()
+    return trimmedValue === '' ? 'N/A' : trimmedValue
+  }
+  return value
 }
 
 function inferAlignment(key: string, value: any): 'left' | 'center' | 'right' {
