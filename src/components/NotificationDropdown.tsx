@@ -1,13 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, X, Check } from 'lucide-react'
+import { Bell, X, Check, CheckCheck, Trash2, Dot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useNotifications } from '@/contexts/NotificationContext'
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false)
-  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotifications()
+  const {
+    notifications,
+    markAsRead,
+    markAsUnread,
+    markAllAsRead,
+    deleteNotification,
+    deleteReadNotifications,
+    clearAllNotifications,
+    unreadCount,
+  } = useNotifications()
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -16,6 +25,15 @@ export default function NotificationDropdown() {
       case 'success': return 'bg-primary/10 text-primary'
       default: return 'bg-accent text-accent-foreground'
     }
+  }
+
+  const formatTimestamp = (value: Date) => {
+    const date = new Date(value)
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][date.getMonth()]
+    const year = date.getFullYear()
+    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    return `${day}-${month}-${year} ${time}`
   }
 
   return (
@@ -52,7 +70,31 @@ export default function NotificationDropdown() {
                     className="text-xs"
                   >
                     <Check className="h-3 w-3 mr-1 text-muted-foreground" />
-                    Mark all read
+                    Read all
+                  </Button>
+                )}
+                {notifications.some((n) => n.read) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={deleteReadNotifications}
+                    className="text-xs"
+                    title="Delete all read notifications"
+                  >
+                    <CheckCheck className="h-3 w-3 mr-1 text-muted-foreground" />
+                    Delete read
+                  </Button>
+                )}
+                {notifications.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearAllNotifications}
+                    className="text-xs"
+                    title="Delete all notifications"
+                  >
+                    <Trash2 className="h-3 w-3 mr-1 text-muted-foreground" />
+                    Clear all
                   </Button>
                 )}
                 <Button 
@@ -77,7 +119,11 @@ export default function NotificationDropdown() {
                     className={`p-4 border-b border-border hover:bg-accent cursor-pointer ${
                       !notification.read ? 'bg-accent/50' : ''
                     }`}
-                    onClick={() => markAsRead(notification.id)}
+                    onClick={() => {
+                      if (!notification.read) {
+                        markAsRead(notification.id)
+                      }
+                    }}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -86,14 +132,44 @@ export default function NotificationDropdown() {
                             {notification.type}
                           </span>
                           {!notification.read && (
-                            <div className="w-2 h-2 bg-primary rounded-full" />
+                            <Dot className="h-4 w-4 text-primary" />
                           )}
                         </div>
                         <h4 className="font-medium text-sm text-foreground">{notification.title}</h4>
                         <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
                         <p className="text-xs text-muted-foreground/80 mt-2">
-                          {notification.timestamp.toLocaleString()}
+                          {formatTimestamp(notification.timestamp)}
                         </p>
+                      </div>
+                      <div className="ml-3 flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (notification.read) {
+                              markAsUnread(notification.id)
+                            } else {
+                              markAsRead(notification.id)
+                            }
+                          }}
+                          title={notification.read ? 'Mark as unread' : 'Mark as read'}
+                        >
+                          <Check className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteNotification(notification.id)
+                          }}
+                          title="Delete notification"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
                       </div>
                     </div>
                   </div>

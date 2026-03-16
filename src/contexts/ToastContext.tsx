@@ -11,6 +11,16 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined)
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning') => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('app:notification:add', {
+        detail: {
+          title: type.charAt(0).toUpperCase() + type.slice(1),
+          message,
+          type,
+        }
+      }))
+    }
+
     const options = {
       duration: 4000,
       position: 'bottom-center' as const,
