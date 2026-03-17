@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useToast } from '@/contexts/ToastContext'
 import { DataView } from '@/components/ui/data-view'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ import { Pagination, usePagination } from '@/components/ui/pagination'
 import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/table-filters'
 import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
-import { Plus, Edit, Trash2 } from 'lucide-react'
+import { Filter, Plus, Edit, Trash2 } from 'lucide-react'
 
 interface Location {
   id: string
@@ -64,9 +64,10 @@ export default function LocationsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   
   const { showToast } = useToast()
-  const router = useRouter()
+  const searchParams = useSearchParams()
   const deleteConfirmation = useDeleteConfirmation()
   
   // Pagination
@@ -129,6 +130,14 @@ export default function LocationsPage() {
   useEffect(() => {
     fetchLocations()
   }, [fetchLocations])
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      setEditingLocation(null)
+      resetForm()
+      setShowForm(true)
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -288,17 +297,13 @@ export default function LocationsPage() {
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
         <div>{formatDate(location.createdAt)}</div>
-        {location.createdBy && (
-          <div className="text-xs">{location.createdBy.name}</div>
-        )}
+        <div className="text-xs">{location.createdBy?.name || 'System'}</div>
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
         {location.updatedAt && location.updatedAt !== location.createdAt ? (
           <div>
             <div>{formatDate(location.updatedAt)}</div>
-            {location.updatedBy && (
-              <div className="text-xs">{location.updatedBy.name}</div>
-            )}
+            <div className="text-xs">{location.updatedBy?.name || 'System'}</div>
           </div>
         ) : (
           <span className="text-xs">-</span>
@@ -334,28 +339,16 @@ export default function LocationsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full px-3 sm:px-4 md:px-6 space-y-6">
       {/* Filters */}
       <TableFilters
-        filters={filterConfigs}
-        values={filters}
-        onFiltersChange={updateFilters}
-        searchValue={search}
-        onSearchChange={updateSearch}
-        searchPlaceholder="Search locations..."
-        loading={loading}
-      />
-
-      {/* Data View */}
-      <DataView
-        items={locations}
-        view={view}
-        onViewChange={setView}
-        loading={loading}
-        autoResponsive={true}
         title="Locations"
         actions={
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setFiltersOpen((prev) => !prev)}>
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
             <ExportButton
               data={locations}
               columns={commonColumns.location}
@@ -370,88 +363,108 @@ export default function LocationsPage() {
               }}
               disabled={locations.length === 0}
             />
-            <Dialog open={showForm} onOpenChange={setShowForm}>
-              <DialogTrigger asChild>
-                <Button 
-                  onClick={() => {
-                    setEditingLocation(null)
-                    resetForm()
-                  }}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Location
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-card border-border max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="text-card-foreground font-semibold">
-                    {editingLocation ? 'Edit Location' : 'Add New Location'}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Name *</label>
-                    <Input
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Enter location name"
-                      required
-                      className="bg-background border-input text-foreground"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Address</label>
-                    <Input
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      placeholder="Enter address (optional)"
-                      className="bg-background border-input text-foreground"
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="isActive"
-                      checked={formData.isActive}
-                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                      className="rounded border-input"
-                    />
-                    <label htmlFor="isActive" className="text-sm font-medium text-foreground">
-                      Active
-                    </label>
-                  </div>
-                  <div className="flex gap-2 pt-4">
-                    <Button 
-                      type="submit" 
-                      disabled={submitting} 
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
-                    >
-                      {submitting ? 'Saving...' : editingLocation ? 'Update' : 'Create'}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowForm(false)}
-                      className="border-border text-foreground hover:bg-accent font-medium"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditingLocation(null)
+                resetForm()
+                setShowForm(true)
+              }}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Location
+            </Button>
           </div>
         }
+        filters={filterConfigs}
+        values={filters}
+        onFiltersChange={updateFilters}
+        searchValue={search}
+        onSearchChange={updateSearch}
+        showSearch={false}
+        showFilterToggle={false}
+        filtersOpen={filtersOpen}
+        onFiltersOpenChange={setFiltersOpen}
+        loading={loading}
+      />
+
+      {/* Data View */}
+      <DataView
+        items={locations}
+        view={view}
+        onViewChange={setView}
+        loading={loading}
+        autoResponsive={true}
         gridProps={{
           renderItem: renderGridItem,
           columns: 3
         }}
         listProps={{
-          headers: ['Name', 'Address', 'Status', 'Batches', 'Created', 'Updated', 'Actions'],
+          headers: ['Location', 'Address', 'Status', 'Batches', 'Created', 'Updated', 'Actions'],
           renderRow: renderListRow
         }}
       />
+
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="bg-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-card-foreground font-semibold">
+              {editingLocation ? 'Edit Location' : 'Add New Location'}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">Name *</label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter location name"
+                required
+                className="bg-background border-input text-foreground"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Address</label>
+              <Input
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                placeholder="Enter address (optional)"
+                className="bg-background border-input text-foreground"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={formData.isActive}
+                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                className="rounded border-input"
+              />
+              <label htmlFor="isActive" className="text-sm font-medium text-foreground">
+                Active
+              </label>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+              >
+                {submitting ? 'Saving...' : editingLocation ? 'Update' : 'Create'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowForm(false)}
+                className="border-border text-foreground hover:bg-accent font-medium"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Pagination */}
       <Pagination

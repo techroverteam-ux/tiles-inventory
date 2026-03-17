@@ -12,7 +12,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const mobileNavigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Products', href: '/products', icon: Package },
   { name: 'Inventory', href: '/inventory', icon: Layers },
   { name: 'Purchase', href: '/purchase-orders', icon: ShoppingCart },
@@ -23,7 +23,7 @@ export default function MobileNav() {
   const pathname = usePathname()
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 md:hidden mobile-safe-area">
       <div className="grid grid-cols-5 h-16">
         {mobileNavigation.map((item) => {
           const isActive = pathname === item.href

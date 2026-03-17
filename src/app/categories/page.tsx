@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useToast } from '@/contexts/ToastContext'
 import { DataView } from '@/components/ui/data-view'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ import { Pagination, usePagination } from '@/components/ui/pagination'
 import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/table-filters'
 import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
-import { Plus, Edit, Trash2 } from 'lucide-react'
+import { Filter, Plus, Edit, Trash2 } from 'lucide-react'
 
 interface Category {
   id: string
@@ -77,9 +77,10 @@ export default function CategoriesPage() {
   const [submitting, setSubmitting] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   
   const { showToast } = useToast()
-  const router = useRouter()
+  const searchParams = useSearchParams()
   const deleteConfirmation = useDeleteConfirmation()
   
   // Pagination
@@ -173,6 +174,14 @@ export default function CategoriesPage() {
   useEffect(() => {
     fetchBrands()
   }, [fetchBrands])
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      setEditingCategory(null)
+      resetForm()
+      setShowForm(true)
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -340,17 +349,13 @@ export default function CategoriesPage() {
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
         <div>{formatDate(category.createdAt)}</div>
-        {category.createdBy && (
-          <div className="text-xs">{category.createdBy.name}</div>
-        )}
+        <div className="text-xs">{category.createdBy?.name || 'System'}</div>
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
         {category.updatedAt && category.updatedAt !== category.createdAt ? (
           <div>
             <div>{formatDate(category.updatedAt)}</div>
-            {category.updatedBy && (
-              <div className="text-xs">{category.updatedBy.name}</div>
-            )}
+            <div className="text-xs">{category.updatedBy?.name || 'System'}</div>
           </div>
         ) : (
           <span className="text-xs">-</span>
@@ -386,28 +391,16 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full px-3 sm:px-4 md:px-6 space-y-6">
       {/* Filters */}
       <TableFilters
-        filters={filterConfigs}
-        values={filters}
-        onFiltersChange={updateFilters}
-        searchValue={search}
-        onSearchChange={updateSearch}
-        searchPlaceholder="Search categories..."
-        loading={loading}
-      />
-
-      {/* Data View */}
-      <DataView
-        items={categories}
-        view={view}
-        onViewChange={setView}
-        loading={loading}
-        autoResponsive={true}
         title="Categories"
         actions={
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setFiltersOpen((prev) => !prev)}>
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
             <ExportButton
               data={categories}
               columns={commonColumns.category}
@@ -421,88 +414,35 @@ export default function CategoriesPage() {
               }}
               disabled={categories.length === 0}
             />
-            <Dialog open={showForm} onOpenChange={setShowForm}>
-              <DialogTrigger asChild>
-                <Button onClick={() => {
-                  setEditingCategory(null)
-                  resetForm()
-                }} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Category
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-card border-border max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="text-card-foreground">
-                    {editingCategory ? 'Edit Category' : 'Add New Category'}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Name *</label>
-                    <Input
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Enter category name"
-                      required
-                      className="bg-background border-input text-foreground"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Brand *</label>
-                    <select
-                      value={formData.brandId}
-                      onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                    >
-                      <option value="">Select a brand</option>
-                      {brands.map((brand) => (
-                        <option key={brand.id} value={brand.id}>
-                          {brand.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Description</label>
-                    <Input
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Enter description (optional)"
-                      className="bg-background border-input text-foreground"
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="isActive"
-                      checked={formData.isActive}
-                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                      className="rounded border-input"
-                    />
-                    <label htmlFor="isActive" className="text-sm font-medium text-foreground">
-                      Active
-                    </label>
-                  </div>
-                  <div className="flex gap-2 pt-4">
-                    <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground">
-                      {submitting ? 'Saving...' : editingCategory ? 'Update' : 'Create'}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowForm(false)}
-                      className="border-border text-foreground"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <Button size="sm" onClick={() => {
+              setEditingCategory(null)
+              resetForm()
+              setShowForm(true)
+            }} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Category
+            </Button>
           </div>
         }
+        filters={filterConfigs}
+        values={filters}
+        onFiltersChange={updateFilters}
+        searchValue={search}
+        onSearchChange={updateSearch}
+        showSearch={false}
+        showFilterToggle={false}
+        filtersOpen={filtersOpen}
+        onFiltersOpenChange={setFiltersOpen}
+        loading={loading}
+      />
+
+      {/* Data View */}
+      <DataView
+        items={categories}
+        view={view}
+        onViewChange={setView}
+        loading={loading}
+        autoResponsive={true}
         gridProps={{
           renderItem: renderGridItem,
           columns: 3
@@ -512,6 +452,78 @@ export default function CategoriesPage() {
           renderRow: renderListRow
         }}
       />
+
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="bg-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-card-foreground">
+              {editingCategory ? 'Edit Category' : 'Add New Category'}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">Name *</label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter category name"
+                required
+                className="bg-background border-input text-foreground"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Brand *</label>
+              <select
+                value={formData.brandId}
+                onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
+                required
+                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+              >
+                <option value="">Select a brand</option>
+                {brands.map((brand) => (
+                  <option key={brand.id} value={brand.id}>
+                    {brand.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Description</label>
+              <Input
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Enter description (optional)"
+                className="bg-background border-input text-foreground"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={formData.isActive}
+                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                className="rounded border-input"
+              />
+              <label htmlFor="isActive" className="text-sm font-medium text-foreground">
+                Active
+              </label>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground">
+                {submitting ? 'Saving...' : editingCategory ? 'Update' : 'Create'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowForm(false)}
+                className="border-border text-foreground"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Pagination */}
       <Pagination

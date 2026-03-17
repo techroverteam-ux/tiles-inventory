@@ -13,8 +13,7 @@ import {
   MapPin,
   Layers,
   Palette,
-  Ruler,
-  X
+  Ruler
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -55,20 +54,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         "fixed left-0 top-16 sm:top-20 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] bg-card border-r border-border transition-all duration-300 z-40 flex flex-col",
         isOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full md:w-16 md:translate-x-0"
       )}>
-        <div className={cn("px-4 py-3 border-b border-border", isOpen ? "block" : "hidden md:hidden")}>
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-foreground">Navigation</h2>
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent md:hidden"
-              aria-label="Close sidebar"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
         <nav className={cn("space-y-2 flex-1", isOpen ? "p-4" : "p-3 md:p-2")}>
           {navigation.map((item) => {
             const isActive = pathname === item.href

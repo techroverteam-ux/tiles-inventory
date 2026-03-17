@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+async function normalizeLegacyUserRoles() {
+  try {
+    await prisma.$runCommandRaw({
+      update: 'users',
+      updates: [
+        { q: { role: 'admin' }, u: { $set: { role: 'ADMIN' } }, multi: true },
+        { q: { role: 'user' }, u: { $set: { role: 'USER' } }, multi: true }
+      ]
+    })
+  } catch (error) {
+    console.error('Role normalization error:', error)
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     console.log('🔍 Verify: Starting session verification')
@@ -28,16 +42,35 @@ export async function GET(request: NextRequest) {
     console.log('👤 Verify: User ID from token:', authUser.userId)
     
     // Fetch fresh user data from database
-    const user = await prisma.user.findUnique({
-      where: { id: authUser.userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        isActive: true,
-      },
-    })
+    let user
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: authUser.userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          isActive: true,
+        },
+      })
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("not found in enum 'UserRole'")) {
+        await normalizeLegacyUserRoles()
+        user = await prisma.user.findUnique({
+          where: { id: authUser.userId },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            isActive: true,
+          },
+        })
+      } else {
+        throw error
+      }
+    }
 
     console.log('🗄️ Verify: User found in database:', !!user)
     

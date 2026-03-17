@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/contexts/SessionContext'
+import { LoadingPage } from '@/components/ui/skeleton'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -20,14 +21,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   // Show loading spinner while checking authentication
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-muted border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Verifying session...</p>
-        </div>
-      </div>
-    )
+    return <LoadingPage view="grid" title="Verifying session" items={6} columns={3} />
   }
 
   // Don't render children if not authenticated

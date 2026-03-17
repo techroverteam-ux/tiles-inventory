@@ -3,6 +3,20 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
 
+async function normalizeLegacyUserRoles() {
+  try {
+    await prisma.$runCommandRaw({
+      update: 'users',
+      updates: [
+        { q: { role: 'admin' }, u: { $set: { role: 'ADMIN' } }, multi: true },
+        { q: { role: 'user' }, u: { $set: { role: 'USER' } }, multi: true }
+      ]
+    })
+  } catch (error) {
+    console.error('Role normalization error:', error)
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
@@ -14,17 +28,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: {
-        id: true,
-        email: true,
-        password: true,
-        name: true,
-        role: true,
-        isActive: true,
-      },
-    })
+    let user
+    try {
+      user = await prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          password: true,
+          name: true,
+          role: true,
+          isActive: true,
+        },
+      })
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("not found in enum 'UserRole'")) {
+        await normalizeLegacyUserRoles()
+        user = await prisma.user.findUnique({
+          where: { email },
+          select: {
+            id: true,
+            email: true,
+            password: true,
+            name: true,
+            role: true,
+            isActive: true,
+          },
+        })
+      } else {
+        throw error
+      }
+    }
 
     if (!user || !user.isActive) {
       return NextResponse.json(

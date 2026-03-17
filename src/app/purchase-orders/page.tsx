@@ -1,17 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
+import { LoadingPage } from '@/components/ui/skeleton'
 import { 
   Plus, 
-  Search, 
   Filter, 
   Download, 
   Edit, 
@@ -42,10 +42,13 @@ interface PurchaseOrder {
   items: any[]
   createdAt: string
   updatedAt?: string
+  createdByName?: string
+  updatedByName?: string
 }
 
 export default function PurchaseOrdersPage() {
   const { showToast } = useToast()
+  const searchParams = useSearchParams()
   const [orders, setOrders] = useState<PurchaseOrder[]>([])
   const [brands, setBrands] = useState<any[]>([])
   const [locations, setLocations] = useState<any[]>([])
@@ -61,7 +64,6 @@ export default function PurchaseOrdersPage() {
   const [changingStatus, setChangingStatus] = useState<string | null>(null)
   
   const [filters, setFilters] = useState({
-    search: '',
     brandId: '',
     status: '',
     sortBy: 'createdAt',
@@ -109,6 +111,12 @@ export default function PurchaseOrdersPage() {
     fetchBrands()
     fetchLocations()
   }, [])
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      setShowAddDialog(true)
+    }
+  }, [searchParams])
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     if (newStatus === 'DELIVERED') {
@@ -211,7 +219,6 @@ export default function PurchaseOrdersPage() {
 
   const clearFilters = () => {
     setFilters({
-      search: '',
       brandId: '',
       status: '',
       sortBy: 'createdAt',
@@ -220,21 +227,21 @@ export default function PurchaseOrdersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-container">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Purchase Orders</h1>
-          <p className="text-muted-foreground mt-1">Manage your purchase orders</p>
+          <h1 className="page-title">Purchase Orders</h1>
+          <p className="page-subtitle mt-1">Manage your purchase orders</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
+          <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
             <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
             Filters
           </Button>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
-              <Button>
+              <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
                 New Order
               </Button>
@@ -293,20 +300,7 @@ export default function PurchaseOrdersPage() {
             <CardTitle className="text-lg text-foreground">Filters</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search orders..."
-                    value={filters.search}
-                    onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Brand</label>
                 <Select value={filters.brandId} onValueChange={(value) => setFilters({ ...filters, brandId: value })}>
@@ -357,9 +351,7 @@ export default function PurchaseOrdersPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <ShoppingCart className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <LoadingPage view="list" showHeader={false} items={8} />
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -426,11 +418,17 @@ export default function PurchaseOrdersPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {formatDate(order.createdAt)}
+                        <div>{formatDate(order.createdAt)}</div>
+                        <div className="text-xs">{order.createdByName || 'System'}</div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         {order.updatedAt && order.updatedAt !== order.createdAt
-                          ? formatDate(order.updatedAt)
+                          ? (
+                            <>
+                              <div>{formatDate(order.updatedAt)}</div>
+                              <div className="text-xs">{order.updatedByName || 'System'}</div>
+                            </>
+                          )
                           : <span className="text-xs">-</span>
                         }
                       </TableCell>

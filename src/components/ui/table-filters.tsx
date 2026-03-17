@@ -30,6 +30,12 @@ interface TableFiltersProps {
   onFiltersChange: (filters: FilterState) => void
   searchValue: string
   onSearchChange: (search: string) => void
+  title?: string
+  actions?: React.ReactNode
+  showSearch?: boolean
+  showFilterToggle?: boolean
+  filtersOpen?: boolean
+  onFiltersOpenChange?: (open: boolean) => void
   searchPlaceholder?: string
   loading?: boolean
   className?: string
@@ -41,12 +47,27 @@ export function TableFilters({
   onFiltersChange,
   searchValue,
   onSearchChange,
+  title,
+  actions,
+  showSearch = true,
+  showFilterToggle = true,
+  filtersOpen,
+  onFiltersOpenChange,
   searchPlaceholder = 'Search...',
   loading = false,
   className = ''
 }: TableFiltersProps) {
-  const [showFilters, setShowFilters] = useState(false)
+  const [internalShowFilters, setInternalShowFilters] = useState(false)
   const [localSearch, setLocalSearch] = useState(searchValue)
+  const showFilters = typeof filtersOpen === 'boolean' ? filtersOpen : internalShowFilters
+
+  const setShowFilters = (open: boolean) => {
+    if (onFiltersOpenChange) {
+      onFiltersOpenChange(open)
+      return
+    }
+    setInternalShowFilters(open)
+  }
 
   // Debounce search
   useEffect(() => {
@@ -77,7 +98,7 @@ export function TableFilters({
       const value = values[key]
       return value && (Array.isArray(value) ? value.length > 0 : value !== '')
     }).length
-    return filterCount + (searchValue ? 1 : 0)
+    return filterCount + (showSearch && searchValue ? 1 : 0)
   }
 
   const renderFilter = (filter: FilterConfig) => {
@@ -193,56 +214,72 @@ export function TableFilters({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Search and Filter Toggle */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-0 flex-1 max-w-full sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder={searchPlaceholder}
-            value={localSearch}
-            onChange={(e) => setLocalSearch(e.target.value)}
-            className="pl-10 h-9"
-            disabled={loading}
-          />
-          {localSearch && (
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {title ? (
+          <div>
+            <h1 className="text-xl md:text-2xl font-semibold text-foreground">{title}</h1>
+          </div>
+        ) : (
+          <div />
+        )}
+
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          {actions}
+
+          {showSearch && (
+            <div className="relative min-w-0 flex-1 max-w-full sm:max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder={searchPlaceholder}
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
+                className="pl-10 h-9"
+                disabled={loading}
+              />
+              {localSearch && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLocalSearch('')}
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          )}
+
+          {showFilterToggle && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="h-9 gap-2 whitespace-nowrap"
+              disabled={loading}
+            >
+              <Filter className="h-4 w-4" />
+              Filters
+              {getActiveFiltersCount() > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs">
+                  {getActiveFiltersCount()}
+                </Badge>
+              )}
+            </Button>
+          )}
+
+          {getActiveFiltersCount() > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setLocalSearch('')}
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+              onClick={clearAllFilters}
+              className="h-9 gap-2 whitespace-nowrap text-muted-foreground"
+              disabled={loading}
             >
-              <X className="h-3 w-3" />
+              <RotateCcw className="h-4 w-4" />
+              Clear
             </Button>
           )}
         </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowFilters(!showFilters)}
-          className="h-9 gap-2 whitespace-nowrap"
-          disabled={loading}
-        >
-          <Filter className="h-4 w-4" />
-          Filters
-          {getActiveFiltersCount() > 0 && (
-            <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs">
-              {getActiveFiltersCount()}
-            </Badge>
-          )}
-        </Button>
-
-        {getActiveFiltersCount() > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearAllFilters}
-            className="h-9 gap-2 whitespace-nowrap text-muted-foreground"
-            disabled={loading}
-          >
-            <RotateCcw className="h-4 w-4" />
-            Clear
-          </Button>
-        )}
       </div>
 
       {/* Filter Controls */}
@@ -257,7 +294,7 @@ export function TableFilters({
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted-foreground">Active filters:</span>
 
-          {searchValue && (
+          {showSearch && searchValue && (
             <Badge variant="secondary" className="gap-1">
               Search: {searchValue}
               <Button

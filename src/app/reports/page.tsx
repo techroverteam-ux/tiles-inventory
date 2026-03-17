@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { LoadingPage } from '@/components/ui/skeleton'
 import { ExportButton, ExportColumn } from '@/lib/excel-export'
-import { BarChart3, Calendar, Search } from 'lucide-react'
+import { BarChart3, Calendar, Filter, Search } from 'lucide-react'
 import { useToast } from '@/contexts/ToastContext'
 
 type ReportType = 'sales' | 'purchase' | 'inventory'
@@ -39,6 +40,7 @@ export default function ReportsPage() {
   const [locations, setLocations] = useState<any[]>([])
 
   const [loading, setLoading] = useState(false)
+  const [showFilters, setShowFilters] = useState(true)
   const [columns, setColumns] = useState<ReportColumn[]>([])
   const [rows, setRows] = useState<any[]>([])
 
@@ -210,24 +212,31 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-container">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Reports</h1>
-          <p className="text-muted-foreground mt-1">Generate and export Sales, Purchase, and Inventory reports</p>
+          <h1 className="page-title">Reports</h1>
+          <p className="page-subtitle mt-1">Generate and export Sales, Purchase, and Inventory reports</p>
         </div>
-        <ExportButton
-          data={rows}
-          columns={excelColumns}
-          filename={reportType === 'sales' ? 'sales-report' : reportType === 'purchase' ? 'purchase-report' : 'inventory-report'}
-          sheetName={reportTitle}
-          reportTitle={`${reportTitle} (${formatDateDisplay(dateFrom)} to ${formatDateDisplay(dateTo)})`}
-          headerColor={COMPANY_LOGO_HEADER_COLOR}
-          disabled={rows.length === 0}
-          className="w-full sm:w-auto"
-        />
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowFilters((prev) => !prev)}>
+            <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+            Filters
+          </Button>
+          <ExportButton
+            data={rows}
+            columns={excelColumns}
+            filename={reportType === 'sales' ? 'sales-report' : reportType === 'purchase' ? 'purchase-report' : 'inventory-report'}
+            sheetName={reportTitle}
+            reportTitle={`${reportTitle} (${formatDateDisplay(dateFrom)} to ${formatDateDisplay(dateTo)})`}
+            headerColor={COMPANY_LOGO_HEADER_COLOR}
+            disabled={rows.length === 0}
+            className="w-full sm:w-auto"
+          />
+        </div>
       </div>
 
+      {showFilters && (
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-foreground">
@@ -382,6 +391,7 @@ export default function ReportsPage() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       <Card className="bg-card border-border">
         <CardHeader className="flex flex-row items-center justify-between">
@@ -400,7 +410,9 @@ export default function ReportsPage() {
           />
         </CardHeader>
         <CardContent>
-          {rows.length === 0 ? (
+          {loading ? (
+            <LoadingPage view="list" showHeader={false} items={8} />
+          ) : rows.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">
               Click Search to generate report data and view it in table.
             </div>

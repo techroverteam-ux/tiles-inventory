@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useToast } from '@/contexts/ToastContext'
 import { DataView } from '@/components/ui/data-view'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,7 @@ import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/tab
 import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
 import ImageUpload from '@/components/ui/image-upload'
-import { Plus, Edit, Trash2 } from 'lucide-react'
+import { Filter, Plus, Edit, Trash2 } from 'lucide-react'
 
 interface Product {
   id: string
@@ -31,6 +31,14 @@ interface Product {
   isActive: boolean
   createdAt: string
   updatedAt: string
+  createdBy?: {
+    name: string
+    email: string
+  }
+  updatedBy?: {
+    name: string
+    email: string
+  }
   brand: { name: string }
   category: { name: string }
   size?: { name: string }
@@ -86,9 +94,10 @@ export default function ProductsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   
   const { showToast } = useToast()
-  const router = useRouter()
+  const searchParams = useSearchParams()
   // Pagination
   const {
     currentPage,
@@ -200,6 +209,14 @@ export default function ProductsPage() {
   useEffect(() => {
     fetchDropdownData()
   }, [fetchDropdownData])
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      setEditingProduct(null)
+      resetForm()
+      setShowForm(true)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     if (formData.brandId) {
@@ -402,9 +419,9 @@ export default function ProductsPage() {
           <div>Box: {product.pcsPerBox} pcs / {product.sqftPerBox} sqft</div>
         </div>
         <div className="text-xs text-muted-foreground mb-4 space-y-1">
-          <div>Created: {formatDate(product.createdAt)}</div>
+          <div>Created: {formatDate(product.createdAt)} by {product.createdBy?.name || 'System'}</div>
           {product.updatedAt && product.updatedAt !== product.createdAt && (
-            <div>Updated: {formatDate(product.updatedAt)}</div>
+            <div>Updated: {formatDate(product.updatedAt)} by {product.updatedBy?.name || 'System'}</div>
           )}
         </div>
         <div className="flex gap-2">
@@ -470,11 +487,17 @@ export default function ProductsPage() {
         </Badge>
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
-        {formatDate(product.createdAt)}
+        <div>{formatDate(product.createdAt)}</div>
+        <div className="text-xs">{product.createdBy?.name || 'System'}</div>
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
         {product.updatedAt && product.updatedAt !== product.createdAt
-          ? formatDate(product.updatedAt)
+          ? (
+            <>
+              <div>{formatDate(product.updatedAt)}</div>
+              <div className="text-xs">{product.updatedBy?.name || 'System'}</div>
+            </>
+          )
           : <span className="text-xs">-</span>
         }
       </td>
@@ -508,27 +531,16 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full px-3 sm:px-4 md:px-6 space-y-6">
       {/* Filters */}
       <TableFilters
-        filters={filterConfigs}
-        values={filters}
-        onFiltersChange={updateFilters}
-        searchValue={search}
-        onSearchChange={updateSearch}
-        searchPlaceholder="Search products..."
-        loading={loading}
-      />
-
-      <DataView
-        items={products}
-        view={view}
-        onViewChange={setView}
-        loading={loading}
-        autoResponsive={true}
         title="Products"
         actions={
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setFiltersOpen((prev) => !prev)}>
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
             <ExportButton
               data={products}
               columns={commonColumns.product}
@@ -545,7 +557,7 @@ export default function ProductsPage() {
             />
             <Dialog open={showForm} onOpenChange={setShowForm}>
               <DialogTrigger asChild>
-                <Button onClick={() => {
+                <Button size="sm" onClick={() => {
                   setEditingProduct(null)
                   resetForm()
                 }} className="gap-2">
@@ -701,6 +713,24 @@ export default function ProductsPage() {
             </Dialog>
           </div>
         }
+        filters={filterConfigs}
+        values={filters}
+        onFiltersChange={updateFilters}
+        searchValue={search}
+        onSearchChange={updateSearch}
+        showSearch={false}
+        showFilterToggle={false}
+        filtersOpen={filtersOpen}
+        onFiltersOpenChange={setFiltersOpen}
+        loading={loading}
+      />
+
+      <DataView
+        items={products}
+        view={view}
+        onViewChange={setView}
+        loading={loading}
+        autoResponsive={true}
           gridProps={{
             renderItem: renderGridItem,
             columns: 3
