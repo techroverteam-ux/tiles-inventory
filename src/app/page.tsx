@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MobileStatsCard, MobileCard, MobileCardHeader, MobileCardField } from '@/components/ui/mobile-card'
+import { StatsSkeleton } from '@/components/ui/skeleton'
 import { 
+  Users,
+  Palette,
+  Ruler,
   Package, 
   ShoppingCart, 
   TrendingUp, 
@@ -14,9 +18,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
+    totalBrands: 0,
+    totalCategories: 0,
+    totalSizes: 0,
     totalProducts: 0,
     monthlySales: 0,
     purchaseOrders: 0,
+    salesOrders: 0,
     lowStockItems: 0
   })
   const [salesData, setSalesData] = useState<any[]>([])
@@ -67,21 +75,43 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Package className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <div className="h-8 w-44 animate-skeleton rounded-md bg-muted/60" />
+          <div className="h-4 w-64 animate-skeleton rounded-md bg-muted/40" />
+        </div>
+        <StatsSkeleton items={6} />
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
+    <div className="page-container">
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl md:text-3xl font-bold text-foreground">Dashboard</h1>
+        <h1 className="page-title">Dashboard</h1>
         <p className="text-sm text-muted-foreground md:hidden">Overview of your inventory</p>
       </div>
 
       {/* Mobile Stats Cards */}
       <div className="grid grid-cols-2 md:hidden gap-3">
+        <MobileStatsCard
+          title="Brands"
+          value={stats.totalBrands}
+          subtitle="Active"
+          icon={<Users className="h-4 w-4 text-primary" />}
+        />
+        <MobileStatsCard
+          title="Categories"
+          value={stats.totalCategories}
+          subtitle="Active"
+          icon={<Palette className="h-4 w-4 text-primary" />}
+        />
+        <MobileStatsCard
+          title="Sizes"
+          value={stats.totalSizes}
+          subtitle="Active"
+          icon={<Ruler className="h-4 w-4 text-primary" />}
+        />
         <MobileStatsCard
           title="Products"
           value={stats.totalProducts.toLocaleString()}
@@ -89,16 +119,16 @@ export default function Dashboard() {
           icon={<Package className="h-4 w-4 text-primary" />}
         />
         <MobileStatsCard
-          title="Sales"
-          value={`₹${(stats.monthlySales / 1000).toFixed(0)}K`}
-          subtitle="This month"
-          icon={<TrendingUp className="h-4 w-4 text-primary" />}
+          title="Purchase"
+          value={stats.purchaseOrders}
+          subtitle="Open"
+          icon={<ShoppingCart className="h-4 w-4 text-primary" />}
         />
         <MobileStatsCard
-          title="Orders"
-          value={stats.purchaseOrders}
-          subtitle="Active"
-          icon={<ShoppingCart className="h-4 w-4 text-primary" />}
+          title="Sales"
+          value={stats.salesOrders}
+          subtitle="Orders"
+          icon={<TrendingUp className="h-4 w-4 text-primary" />}
         />
         <MobileStatsCard
           title="Low Stock"
@@ -109,7 +139,40 @@ export default function Dashboard() {
       </div>
 
       {/* Desktop Stats Cards */}
-      <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+        <Card className="bg-card border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-foreground">Brands</CardTitle>
+            <Users className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{stats.totalBrands.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Active brands</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-foreground">Categories</CardTitle>
+            <Palette className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{stats.totalCategories.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Active categories</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card border-border">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-foreground">Sizes</CardTitle>
+            <Ruler className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{stats.totalSizes.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Available sizes</p>
+          </CardContent>
+        </Card>
+
         <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-foreground">Total Products</CardTitle>
@@ -123,34 +186,23 @@ export default function Dashboard() {
 
         <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Monthly Sales</CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">₹{stats.monthlySales.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">This month</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-border">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-foreground">Purchase Orders</CardTitle>
             <ShoppingCart className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{stats.purchaseOrders}</div>
-            <p className="text-xs text-muted-foreground">Active orders</p>
+            <p className="text-xs text-muted-foreground">Open purchase orders</p>
           </CardContent>
         </Card>
 
         <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-foreground">Low Stock Items</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <CardTitle className="text-sm font-medium text-foreground">Sales Orders</CardTitle>
+            <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats.lowStockItems}</div>
-            <p className="text-xs text-muted-foreground">Requires attention</p>
+            <div className="text-2xl font-bold text-foreground">{stats.salesOrders.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Total sales orders</p>
           </CardContent>
         </Card>
       </div>

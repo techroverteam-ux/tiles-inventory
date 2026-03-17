@@ -35,7 +35,7 @@ export default function MobileQuickActions() {
       description: 'Create a new brand',
       icon: <Users className="h-6 w-6" />,
       color: 'bg-blue-500',
-      href: '/brands',
+      href: '/brands?action=create',
     },
     {
       id: 'add-category',
@@ -43,7 +43,7 @@ export default function MobileQuickActions() {
       description: 'Create a new category',
       icon: <Palette className="h-6 w-6" />,
       color: 'bg-purple-500',
-      href: '/categories',
+      href: '/categories?action=create',
     },
     {
       id: 'add-size',
@@ -51,7 +51,7 @@ export default function MobileQuickActions() {
       description: 'Create a new size',
       icon: <Ruler className="h-6 w-6" />,
       color: 'bg-green-500',
-      href: '/sizes',
+      href: '/sizes?action=create',
     },
     {
       id: 'add-product',
@@ -59,7 +59,7 @@ export default function MobileQuickActions() {
       description: 'Create a new product',
       icon: <Package className="h-6 w-6" />,
       color: 'bg-indigo-500',
-      href: '/products',
+      href: '/products?action=create',
     },
     {
       id: 'purchase-order',
@@ -67,7 +67,7 @@ export default function MobileQuickActions() {
       description: 'Create purchase order',
       icon: <ShoppingCart className="h-6 w-6" />,
       color: 'bg-orange-500',
-      href: '/purchase-orders',
+      href: '/purchase-orders?action=create',
     },
     {
       id: 'sales-order',
@@ -75,7 +75,7 @@ export default function MobileQuickActions() {
       description: 'Create sales order',
       icon: <TrendingUp className="h-6 w-6" />,
       color: 'bg-rose-500',
-      href: '/sales-orders',
+      href: '/sales-orders?action=create',
     },
   ]
 

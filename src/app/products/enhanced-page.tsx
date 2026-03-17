@@ -467,12 +467,13 @@ export default function ProductsPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Filters */}
       <TableFilters
+        title="Products"
         filters={filterConfigs}
         values={filters}
         onFiltersChange={updateFilters}
         searchValue={search}
         onSearchChange={updateSearch}
-        searchPlaceholder="Search products..."
+        showSearch={false}
         loading={loading}
       />
 
@@ -483,7 +484,6 @@ export default function ProductsPage() {
         onViewChange={setView}
         loading={loading}
         autoResponsive={true}
-        title="Products"
         actions={
           <div className="flex items-center gap-2">
             <ExportButton

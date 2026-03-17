@@ -3,14 +3,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Settings, User, Building, Bell, Shield } from 'lucide-react'
+import { User, Building, Bell, Shield } from 'lucide-react'
 
 export default function SettingsPage() {
   return (
-    <div className="space-y-6">
+    <div className="page-container">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your system preferences</p>
+        <h1 className="page-title">Settings</h1>
+        <p className="page-subtitle mt-1">Manage your account and application preferences</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

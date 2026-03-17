@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .page-container {
+    @apply w-full px-3 sm:px-4 md:px-6 space-y-6;
+  }
+
+  .page-header {
+    @apply flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  .page-title {
+    @apply text-xl md:text-2xl font-semibold text-foreground tracking-tight;
+  }
+
+  .page-subtitle {
+    @apply text-sm text-muted-foreground;
+  }
+}
+
 @layer base {
   html,
   body {

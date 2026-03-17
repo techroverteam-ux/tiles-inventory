@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { Menu, Search } from 'lucide-react'
+import { Menu, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Sidebar from './sidebar'
@@ -22,11 +22,218 @@ interface LayoutProps {
   children: React.ReactNode
 }
 
+interface GlobalSearchResult {
+  type: string
+  label: string
+  href: string
+  subtitle?: string
+}
+
+const mobileSearchShortcuts = [
+  { label: 'Products', href: '/products' },
+  { label: 'Inventory', href: '/inventory' },
+  { label: 'Purchase Orders', href: '/purchase-orders' },
+  { label: 'Sales Orders', href: '/sales-orders' },
+]
+
 export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [globalSearch, setGlobalSearch] = useState('')
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchResults, setSearchResults] = useState<GlobalSearchResult[]>([])
+  const [showSearchResults, setShowSearchResults] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [activeSearchIndex, setActiveSearchIndex] = useState(-1)
+  const searchBoxRef = useRef<HTMLDivElement | null>(null)
+  const desktopInputRef = useRef<HTMLInputElement | null>(null)
+  const mobileInputRef = useRef<HTMLInputElement | null>(null)
   const router = useRouter()
   const pathname = usePathname()
+
+  const groupedSearchResults = useMemo(() => {
+    return searchResults.reduce((acc, item) => {
+      if (!acc[item.type]) {
+        acc[item.type] = []
+      }
+      acc[item.type].push(item)
+      return acc
+    }, {} as Record<string, GlobalSearchResult[]>)
+  }, [searchResults])
+
+  const hasSearchQuery = globalSearch.trim().length >= 2
+
+  const closeSearch = () => {
+    setShowSearchResults(false)
+    setMobileSearchOpen(false)
+    setActiveSearchIndex(-1)
+  }
+
+  const handleSearchResultSelect = (result: GlobalSearchResult) => {
+    setSidebarOpen(false)
+    closeSearch()
+    router.push(result.href)
+  }
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!hasSearchQuery || searchResults.length === 0) {
+      if (event.key === 'Escape') {
+        closeSearch()
+      }
+      return
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setActiveSearchIndex((prev) => (prev + 1) % searchResults.length)
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      setActiveSearchIndex((prev) => (prev <= 0 ? searchResults.length - 1 : prev - 1))
+      return
+    }
+
+    if (event.key === 'Enter' && activeSearchIndex >= 0) {
+      event.preventDefault()
+      handleSearchResultSelect(searchResults[activeSearchIndex])
+      return
+    }
+
+    if (event.key === 'Escape') {
+      closeSearch()
+    }
+  }
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    const search = async () => {
+      if (globalSearch.trim().length < 2) {
+        setSearchResults([])
+        setSearchLoading(false)
+        return
+      }
+
+      setSearchLoading(true)
+      try {
+        const response = await fetch(`/api/global-search?q=${encodeURIComponent(globalSearch.trim())}&limit=6`, {
+          signal: controller.signal,
+        })
+        if (!response.ok) {
+          setSearchResults([])
+          return
+        }
+        const data = await response.json()
+        const results: GlobalSearchResult[] = data.results || []
+        setSearchResults(results)
+        setActiveSearchIndex(results.length ? 0 : -1)
+      } catch {
+        if (!controller.signal.aborted) {
+          setSearchResults([])
+          setActiveSearchIndex(-1)
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setSearchLoading(false)
+        }
+      }
+    }
+
+    const timer = setTimeout(search, 250)
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [globalSearch])
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!searchBoxRef.current) return
+      if (!searchBoxRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false)
+        setActiveSearchIndex(-1)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
+
+  useEffect(() => {
+    if (mobileSearchOpen) {
+      setTimeout(() => {
+        mobileInputRef.current?.focus()
+      }, 50)
+    }
+  }, [mobileSearchOpen])
+
+  useEffect(() => {
+    if (!mobileSearchOpen) return
+
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = originalOverflow
+    }
+  }, [mobileSearchOpen])
+
+  const renderSearchResults = (mode: 'dropdown' | 'inline' = 'dropdown') => {
+    if (!showSearchResults || !hasSearchQuery) {
+      return null
+    }
+
+    const containerClass =
+      mode === 'dropdown'
+        ? 'absolute top-11 left-0 right-0 z-[60] rounded-lg border border-border bg-card shadow-lg overflow-hidden animate-in'
+        : 'rounded-lg border border-border bg-card shadow-sm overflow-hidden'
+
+    return (
+      <div className={containerClass}>
+        {searchLoading ? (
+          <div className="px-3 py-2 text-sm text-muted-foreground">Searching...</div>
+        ) : searchResults.length === 0 ? (
+          <div className="px-3 py-2 text-sm text-muted-foreground">No matches found</div>
+        ) : (
+          <div className="max-h-80 overflow-y-auto">
+            {Object.entries(groupedSearchResults).map(([type, items]) => (
+              <div key={type} className="border-b last:border-b-0 border-border/50">
+                <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                  {type}
+                </div>
+                {items.map((result) => {
+                  const absoluteIndex = searchResults.findIndex(
+                    (item) => item.type === result.type && item.label === result.label && item.href === result.href
+                  )
+                  const isActive = absoluteIndex === activeSearchIndex
+
+                  return (
+                    <button
+                      key={`${result.type}-${result.label}-${result.href}`}
+                      className={`w-full px-3 py-2 text-left transition-colors ${isActive ? 'bg-accent' : 'hover:bg-accent'}`}
+                      onMouseEnter={() => setActiveSearchIndex(absoluteIndex)}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleSearchResultSelect(result)}
+                    >
+                      <div className="text-sm font-medium text-foreground line-clamp-1">{result.label}</div>
+                      <div className="text-xs text-muted-foreground line-clamp-1">{result.subtitle || result.type}</div>
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+        )}
+        {mode === 'dropdown' && searchResults.length > 0 && (
+          <div className="px-3 py-1.5 text-[11px] text-muted-foreground border-t border-border bg-muted/20">
+            Use ↑ ↓ to navigate and Enter to open
+          </div>
+        )}
+      </div>
+    )
+  }
 
   // Don't show layout on login page
   if (pathname === '/login') {
@@ -58,7 +265,7 @@ export default function Layout({ children }: LayoutProps) {
             <NotificationProvider>
         <div className="min-h-screen max-w-full overflow-x-hidden bg-background text-foreground flex flex-col">
           {/* Header */}
-          <header className="bg-card border-b border-border px-3 sm:px-4 md:px-6 h-16 sm:h-20 flex items-center justify-between fixed top-0 left-0 right-0 z-50 shadow-sm">
+          <header className="bg-card border-b border-border px-3 sm:px-4 md:px-6 h-16 sm:h-20 flex items-center justify-between fixed top-0 left-0 right-0 z-50 shadow-sm gap-2 sm:gap-4">
             <div className="flex items-center gap-3">
               {/* Mobile Hamburger Menu */}
               <Button
@@ -85,7 +292,7 @@ export default function Layout({ children }: LayoutProps) {
                 <img
                   src="/logo.jpeg?v=1"
                   alt="Logo"
-                  className="h-8 w-auto object-contain"
+                  className="h-7 sm:h-8 w-auto object-contain"
                   onError={(e) => {
                     console.error('Header logo failed to load')
                     e.currentTarget.style.display = 'none'
@@ -94,29 +301,130 @@ export default function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
-            {/* Desktop Search */}
-            <div className="hidden lg:flex items-center gap-4 flex-1 max-w-md mx-4">
+            <div ref={searchBoxRef} className="hidden sm:flex items-center gap-4 flex-1 max-w-xl mx-3 sm:mx-6">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Search..."
+                  ref={desktopInputRef}
+                  placeholder="Search brands, categories, sizes, products, orders..."
                   className="pl-10 text-sm"
+                  value={globalSearch}
+                  onChange={(e) => setGlobalSearch(e.target.value)}
+                  onFocus={() => setShowSearchResults(true)}
+                  onKeyDown={handleSearchKeyDown}
                 />
+                {globalSearch && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                    onClick={() => {
+                      setGlobalSearch('')
+                      setSearchResults([])
+                      setShowSearchResults(false)
+                      desktopInputRef.current?.focus()
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+                {renderSearchResults()}
               </div>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-2">
-              {/* Mobile Search Button */}
-              <Button variant="ghost" size="sm" className="p-2 md:hidden">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2 sm:hidden"
+                onClick={() => {
+                  setMobileSearchOpen(true)
+                  setShowSearchResults(true)
+                  setActiveSearchIndex(-1)
+                }}
+              >
                 <Search className="h-5 w-5 text-muted-foreground" />
               </Button>
-              
               <QuickAddPanel />
               <ThemeToggle />
               <NotificationDropdown />
               <UserDropdown />
             </div>
           </header>
+
+          {mobileSearchOpen && (
+            <div className="fixed inset-0 z-[70] sm:hidden bg-background/95 backdrop-blur-sm">
+              <div className="mt-16 h-[calc(100vh-4rem)] flex flex-col" ref={searchBoxRef}>
+                <div className="px-3 pt-3 pb-2 border-b border-border bg-background">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      ref={mobileInputRef}
+                      placeholder="Search brands, categories, sizes, products, orders..."
+                      className="pl-10 pr-10"
+                      value={globalSearch}
+                      onChange={(e) => setGlobalSearch(e.target.value)}
+                      onFocus={() => setShowSearchResults(true)}
+                      onKeyDown={handleSearchKeyDown}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                      onClick={() => {
+                        if (globalSearch) {
+                          setGlobalSearch('')
+                          setSearchResults([])
+                          setActiveSearchIndex(-1)
+                          mobileInputRef.current?.focus()
+                          return
+                        }
+                        closeSearch()
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">Global search</p>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2" onClick={closeSearch}>
+                      Done
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-3 py-3 mobile-safe-area">
+                  {hasSearchQuery ? (
+                    renderSearchResults('inline')
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="text-sm text-muted-foreground">Try searching for products, brands, categories, sizes or orders.</div>
+                      <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Quick shortcuts</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {mobileSearchShortcuts.map((item) => (
+                            <button
+                              key={item.href}
+                              type="button"
+                              className="text-left px-3 py-2 rounded-md border border-border hover:bg-accent text-sm"
+                              onClick={() => {
+                                closeSearch()
+                                router.push(item.href)
+                              }}
+                            >
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-1 min-w-0 max-w-full pt-16 sm:pt-20">
             {/* Desktop Sidebar */}
@@ -125,7 +433,15 @@ export default function Layout({ children }: LayoutProps) {
             {/* Main Content */}
             <main className={`min-w-0 max-w-full flex-1 overflow-x-hidden transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'} flex flex-col`}>
               <div className="min-w-0 max-w-full flex-1 overflow-x-hidden p-3 sm:p-4 md:p-6 pb-20 md:pb-6">
-                {children}
+                <div
+                  className="animate-in"
+                  onClick={() => {
+                    setShowSearchResults(false)
+                    setMobileSearchOpen(false)
+                  }}
+                >
+                  {children}
+                </div>
               </div>
               
               {/* Footer - Sticky at bottom */}

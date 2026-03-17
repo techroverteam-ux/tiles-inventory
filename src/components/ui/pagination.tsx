@@ -74,7 +74,7 @@ export function Pagination({
               onValueChange={(value) => onItemsPerPageChange(Number(value))}
               disabled={loading}
             >
-              <SelectTrigger className="w-20 h-8">
+              <SelectTrigger className="w-20 h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -96,7 +96,7 @@ export function Pagination({
           size="sm"
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1 || loading}
-          className="h-8 w-8 p-0"
+          className="h-9 w-9 p-0"
         >
           <ChevronsLeft className="h-4 w-4" />
         </Button>
@@ -106,7 +106,7 @@ export function Pagination({
           size="sm"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1 || loading}
-          className="h-8 w-8 p-0"
+          className="h-9 w-9 p-0"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -122,7 +122,7 @@ export function Pagination({
                   size="sm"
                   onClick={() => onPageChange(page as number)}
                   disabled={loading}
-                  className="h-8 w-8 p-0"
+                  className="h-9 w-9 p-0"
                 >
                   {page}
                 </Button>
@@ -136,7 +136,7 @@ export function Pagination({
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages || loading}
-          className="h-8 w-8 p-0"
+          className="h-9 w-9 p-0"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -146,7 +146,7 @@ export function Pagination({
           size="sm"
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages || loading}
-          className="h-8 w-8 p-0"
+          className="h-9 w-9 p-0"
         >
           <ChevronsRight className="h-4 w-4" />
         </Button>

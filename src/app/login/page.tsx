@@ -33,17 +33,12 @@ export default function LoginPage() {
     console.log('📧 Email:', email)
     console.log('🔐 Password length:', password.length)
 
-    debugger // Debug point 1: Before login attempt
-
     try {
       const success = await login(email, password)
       console.log('✅ Login result:', success)
       
-      debugger // Debug point 2: After login attempt
-      
       if (success) {
         console.log('🚀 Login successful, redirecting to dashboard...')
-        debugger // Debug point 3: Before redirect
         // Use window.location for immediate redirect
         window.location.href = '/dashboard'
       } else {

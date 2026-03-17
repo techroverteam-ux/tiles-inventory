@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useToast } from '@/contexts/ToastContext'
 import { DataView } from '@/components/ui/data-view'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ import { Pagination, usePagination } from '@/components/ui/pagination'
 import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/table-filters'
 import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
-import { Plus, Edit, Trash2 } from 'lucide-react'
+import { Filter, Plus, Edit, Trash2 } from 'lucide-react'
 
 interface Brand {
   id: string
@@ -68,9 +68,10 @@ export default function BrandsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   
   const { showToast } = useToast()
-  const router = useRouter()
+  const searchParams = useSearchParams()
   const deleteConfirmation = useDeleteConfirmation()
   
   // Pagination
@@ -141,6 +142,14 @@ export default function BrandsPage() {
   useEffect(() => {
     fetchBrands()
   }, [fetchBrands])
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      setEditingBrand(null)
+      resetForm()
+      setShowForm(true)
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -312,17 +321,13 @@ export default function BrandsPage() {
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
         <div>{formatDate(brand.createdAt)}</div>
-        {brand.createdBy && (
-          <div className="text-xs">{brand.createdBy.name}</div>
-        )}
+        <div className="text-xs">{brand.createdBy?.name || 'System'}</div>
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
         {brand.updatedAt && brand.updatedAt !== brand.createdAt ? (
           <div>
             <div>{formatDate(brand.updatedAt)}</div>
-            {brand.updatedBy && (
-              <div className="text-xs">{brand.updatedBy.name}</div>
-            )}
+            <div className="text-xs">{brand.updatedBy?.name || 'System'}</div>
           </div>
         ) : (
           <span className="text-xs">-</span>
@@ -358,28 +363,16 @@ export default function BrandsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full px-3 sm:px-4 md:px-6 space-y-6">
       {/* Filters */}
       <TableFilters
-        filters={filterConfigs}
-        values={filters}
-        onFiltersChange={updateFilters}
-        searchValue={search}
-        onSearchChange={updateSearch}
-        searchPlaceholder="Search brands..."
-        loading={loading}
-      />
-
-      {/* Data View */}
-      <DataView
-        items={brands}
-        view={view}
-        onViewChange={setView}
-        loading={loading}
-        autoResponsive={true}
         title="Brands"
         actions={
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setFiltersOpen((prev) => !prev)}>
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
             <ExportButton
               data={brands}
               columns={commonColumns.brand}
@@ -395,7 +388,8 @@ export default function BrandsPage() {
             />
             <Dialog open={showForm} onOpenChange={setShowForm}>
               <DialogTrigger asChild>
-                <Button 
+                <Button
+                  size="sm"
                   onClick={() => {
                     setEditingBrand(null)
                     resetForm()
@@ -423,49 +417,46 @@ export default function BrandsPage() {
                       className="bg-background border-input text-foreground"
                     />
                   </div>
+
                   <div>
                     <label className="text-sm font-medium text-foreground">Description</label>
                     <Input
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Enter description (optional)"
+                      placeholder="Enter description"
                       className="bg-background border-input text-foreground"
                     />
                   </div>
+
                   <div>
                     <label className="text-sm font-medium text-foreground">Contact Info</label>
                     <Input
                       value={formData.contactInfo}
                       onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })}
-                      placeholder="Enter contact information (optional)"
+                      placeholder="Enter contact info"
                       className="bg-background border-input text-foreground"
                     />
                   </div>
+
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      id="isActive"
                       checked={formData.isActive}
                       onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                       className="rounded border-input"
                     />
-                    <label htmlFor="isActive" className="text-sm font-medium text-foreground">
-                      Active
-                    </label>
+                    <label className="text-sm font-medium text-foreground">Active</label>
                   </div>
+
                   <div className="flex gap-2 pt-4">
-                    <Button 
-                      type="submit" 
-                      disabled={submitting} 
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
-                    >
+                    <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground">
                       {submitting ? 'Saving...' : editingBrand ? 'Update' : 'Create'}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setShowForm(false)}
-                      className="border-border text-foreground hover:bg-accent font-medium"
+                      className="border-border text-foreground"
                     >
                       Cancel
                     </Button>
@@ -475,6 +466,24 @@ export default function BrandsPage() {
             </Dialog>
           </div>
         }
+        filters={filterConfigs}
+        values={filters}
+        onFiltersChange={updateFilters}
+        searchValue={search}
+        onSearchChange={updateSearch}
+        showSearch={false}
+        showFilterToggle={false}
+        filtersOpen={filtersOpen}
+        onFiltersOpenChange={setFiltersOpen}
+        loading={loading}
+      />
+
+      <DataView
+        items={brands}
+        view={view}
+        onViewChange={setView}
+        loading={loading}
+        autoResponsive={true}
         gridProps={{
           renderItem: renderGridItem,
           columns: 3

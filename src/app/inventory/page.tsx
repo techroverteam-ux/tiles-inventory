@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,10 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import { MobileCard, MobileCardHeader, MobileCardField, MobileStatsCard } from '@/components/ui/mobile-card'
+import { LoadingPage } from '@/components/ui/skeleton'
 import { useToast } from '@/contexts/ToastContext'
 import { 
   Plus, 
-  Search, 
   Filter, 
   Download, 
   Edit, 
@@ -53,10 +54,11 @@ interface InventoryItem {
   expiryDate?: string
   createdAt: string
   updatedAt?: string
+  createdByName?: string
+  updatedByName?: string
 }
 
 interface Filters {
-  search: string
   locationId: string
   brandId: string
   categoryId: string
@@ -69,6 +71,7 @@ interface Filters {
 
 export default function InventoryPage() {
   const { showToast } = useToast()
+  const searchParams = useSearchParams()
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [locations, setLocations] = useState<any[]>([])
   const [brands, setBrands] = useState<any[]>([])
@@ -94,7 +97,6 @@ export default function InventoryPage() {
   })
   
   const [filters, setFilters] = useState<Filters>({
-    search: '',
     locationId: '',
     brandId: '',
     categoryId: '',
@@ -170,6 +172,12 @@ export default function InventoryPage() {
     fetchCategories()
   }, [])
 
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      setShowAddDialog(true)
+    }
+  }, [searchParams])
+
   const handleFilterChange = (key: keyof Filters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }))
     setPagination(prev => ({ ...prev, page: 1 }))
@@ -177,7 +185,6 @@ export default function InventoryPage() {
 
   const clearFilters = () => {
     setFilters({
-      search: '',
       locationId: '',
       brandId: '',
       categoryId: '',
@@ -268,12 +275,12 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="page-container">
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-xl md:text-3xl font-bold text-foreground">Inventory</h1>
-          <p className="text-sm text-muted-foreground mt-1">Track your stock levels and batches</p>
+          <h1 className="page-title">Inventory</h1>
+          <p className="page-subtitle mt-1">Track your stock levels and batches</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
@@ -387,18 +394,6 @@ export default function InventoryPage() {
         </Card>
       </div>
 
-      {/* Mobile Search Bar */}
-      <div className="md:hidden">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search inventory..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
 
       {/* Filters */}
       {showFilters && (
@@ -408,19 +403,6 @@ export default function InventoryPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-2 md:block hidden">
-                <label className="text-sm font-medium text-foreground">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search inventory..."
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange('search', e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Location</label>
                 <Select value={filters.locationId} onValueChange={(value) => handleFilterChange('locationId', value)}>
@@ -549,9 +531,7 @@ export default function InventoryPage() {
         </div>
         
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Package className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
+          <LoadingPage view="grid" showHeader={false} items={4} columns={2} />
         ) : (
           <>
             {inventory.map((item) => (
@@ -643,9 +623,7 @@ export default function InventoryPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Package className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <LoadingPage view="list" showHeader={false} items={8} />
           ) : (
             <>
               <Table>
@@ -700,11 +678,17 @@ export default function InventoryPage() {
                         ₹{(item.quantity * item.sellingPrice).toLocaleString()}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {formatDate(item.createdAt)}
+                        <div>{formatDate(item.createdAt)}</div>
+                        <div className="text-xs">{item.createdByName || 'System'}</div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         {item.updatedAt && item.updatedAt !== item.createdAt
-                          ? formatDate(item.updatedAt)
+                          ? (
+                            <>
+                              <div>{formatDate(item.updatedAt)}</div>
+                              <div className="text-xs">{item.updatedByName || 'System'}</div>
+                            </>
+                          )
                           : <span className="text-xs">-</span>
                         }
                       </TableCell>

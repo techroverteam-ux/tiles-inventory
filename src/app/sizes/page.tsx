@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useToast } from '@/contexts/ToastContext'
 import { DataView } from '@/components/ui/data-view'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ import { Pagination, usePagination } from '@/components/ui/pagination'
 import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/table-filters'
 import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
-import { Plus, Edit, Trash2 } from 'lucide-react'
+import { Filter, Plus, Edit, Trash2 } from 'lucide-react'
 
 interface Size {
   id: string
@@ -93,9 +93,10 @@ export default function SizesPage() {
   const [submitting, setSubmitting] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   
   const { showToast } = useToast()
-  const router = useRouter()
+  const searchParams = useSearchParams()
   const deleteConfirmation = useDeleteConfirmation()
   
   // Pagination
@@ -209,6 +210,14 @@ export default function SizesPage() {
     fetchBrands()
     fetchCategories()
   }, [fetchBrands, fetchCategories])
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'create') {
+      setEditingSize(null)
+      resetForm()
+      setShowForm(true)
+    }
+  }, [searchParams])
 
   // Fetch filtered categories based on brand selection
   useEffect(() => {
@@ -429,17 +438,13 @@ export default function SizesPage() {
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
         <div>{formatDate(size.createdAt)}</div>
-        {size.createdBy && (
-          <div className="text-xs">{size.createdBy.name}</div>
-        )}
+        <div className="text-xs">{size.createdBy?.name || 'System'}</div>
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
         {size.updatedAt && size.updatedAt !== size.createdAt ? (
           <div>
             <div>{formatDate(size.updatedAt)}</div>
-            {size.updatedBy && (
-              <div className="text-xs">{size.updatedBy.name}</div>
-            )}
+            <div className="text-xs">{size.updatedBy?.name || 'System'}</div>
           </div>
         ) : (
           <span className="text-xs">-</span>
@@ -475,28 +480,16 @@ export default function SizesPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full px-3 sm:px-4 md:px-6 space-y-6">
       {/* Filters */}
       <TableFilters
-        filters={filterConfigs}
-        values={filters}
-        onFiltersChange={updateFilters}
-        searchValue={search}
-        onSearchChange={updateSearch}
-        searchPlaceholder="Search sizes..."
-        loading={loading}
-      />
-
-      {/* Data View */}
-      <DataView
-        items={sizes}
-        view={view}
-        onViewChange={setView}
-        loading={loading}
-        autoResponsive={true}
         title="Sizes"
         actions={
           <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setFiltersOpen((prev) => !prev)}>
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+            </Button>
             <ExportButton
               data={sizes}
               columns={commonColumns.size}
@@ -511,151 +504,171 @@ export default function SizesPage() {
               }}
               disabled={sizes.length === 0}
             />
-            <Dialog open={showForm} onOpenChange={setShowForm}>
-              <DialogTrigger asChild>
-                <Button 
-                  onClick={() => {
-                    setEditingSize(null)
-                    resetForm()
-                  }}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Size
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-card border-border max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle className="text-card-foreground font-semibold">
-                    {editingSize ? 'Edit Size' : 'Add New Size'}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-foreground">Name *</label>
-                      <Input
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="e.g., 600x600mm"
-                        required
-                        className="bg-background border-input text-foreground"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground">Brand *</label>
-                      <select
-                        value={formData.brandId}
-                        onChange={(e) => setFormData({ ...formData, brandId: e.target.value, categoryId: '' })}
-                        required
-                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                      >
-                        <option value="">Select a brand</option>
-                        {brands.map((brand) => (
-                          <option key={brand.id} value={brand.id}>
-                            {brand.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-foreground">Category *</label>
-                      <select
-                        value={formData.categoryId}
-                        onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                        disabled={!formData.brandId}
-                        required
-                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground disabled:opacity-50"
-                      >
-                        <option value="">Select a category</option>
-                        {filteredCategories.map((category) => (
-                          <option key={category.id} value={category.id}>
-                            {category.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground">Description</label>
-                      <Input
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        placeholder="Enter description (optional)"
-                        className="bg-background border-input text-foreground"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-foreground">Length (mm)</label>
-                      <Input
-                        type="number"
-                        value={formData.length}
-                        onChange={(e) => setFormData({ ...formData, length: e.target.value })}
-                        placeholder="Enter length in mm"
-                        className="bg-background border-input text-foreground"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground">Width (mm)</label>
-                      <Input
-                        type="number"
-                        value={formData.width}
-                        onChange={(e) => setFormData({ ...formData, width: e.target.value })}
-                        placeholder="Enter width in mm"
-                        className="bg-background border-input text-foreground"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="isActive"
-                      checked={formData.isActive}
-                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                      className="rounded border-input"
-                    />
-                    <label htmlFor="isActive" className="text-sm font-medium text-foreground">
-                      Active
-                    </label>
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <Button 
-                      type="submit" 
-                      disabled={submitting} 
-                      className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
-                    >
-                      {submitting ? 'Saving...' : editingSize ? 'Update' : 'Create'}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowForm(false)}
-                      className="border-border text-foreground hover:bg-accent font-medium"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditingSize(null)
+                resetForm()
+                setShowForm(true)
+              }}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Size
+            </Button>
           </div>
         }
+        filters={filterConfigs}
+        values={filters}
+        onFiltersChange={updateFilters}
+        searchValue={search}
+        onSearchChange={updateSearch}
+        showSearch={false}
+        showFilterToggle={false}
+        filtersOpen={filtersOpen}
+        onFiltersOpenChange={setFiltersOpen}
+        loading={loading}
+      />
+
+      {/* Data View */}
+      <DataView
+        items={sizes}
+        view={view}
+        onViewChange={setView}
+        loading={loading}
+        autoResponsive={true}
         gridProps={{
           renderItem: renderGridItem,
           columns: 3
         }}
         listProps={{
-          headers: ['Name & Dimensions', 'Brand & Category', 'Description', 'Status', 'Products', 'Created', 'Updated', 'Actions'],
+          headers: ['Size', 'Dimensions', 'Brand & Category', 'Status', 'Products', 'Created', 'Updated', 'Actions'],
           renderRow: renderListRow
         }}
       />
+
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="bg-card border-border max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-card-foreground font-semibold">
+              {editingSize ? 'Edit Size' : 'Add New Size'}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Name *</label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., 600x600mm"
+                  required
+                  className="bg-background border-input text-foreground"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Brand *</label>
+                <select
+                  value={formData.brandId}
+                  onChange={(e) => setFormData({ ...formData, brandId: e.target.value, categoryId: '' })}
+                  required
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                >
+                  <option value="">Select a brand</option>
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Category *</label>
+                <select
+                  value={formData.categoryId}
+                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                  disabled={!formData.brandId}
+                  required
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground disabled:opacity-50"
+                >
+                  <option value="">Select a category</option>
+                  {filteredCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Description</label>
+                <Input
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter description (optional)"
+                  className="bg-background border-input text-foreground"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Length (mm)</label>
+                <Input
+                  type="number"
+                  value={formData.length}
+                  onChange={(e) => setFormData({ ...formData, length: e.target.value })}
+                  placeholder="Enter length in mm"
+                  className="bg-background border-input text-foreground"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Width (mm)</label>
+                <Input
+                  type="number"
+                  value={formData.width}
+                  onChange={(e) => setFormData({ ...formData, width: e.target.value })}
+                  placeholder="Enter width in mm"
+                  className="bg-background border-input text-foreground"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={formData.isActive}
+                onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                className="rounded border-input"
+              />
+              <label htmlFor="isActive" className="text-sm font-medium text-foreground">
+                Active
+              </label>
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+              >
+                {submitting ? 'Saving...' : editingSize ? 'Update' : 'Create'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowForm(false)}
+                className="border-border text-foreground hover:bg-accent font-medium"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Pagination */}
       <Pagination
