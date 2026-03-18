@@ -5,18 +5,16 @@ import { Button } from '@/components/ui/button'
 import { useTheme } from '@/contexts/ThemeContext'
 
 export default function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme()
+  const { actualTheme, toggleTheme } = useTheme()
 
   const getIcon = () => {
-    switch (theme) {
+    switch (actualTheme) {
       case 'light':
         return <Sun className="h-5 w-5 text-muted-foreground" />
       case 'dark':
         return <Moon className="h-5 w-5 text-muted-foreground" />
-      case 'system':
-        return <Monitor className="h-5 w-5 text-muted-foreground" />
       default:
-        return <Sun className="h-5 w-5 text-muted-foreground" />
+        return <Monitor className="h-5 w-5 text-muted-foreground" />
     }
   }
 
@@ -25,7 +23,7 @@ export default function ThemeToggle() {
       variant="ghost" 
       size="sm" 
       onClick={toggleTheme}
-      title={`Current theme: ${theme}`}
+      title={`Current theme: ${actualTheme}`}
       className="transition-smooth"
     >
       {getIcon()}

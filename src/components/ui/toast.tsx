@@ -17,6 +17,13 @@ interface ToastContextType {
 
 const ToastContext = React.createContext<ToastContextType | undefined>(undefined)
 
+const toastVariantClasses: Record<ToastType, string> = {
+  success: 'bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]',
+  error: 'bg-destructive text-destructive-foreground',
+  warning: 'bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))]',
+  info: 'bg-[hsl(var(--info))] text-[hsl(var(--info-foreground))]',
+}
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<Toast[]>([])
 
@@ -40,19 +47,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`
-              flex items-center justify-between gap-3 px-4 py-3 rounded-lg shadow-lg
-              animate-in slide-in-from-right duration-300
-              ${toast.type === 'success' ? 'bg-green-600 text-white' : ''}
-              ${toast.type === 'error' ? 'bg-red-600 text-white' : ''}
-              ${toast.type === 'warning' ? 'bg-yellow-600 text-white' : ''}
-              ${toast.type === 'info' ? 'bg-blue-600 text-white' : ''}
-            `}
+            className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg shadow-lg animate-in slide-in-from-right duration-300 ${toastVariantClasses[toast.type]}`}
           >
             <p className="text-sm font-medium">{toast.message}</p>
             <button
               onClick={() => removeToast(toast.id)}
-              className="text-white hover:text-gray-200 transition-colors"
+              className="inline-flex items-center justify-center rounded-md bg-destructive px-1.5 py-1 text-destructive-foreground transition-colors hover:bg-destructive/90"
+              aria-label="Close notification"
             >
               <X className="h-4 w-4" />
             </button>

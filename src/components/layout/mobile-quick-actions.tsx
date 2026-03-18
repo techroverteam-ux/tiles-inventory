@@ -34,7 +34,7 @@ export default function MobileQuickActions() {
       title: 'Add Brand',
       description: 'Create a new brand',
       icon: <Users className="h-6 w-6" />,
-      color: 'bg-blue-500',
+      color: 'bg-primary',
       href: '/brands?action=create',
     },
     {
@@ -42,7 +42,7 @@ export default function MobileQuickActions() {
       title: 'Add Category',
       description: 'Create a new category',
       icon: <Palette className="h-6 w-6" />,
-      color: 'bg-purple-500',
+      color: 'bg-primary',
       href: '/categories?action=create',
     },
     {
@@ -50,7 +50,7 @@ export default function MobileQuickActions() {
       title: 'Add Size',
       description: 'Create a new size',
       icon: <Ruler className="h-6 w-6" />,
-      color: 'bg-green-500',
+      color: 'bg-primary',
       href: '/sizes?action=create',
     },
     {
@@ -58,7 +58,7 @@ export default function MobileQuickActions() {
       title: 'Add Product',
       description: 'Create a new product',
       icon: <Package className="h-6 w-6" />,
-      color: 'bg-indigo-500',
+      color: 'bg-primary',
       href: '/products?action=create',
     },
     {
@@ -66,7 +66,7 @@ export default function MobileQuickActions() {
       title: 'Purchase Order',
       description: 'Create purchase order',
       icon: <ShoppingCart className="h-6 w-6" />,
-      color: 'bg-orange-500',
+      color: 'bg-primary',
       href: '/purchase-orders?action=create',
     },
     {
@@ -74,7 +74,7 @@ export default function MobileQuickActions() {
       title: 'Sales Order',
       description: 'Create sales order',
       icon: <TrendingUp className="h-6 w-6" />,
-      color: 'bg-rose-500',
+      color: 'bg-primary',
       href: '/sales-orders?action=create',
     },
   ]
@@ -100,6 +100,8 @@ export default function MobileQuickActions() {
                 size="sm"
                 onClick={() => setShowActions(false)}
                 className="h-8 w-8 p-0"
+                aria-label="Close quick actions"
+                title="Close quick actions"
               >
                 <X className="h-4 w-4" />
               </Button>

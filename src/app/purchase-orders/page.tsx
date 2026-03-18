@@ -269,7 +269,7 @@ export default function PurchaseOrdersPage() {
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+            <div className="text-2xl font-bold text-[hsl(var(--warning))]">
               {orders.filter(o => o.status === 'PENDING').length}
             </div>
             <p className="text-sm text-muted-foreground">Pending</p>

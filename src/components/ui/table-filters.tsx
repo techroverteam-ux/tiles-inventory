@@ -174,9 +174,9 @@ export function TableFilters({
         const fromKey = `${filter.key}From`
         const toKey = `${filter.key}To`
         return (
-          <div key={filter.key} className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+          <div key={filter.key} className="flex flex-col md:flex-row md:items-center gap-2 w-full lg:w-auto">
             <span className="text-sm text-muted-foreground whitespace-nowrap">{filter.label}:</span>
-            <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-1 w-full sm:w-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full md:w-auto">
               <Input
                 type="date"
                 value={(values[fromKey] as string) || ''}
@@ -185,11 +185,10 @@ export function TableFilters({
                   if (!e.target.value) delete newFilters[fromKey]
                   onFiltersChange(newFilters)
                 }}
-                className="h-9 w-full sm:w-36 text-sm"
+                className="h-9 w-full md:w-44 text-sm"
                 placeholder="From"
                 disabled={loading}
               />
-              <span className="hidden xs:block text-muted-foreground">–</span>
               <Input
                 type="date"
                 value={(values[toKey] as string) || ''}
@@ -198,7 +197,7 @@ export function TableFilters({
                   if (!e.target.value) delete newFilters[toKey]
                   onFiltersChange(newFilters)
                 }}
-                className="h-9 w-full sm:w-36 text-sm"
+                className="h-9 w-full md:w-44 text-sm"
                 placeholder="To"
                 disabled={loading}
               />

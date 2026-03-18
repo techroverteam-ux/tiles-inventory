@@ -373,6 +373,8 @@ export default function Layout({ children }: LayoutProps) {
                       variant="ghost"
                       size="sm"
                       className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                      aria-label={globalSearch ? 'Clear search' : 'Close search'}
+                      title={globalSearch ? 'Clear search' : 'Close search'}
                       onClick={() => {
                         if (globalSearch) {
                           setGlobalSearch('')

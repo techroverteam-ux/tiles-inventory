@@ -39,6 +39,13 @@ const navigation = [
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
 
+  const handleNavItemClick = () => {
+    // Keep desktop sidebar state stable; close only on mobile navigation.
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      onClose()
+    }
+  }
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -51,27 +58,34 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       
       {/* Sidebar */}
       <aside className={cn(
-        "fixed left-0 top-16 sm:top-20 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] bg-card border-r border-border transition-all duration-300 z-40 flex flex-col",
+        "fixed left-0 top-16 sm:top-20 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] bg-card border-r border-border transition-[width,transform] duration-300 ease-out z-40 flex flex-col",
         isOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full md:w-16 md:translate-x-0"
       )}>
-        <nav className={cn("space-y-2 flex-1", isOpen ? "p-4" : "p-3 md:p-2")}>
+        <nav className="space-y-1.5 flex-1 p-3">
           {navigation.map((item) => {
             const isActive = pathname === item.href
             return (
               <div key={item.name} className="relative group">
                 <Link
                   href={item.href}
-                  onClick={() => onClose()}
+                  onClick={handleNavItemClick}
                   className={cn(
-                    "flex items-center rounded-lg text-sm font-medium transition-colors relative",
-                    isOpen ? "gap-3 px-3 py-2 justify-start" : "justify-center px-2 py-2.5",
+                    "relative flex h-11 items-center rounded-lg text-sm font-medium transition-all duration-200",
+                    isOpen ? "justify-start gap-3 px-3" : "justify-center px-0",
                     isActive 
                       ? "bg-accent text-accent-foreground" 
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   )}
                 >
                   <item.icon className="h-5 w-5 flex-shrink-0" />
-                  <span className={cn(isOpen ? "block" : "hidden md:hidden")}>{item.name}</span>
+                  <span
+                    className={cn(
+                      "overflow-hidden whitespace-nowrap transition-all duration-200",
+                      isOpen ? "w-auto opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-1"
+                    )}
+                  >
+                    {item.name}
+                  </span>
                   {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-primary" />}
                 </Link>
                 

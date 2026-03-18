@@ -101,8 +101,10 @@ export default function NotificationDropdown() {
                   variant="ghost" 
                   size="sm"
                   onClick={() => setIsOpen(false)}
+                  aria-label="Close notifications"
+                  title="Close notifications"
                 >
-                  <X className="h-4 w-4 text-muted-foreground" />
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             </div>
