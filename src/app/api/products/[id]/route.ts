@@ -56,6 +56,32 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         updateData.imageUrl = data.imageUrl || null
       }
 
+      // Check if code is already taken by another product (including inactive ones)
+      const duplicateProduct = await prisma.product.findFirst({
+        where: {
+          code: { equals: code, mode: 'insensitive' },
+          id: { not: id }
+        }
+      })
+
+      if (duplicateProduct) {
+        if (duplicateProduct.isActive) {
+          return NextResponse.json({
+            error: 'Duplicate entry',
+            details: 'A product with this code already exists'
+          }, { status: 409 })
+        } else {
+          // Rename the inactive duplicate to free up the code
+          await prisma.product.update({
+            where: { id: duplicateProduct.id },
+            data: { 
+              code: `${duplicateProduct.code}_deleted_${Date.now()}`,
+              updatedAt: new Date()
+            }
+          })
+        }
+      }
+
       const product = await prisma.product.update({
         where: { id },
         data: updateData,
@@ -117,6 +143,32 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       updateData.imageUrl = imageUrl
     }
 
+    // Check if code is already taken by another product (including inactive ones)
+    const duplicateProduct = await prisma.product.findFirst({
+      where: {
+        code: { equals: code, mode: 'insensitive' },
+        id: { not: id }
+      }
+    })
+
+    if (duplicateProduct) {
+      if (duplicateProduct.isActive) {
+        return NextResponse.json({
+          error: 'Duplicate entry',
+          details: 'A product with this code already exists'
+        }, { status: 409 })
+      } else {
+        // Rename the inactive duplicate to free up the code
+        await prisma.product.update({
+          where: { id: duplicateProduct.id },
+          data: { 
+            code: `${duplicateProduct.code}_deleted_${Date.now()}`,
+            updatedAt: new Date()
+          }
+        })
+      }
+    }
+
     const product = await prisma.product.update({
       where: { id },
       data: updateData,
@@ -165,9 +217,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
+    const product = await prisma.product.findUnique({ where: { id }, select: { code: true } })
+    if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+
     await prisma.product.update({
       where: { id },
-      data: { isActive: false },
+      data: { 
+        code: `${product.code}_del_${Date.now()}`,
+        isActive: false,
+        updatedAt: new Date()
+      },
     })
     return NextResponse.json({ success: true })
   } catch (error) {

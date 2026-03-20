@@ -64,7 +64,7 @@ export async function PUT(
       )
     }
 
-    // Check if name is already taken by another brand
+    // Check if name is already taken by another brand (including inactive ones)
     const duplicateBrand = await prisma.brand.findFirst({
       where: {
         name: { equals: name.trim(), mode: 'insensitive' },
@@ -73,10 +73,21 @@ export async function PUT(
     })
 
     if (duplicateBrand) {
-      return NextResponse.json(
-        { error: 'Brand name already exists' },
-        { status: 400 }
-      )
+      if (duplicateBrand.isActive) {
+        return NextResponse.json(
+          { error: 'Brand name already exists' },
+          { status: 400 }
+        )
+      } else {
+        // Rename the inactive duplicate to free up the name
+        await prisma.brand.update({
+          where: { id: duplicateBrand.id },
+          data: { 
+            name: `${duplicateBrand.name}_deleted_${Date.now()}`,
+            updatedAt: new Date()
+          }
+        })
+      }
     }
 
     const brand = await (prisma as any).brand.update({
@@ -142,6 +153,7 @@ export async function DELETE(
     await prisma.brand.update({
       where: { id },
       data: {
+        name: `${existingBrand.name}_del_${Date.now()}`,
         isActive: false,
         updatedAt: new Date(),
       },

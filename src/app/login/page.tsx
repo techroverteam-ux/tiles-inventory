@@ -32,26 +32,28 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-muted/10 via-background to-muted/20" />
+    <div className="min-h-screen bg-mesh text-foreground flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full animate-pulse" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full animate-pulse delay-700" />
 
-      <div className="w-full max-w-md relative z-10">
-        <Card className="shadow-xl border border-border bg-card backdrop-blur-sm">
-          <CardHeader className="text-center pb-8 pt-8">
-            <div className="flex justify-center mb-6">
-              <div className="relative rounded-2xl p-4 shadow-lg bg-background border border-border/70">
+      <div className="w-full max-w-md relative z-10 animate-in fade-in zoom-in-95 duration-1000">
+        <Card className="shadow-premium border-border/50 bg-card/60 backdrop-blur-xl rounded-[2.5rem]">
+          <CardHeader className="text-center pb-8 pt-10">
+            <div className="flex justify-center mb-8">
+              <div className="relative rounded-[2rem] p-5 shadow-premium bg-background border border-border/50 group hover:border-primary/30 transition-all duration-500">
                 <img
                   src="/logo.jpeg?v=1"
                   alt="Company Logo"
-                  className="h-16 w-auto object-contain mx-auto"
+                  className="h-20 w-auto object-contain mx-auto transition-transform duration-500 group-hover:scale-110"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none'
                   }}
                 />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground text-sm">Sign in to your tiles inventory system</p>
+            <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 tracking-tight mb-2">Welcome House of Tiles</h1>
+            <p className="text-muted-foreground font-medium">Elevating your tile inventory management</p>
           </CardHeader>
 
           <CardContent className="px-8 pb-8">
@@ -106,7 +108,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-lg shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-14 bg-primary text-primary-foreground hover:bg-primary/90 font-bold rounded-2xl shadow-lg shadow-primary/20 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">

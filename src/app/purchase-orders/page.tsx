@@ -22,6 +22,8 @@ import {
 import PurchaseOrderForm from '@/components/PurchaseOrderForm'
 import { useToast } from '@/contexts/ToastContext'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
+import { cn } from '@/lib/utils'
+import { Truck } from 'lucide-react'
 
 const formatDate = (dateString: string) => {
   const d = new Date(dateString)
@@ -230,28 +232,39 @@ export default function PurchaseOrdersPage() {
   }
 
   return (
-    <div className="page-container">
+    <div className="w-full px-3 sm:px-4 md:px-6 space-y-8 pb-10">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="page-header">
+        <div className="space-y-1">
           <h1 className="page-title">Purchase Orders</h1>
-          <p className="page-subtitle mt-1">Manage your purchase orders</p>
+          <p className="text-muted-foreground font-medium flex items-center gap-2">
+            <Truck className="h-4 w-4 text-primary/60" />
+            Manage and track your incoming stock and supplier orders
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+        <div className="flex flex-wrap gap-2 pt-2 sm:pt-0">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowFilters(!showFilters)}
+            className={cn(
+              "rounded-xl border-border/50 font-bold gap-2 transition-all",
+              showFilters ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted/50"
+            )}
+          >
+            <Filter className="h-4 w-4" />
             Filters
           </Button>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
+              <Button size="sm" className="rounded-xl font-bold gap-2 shadow-lg shadow-primary/20">
+                <Plus className="h-4 w-4" />
                 New Order
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl bg-card">
+            <DialogContent className="max-w-4xl glass backdrop-blur-3xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
               <DialogHeader>
-                <DialogTitle className="text-foreground">Create Purchase Order</DialogTitle>
+                <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Create Purchase Order</DialogTitle>
               </DialogHeader>
               <PurchaseOrderForm onSuccess={() => {
                 setShowAddDialog(false)
@@ -263,55 +276,63 @@ export default function PurchaseOrdersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-foreground">{orders.length}</div>
-            <p className="text-sm text-muted-foreground">Total Orders</p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="hover:shadow-premium transition-all duration-300 border-border/50 rounded-3xl overflow-hidden glass-card group">
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-1">
+              <div className="text-3xl font-extrabold text-foreground tracking-tight">{orders.length}</div>
+              <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider opacity-70">Total Orders</p>
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-[hsl(var(--warning))]">
-              {orders.filter(o => o.status === 'PENDING').length}
+        <Card className="hover:shadow-premium transition-all duration-300 border-border/50 rounded-3xl overflow-hidden glass-card group">
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-1">
+              <div className="text-3xl font-extrabold text-[hsl(var(--warning))] tracking-tight">
+                {orders.filter(o => o.status === 'PENDING').length}
+              </div>
+              <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider opacity-70">Pending Orders</p>
             </div>
-            <p className="text-sm text-muted-foreground">Pending</p>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-primary">
-              {orders.filter(o => o.status === 'DELIVERED').length}
+        <Card className="hover:shadow-premium transition-all duration-300 border-border/50 rounded-3xl overflow-hidden glass-card group">
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-1">
+              <div className="text-3xl font-extrabold text-primary tracking-tight">
+                {orders.filter(o => o.status === 'DELIVERED').length}
+              </div>
+              <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider opacity-70">Delivered</p>
             </div>
-            <p className="text-sm text-muted-foreground">Delivered</p>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-foreground">
-              ₹{orders.reduce((sum, o) => sum + o.totalAmount, 0).toLocaleString()}
+        <Card className="hover:shadow-premium transition-all duration-300 border-border/50 rounded-3xl overflow-hidden glass-card group">
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-1">
+              <div className="text-3xl font-extrabold text-foreground tracking-tight">
+                ₹{orders.reduce((sum, o) => sum + o.totalAmount, 0).toLocaleString()}
+              </div>
+              <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider opacity-70">Total Expense</p>
             </div>
-            <p className="text-sm text-muted-foreground">Total Value</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
       {showFilters && (
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-lg text-foreground">Filters</CardTitle>
+        <Card className="border-border/50 rounded-3xl overflow-hidden glass-card shadow-premium animate-in slide-in-from-top-4 duration-300">
+          <CardHeader className="pb-4 border-b border-border/30 bg-muted/20">
+            <CardTitle className="text-xl font-bold text-foreground">Filter Orders</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Brand</label>
+                <label className="text-sm font-bold text-foreground/80 ml-1">Brand</label>
                 <Select value={filters.brandId} onValueChange={(value) => setFilters({ ...filters, brandId: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-2xl bg-muted/20 border-border/40 transition-all h-12">
                     <SelectValue placeholder="All brands" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All brands</SelectItem>
+                  <SelectContent className="rounded-2xl">
+                    <SelectItem value="none">All brands</SelectItem>
                     {brands.map((brand) => (
                       <SelectItem key={brand.id} value={brand.id}>
                         {brand.name}
@@ -322,13 +343,13 @@ export default function PurchaseOrdersPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Status</label>
+                <label className="text-sm font-bold text-foreground/80 ml-1">Status</label>
                 <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-2xl bg-muted/20 border-border/40 transition-all h-12">
                     <SelectValue placeholder="All status" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All status</SelectItem>
+                  <SelectContent className="rounded-2xl">
+                    <SelectItem value="all">All status</SelectItem>
                     <SelectItem value="PENDING">Pending</SelectItem>
                     <SelectItem value="CONFIRMED">Confirmed</SelectItem>
                     <SelectItem value="DELIVERED">Delivered</SelectItem>
@@ -338,9 +359,13 @@ export default function PurchaseOrdersPage() {
               </div>
             </div>
             
-            <div className="flex justify-end mt-4">
-              <Button variant="outline" onClick={clearFilters}>
-                Clear Filters
+            <div className="flex justify-end mt-8">
+              <Button 
+                variant="ghost" 
+                onClick={clearFilters}
+                className="rounded-xl font-bold text-muted-foreground hover:text-primary hover:bg-primary/10 px-6 h-12"
+              >
+                Clear All Filters
               </Button>
             </div>
           </CardContent>
@@ -348,11 +373,11 @@ export default function PurchaseOrdersPage() {
       )}
 
       {/* Orders Table */}
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="text-foreground">Purchase Orders ({orders.length})</CardTitle>
+      <Card className="border-border/50 rounded-3xl overflow-hidden glass-card shadow-premium">
+        <CardHeader className="pb-4 border-b border-border/30 bg-muted/20">
+          <CardTitle className="text-xl font-bold text-foreground">Purchase History ({orders.length})</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {loading ? (
             <LoadingPage view="list" showHeader={false} items={8} />
           ) : (
@@ -444,19 +469,34 @@ export default function PurchaseOrdersPage() {
                           : <span className="text-xs">-</span>
                         }
                       </TableCell>
-                      <TableCell className="text-right">
+                      <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" onClick={() => handleView(order)}>
-                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleView(order)}
+                            className="rounded-xl hover:bg-primary/10 hover:text-primary p-2 transition-all"
+                          >
+                            <Eye className="h-5 w-5" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(order)}>
-                            <Edit className="h-4 w-4 text-muted-foreground" />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleEdit(order)}
+                            className="rounded-xl hover:bg-primary/10 hover:text-primary p-2 transition-all"
+                          >
+                            <Edit className="h-5 w-5" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(order)}>
-                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleDelete(order)}
+                            className="rounded-xl hover:bg-destructive/10 hover:text-destructive p-2 transition-all"
+                          >
+                            <Trash2 className="h-5 w-5" />
                           </Button>
                         </div>
-                      </TableCell>
+                      </td>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -468,38 +508,48 @@ export default function PurchaseOrdersPage() {
 
       {/* Location Selection Dialog */}
       <Dialog open={showLocationDialog} onOpenChange={setShowLocationDialog}>
-        <DialogContent className="bg-card">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Select Delivery Location</DialogTitle>
+        <DialogContent className="glass backdrop-blur-3xl border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Confirm Delivery</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Please select the location where this order will be delivered.
-            </p>
-            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select location" />
-              </SelectTrigger>
-              <SelectContent>
-                {locations.map((location) => (
-                  <SelectItem key={location.id} value={location.id}>
-                    {location.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex gap-2">
+          <div className="space-y-6">
+            <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
+              <p className="text-sm text-foreground/80 font-medium leading-relaxed">
+                Please select the storage location where this order's stock will be received. This will update the inventory counts.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-foreground/80 ml-1">Storage Location</label>
+              <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                <SelectTrigger className="rounded-2xl bg-muted/20 border-border/40 transition-all h-12">
+                  <SelectValue placeholder="Choose a location" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl">
+                  {locations.map((location) => (
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-3 pt-4">
               <Button 
                 onClick={handleDelivery} 
                 disabled={!selectedLocation || changingStatus !== null}
+                className="rounded-2xl h-12 font-bold shadow-lg shadow-primary/20"
               >
-                {changingStatus ? 'Processing...' : 'Confirm Delivery'}
+                {changingStatus ? 'Processing Delivery...' : 'Confirm & Update Stock'}
               </Button>
-              <Button variant="outline" onClick={() => {
-                setShowLocationDialog(false)
-                setSelectedLocation('')
-                setSelectedOrder(null)
-              }}>
+              <Button 
+                variant="outline" 
+                className="rounded-2xl h-12 border-border/50 font-bold"
+                onClick={() => {
+                  setShowLocationDialog(false)
+                  setSelectedLocation('')
+                  setSelectedOrder(null)
+                }}
+              >
                 Cancel
               </Button>
             </div>
@@ -509,29 +559,62 @@ export default function PurchaseOrdersPage() {
 
       {/* View Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="bg-card">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">View Purchase Order</DialogTitle>
+        <DialogContent className="glass backdrop-blur-3xl border-border/50 max-w-lg rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 p-8">
+          <DialogHeader className="mb-6">
+            <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Purchase Order Details</DialogTitle>
           </DialogHeader>
           {selectedOrder && (
-            <div className="space-y-4">
-              <div className="text-foreground"><strong>Order Number:</strong> {selectedOrder.orderNumber}</div>
-              <div className="text-foreground"><strong>Brand:</strong> {selectedOrder.brand?.name}</div>
-              <div className="text-foreground"><strong>Order Date:</strong> {formatDate(selectedOrder.orderDate)}</div>
-              <div className="text-foreground"><strong>Expected Date:</strong> {selectedOrder.expectedDate ? formatDate(selectedOrder.expectedDate) : 'Not set'}</div>
-              <div className="text-foreground"><strong>Status:</strong> {selectedOrder.status}</div>
-              <div className="text-foreground"><strong>Amount:</strong> ₹{selectedOrder.totalAmount.toLocaleString()}</div>
-              <div className="text-foreground"><strong>Notes:</strong> {selectedOrder.notes || 'No notes'}</div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Order Number</span>
+                <div className="font-bold text-lg text-foreground bg-muted/30 p-3 rounded-2xl border border-border/30">
+                  {selectedOrder.orderNumber}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</span>
+                <div className={cn(
+                  "p-3 rounded-2xl border font-bold text-center",
+                  selectedOrder.status === 'DELIVERED' ? "bg-primary/10 text-primary border-primary/20" : "bg-warning/10 text-warning border-warning/20"
+                )}>
+                  {selectedOrder.status}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Brand</span>
+                <div className="text-foreground font-medium">{selectedOrder.brand?.name}</div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Order Date</span>
+                <div className="text-foreground font-medium">{formatDate(selectedOrder.orderDate)}</div>
+              </div>
+              <div className="col-span-2 mt-4 space-y-1 text-center">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Purchase Amount</span>
+                <div className="text-4xl font-extrabold text-foreground">₹{selectedOrder.totalAmount.toLocaleString()}</div>
+              </div>
+              {selectedOrder.notes && (
+                <div className="col-span-2 mt-2 space-y-1">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Notes</span>
+                  <div className="text-sm text-foreground bg-muted/20 p-4 rounded-2xl border border-border/30 italic">
+                    {selectedOrder.notes}
+                  </div>
+                </div>
+              )}
             </div>
           )}
+          <div className="mt-8">
+            <Button className="w-full rounded-2xl h-12 font-bold" onClick={() => setShowViewDialog(false)}>
+              Close Order View
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-4xl bg-card">
+        <DialogContent className="max-w-4xl glass backdrop-blur-3xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Edit Purchase Order</DialogTitle>
+            <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 tracking-tight">Edit Purchase Order</DialogTitle>
           </DialogHeader>
           {selectedOrder && (
             <PurchaseOrderForm 

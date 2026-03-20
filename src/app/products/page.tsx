@@ -15,8 +15,9 @@ import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/tab
 import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
 import ImageUpload from '@/components/ui/image-upload'
-import { Filter, Plus, Edit, Trash2 } from 'lucide-react'
+import { Filter, Plus, Edit, Trash2, Hash, Layers, Box, Maximize, Package } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
+import { cn } from '@/lib/utils'
 
 interface Product {
   id: string
@@ -334,62 +335,78 @@ export default function ProductsPage() {
   }
 
   const renderGridItem = (product: Product) => (
-    <Card className="h-full hover:shadow-lg transition-shadow">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg font-semibold text-card-foreground">
-              {product.name}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {product.code}
-            </p>
+    <Card className="h-full hover:shadow-premium transition-all duration-300 border-border/50 group overflow-hidden">
+      <div className="relative aspect-video overflow-hidden bg-muted/30">
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground/20">
+            <Package className="h-12 w-12" />
           </div>
-          <Badge variant={product.isActive ? 'default' : 'secondary'}>
+        )}
+        <div className="absolute top-3 right-3">
+          <Badge 
+            variant={product.isActive ? 'default' : 'secondary'}
+            className={cn(product.isActive ? "bg-primary text-primary-foreground shadow-lg" : "backdrop-blur-md bg-background/50")}
+          >
             {product.isActive ? 'Active' : 'Inactive'}
           </Badge>
         </div>
+        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+          <div className="text-white font-bold truncate">{product.code}</div>
+        </div>
+      </div>
+      <CardHeader className="pb-2 pt-4">
+        <CardTitle className="text-lg font-bold text-card-foreground group-hover:text-primary transition-colors truncate">
+          {product.name}
+        </CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
-        {product.imageUrl && (
-          <div className="mb-4">
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="w-full h-32 object-cover rounded-md"
-            />
+        <div className="grid grid-cols-2 gap-2 text-xs mb-4">
+          <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30">
+            <Layers className="h-3 w-3 text-primary" />
+            <span className="truncate">{product.brand.name}</span>
           </div>
-        )}
-        <div className="space-y-2 text-sm text-muted-foreground mb-3">
-          <div>Brand: {product.brand.name}</div>
-          <div>Category: {product.category.name}</div>
-          <div>Size: {product.size?.name || '-'}</div>
-          <div>Finish: {product.finishType.name}</div>
-          <div>Box: {product.pcsPerBox} pcs / {product.sqftPerBox} sqft</div>
+          <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30">
+            <Filter className="h-3 w-3 text-primary" />
+            <span className="truncate">{product.category.name}</span>
+          </div>
+          <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30">
+            <Maximize className="h-3 w-3 text-primary" />
+            <span className="truncate">{product.size?.name || '-'}</span>
+          </div>
+          <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30">
+            <Box className="h-3 w-3 text-primary" />
+            <span className="truncate">{product.pcsPerBox} pcs</span>
+          </div>
         </div>
-        <div className="text-xs text-muted-foreground mb-4 space-y-1">
-          <div>Created: {formatDate(product.createdAt)} by {product.createdBy?.name || 'System'}</div>
-          {product.updatedAt && product.updatedAt !== product.createdAt && (
-            <div>Updated: {formatDate(product.updatedAt)} by {product.updatedBy?.name || 'System'}</div>
-          )}
+
+        <div className="text-xs text-muted-foreground mb-4 space-y-1 bg-muted/20 p-2.5 rounded-xl border border-border/20">
+          <div className="flex justify-between"><span>Created:</span> <span className="font-medium text-foreground">{formatDate(product.createdAt)}</span></div>
+          <div className="flex justify-between"><span>By:</span> <span className="font-medium text-foreground">{product.createdBy?.name || 'System'}</span></div>
         </div>
-        <div className="flex gap-2">
+
+        <div className="grid grid-cols-2 gap-3">
           <Button
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); handleEdit(product); }}
-            className="flex-1 gap-1"
+            className="rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-2 font-bold"
           >
-            <Edit className="h-3 w-3" />
+            <Edit className="h-3.5 w-3.5" />
             Edit
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); handleDelete(product); }}
-            className="flex-1 text-destructive hover:text-destructive gap-1"
+            className="rounded-xl text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10 hover:border-destructive/30 gap-2 font-bold"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-3.5 w-3.5" />
             Delete
           </Button>
         </div>
@@ -399,75 +416,97 @@ export default function ProductsPage() {
 
   const renderListRow = (product: Product) => (
     <>
-      <td className="px-4 py-3">
-        <div className="flex items-center space-x-3">
-          {product.imageUrl && (
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              className="w-10 h-10 object-cover rounded"
-            />
-          )}
+      <td className="px-6 py-4">
+        <div className="flex items-center space-x-4">
+          <div className="h-12 w-12 rounded-xl overflow-hidden bg-muted/30 border border-border/50 flex-shrink-0">
+            {product.imageUrl ? (
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground/20">
+                <Package className="h-6 w-6" />
+              </div>
+            )}
+          </div>
           <div>
-            <div className="font-medium text-foreground">{product.name}</div>
-            <div className="text-sm text-muted-foreground">{product.code}</div>
+            <div className="font-bold text-foreground group-hover:text-primary transition-colors">{product.name}</div>
+            <div className="text-xs font-medium text-primary bg-primary/5 px-2 py-0.5 rounded-full inline-block mt-1">{product.code}</div>
           </div>
         </div>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-6 py-4">
         <div className="text-sm">
-          <div>{product.brand.name}</div>
-          <div className="text-muted-foreground">{product.category.name}</div>
+          <div className="font-bold text-foreground">{product.brand.name}</div>
+          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+            <Layers className="h-3 w-3" />
+            {product.category.name}
+          </div>
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        {product.size?.name || '-'}
+      <td className="px-6 py-4 text-sm font-medium text-foreground">
+        <div className="flex items-center gap-1.5">
+          <Maximize className="h-4 w-4 text-muted-foreground" />
+          {product.size?.name || '-'}
+        </div>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        {product.finishType.name}
+      <td className="px-6 py-4 text-sm text-muted-foreground">
+        <div className="px-2.5 py-1 rounded-lg bg-muted/50 border border-border/50 inline-block font-medium">
+          {product.finishType.name}
+        </div>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        {product.pcsPerBox} pcs<br />
-        {product.sqftPerBox} sqft
+      <td className="px-6 py-4 text-sm text-muted-foreground">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2 font-bold text-foreground">
+            <Box className="h-4 w-4 text-muted-foreground" />
+            {product.pcsPerBox} pcs
+          </div>
+          <div className="text-xs opacity-70 ml-6">{product.sqftPerBox} sqft</div>
+        </div>
       </td>
-      <td className="px-4 py-3">
-        <Badge variant={product.isActive ? 'default' : 'secondary'}>
+      <td className="px-6 py-4">
+        <Badge 
+          variant={product.isActive ? 'default' : 'secondary'}
+          className={cn(product.isActive ? "bg-primary/20 text-primary border-none" : "")}
+        >
           {product.isActive ? 'Active' : 'Inactive'}
         </Badge>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        <div>{formatDate(product.createdAt)}</div>
+      <td className="px-6 py-4 text-sm text-muted-foreground">
+        <div className="font-medium text-foreground">{formatDate(product.createdAt)}</div>
         <div className="text-xs">{product.createdBy?.name || 'System'}</div>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
+      <td className="px-6 py-4 text-sm text-muted-foreground">
         {product.updatedAt && product.updatedAt !== product.createdAt
           ? (
-            <>
-              <div>{formatDate(product.updatedAt)}</div>
+            <div>
+              <div className="font-medium text-foreground">{formatDate(product.updatedAt)}</div>
               <div className="text-xs">{product.updatedBy?.name || 'System'}</div>
-            </>
+            </div>
           )
-          : <span className="text-xs">-</span>
+          : <span className="text-xs opacity-30">No updates</span>
         }
       </td>
-      <td className="px-4 py-3">
+      <td className="px-6 py-4">
         <div className="flex gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={(e) => { e.stopPropagation(); handleEdit(product); }}
-            className="gap-1"
+            className="rounded-xl hover:bg-primary/10 hover:text-primary gap-2 font-bold px-3 transition-all"
           >
-            <Edit className="h-3 w-3" />
+            <Edit className="h-4 w-4" />
             Edit
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={(e) => { e.stopPropagation(); handleDelete(product); }}
-            className="text-destructive hover:text-destructive gap-1"
+            className="rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 font-bold px-3 transition-all"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-4 w-4" />
             Delete
           </Button>
         </div>
@@ -514,64 +553,64 @@ export default function ProductsPage() {
                   Add Product
                 </Button>
               </DialogTrigger>
-            <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="glass backdrop-blur-3xl border-border/50 max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 no-scrollbar">
               <DialogHeader>
-                <DialogTitle className="text-card-foreground">
+                <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
                   {editingProduct ? 'Edit Product' : 'Add New Product'}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Name *</label>
+              <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-foreground/80 ml-1">Name <span className="text-destructive">*</span></label>
                     <Input
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Enter product name"
                       required
-                      className="bg-background border-input text-foreground"
+                      className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
                     />
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Code *</label>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-foreground/80 ml-1">Code <span className="text-destructive">*</span></label>
                     <Input
                       value={formData.code}
                       onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                       placeholder="Enter product code"
                       required
-                      className="bg-background border-input text-foreground"
+                      className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Brand *</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-foreground/80 ml-1">Brand <span className="text-destructive">*</span></label>
                     <select
                       value={formData.brandId}
                       onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                      className="w-full h-12 px-4 rounded-2xl bg-muted/20 border border-border/40 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none"
                     >
-                      <option value="">Select a brand</option>
+                      <option value="" className="bg-background">Select a brand</option>
                       {brands.map((brand) => (
-                        <option key={brand.id} value={brand.id}>
+                        <option key={brand.id} value={brand.id} className="bg-background">
                           {brand.name}
                         </option>
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Category *</label>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-foreground/80 ml-1">Category <span className="text-destructive">*</span></label>
                     <select
                       value={formData.categoryId}
                       onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                      className="w-full h-12 px-4 rounded-2xl bg-muted/20 border border-border/40 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none"
                     >
-                      <option value="">Select a category</option>
+                      <option value="" className="bg-background">Select a category</option>
                       {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
+                        <option key={category.id} value={category.id} className="bg-background">
                           {category.name}
                         </option>
                       ))}
@@ -579,33 +618,36 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Size</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-foreground/80 ml-1 flex items-center gap-2">
+                      <Maximize className="h-4 w-4" />
+                      Size
+                    </label>
                     <select
                       value={formData.sizeId}
                       onChange={(e) => setFormData({ ...formData, sizeId: e.target.value })}
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                      className="w-full h-12 px-4 rounded-2xl bg-muted/20 border border-border/40 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none"
                     >
-                      <option value="">Select a size</option>
+                      <option value="" className="bg-background">Select a size</option>
                       {sizes.map((size) => (
-                        <option key={size.id} value={size.id}>
+                        <option key={size.id} value={size.id} className="bg-background">
                           {size.name}
                         </option>
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Finish Type *</label>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-foreground/80 ml-1">Finish Type <span className="text-destructive">*</span></label>
                     <select
                       value={formData.finishTypeId}
                       onChange={(e) => setFormData({ ...formData, finishTypeId: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                      className="w-full h-12 px-4 rounded-2xl bg-muted/20 border border-border/40 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none"
                     >
-                      <option value="">Select finish type</option>
+                      <option value="" className="bg-background">Select finish type</option>
                       {finishTypes.map((finish) => (
-                        <option key={finish.id} value={finish.id}>
+                        <option key={finish.id} value={finish.id} className="bg-background">
                           {finish.name}
                         </option>
                       ))}
@@ -613,44 +655,47 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Sq Ft per Box</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 bg-primary/5 rounded-3xl border border-primary/10">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-primary/80 ml-1">Sq Ft per Box</label>
                     <Input
                       type="number"
                       step="0.1"
                       value={formData.sqftPerBox}
                       onChange={(e) => setFormData({ ...formData, sqftPerBox: e.target.value })}
-                      placeholder="Enter sq ft per box"
-                      className="bg-background border-input text-foreground"
+                      placeholder="Enter sq ft"
+                      className="rounded-xl border-primary/20 focus:border-primary transition-all h-11 bg-background"
                     />
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Pieces per Box</label>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-primary/80 ml-1">Pieces per Box</label>
                     <Input
                       type="number"
                       value={formData.pcsPerBox}
                       onChange={(e) => setFormData({ ...formData, pcsPerBox: e.target.value })}
-                      placeholder="Enter pieces per box"
-                      className="bg-background border-input text-foreground"
+                      placeholder="Enter pieces"
+                      className="rounded-xl border-primary/20 focus:border-primary transition-all h-11 bg-background"
                     />
                   </div>
                 </div>
 
-                <ImageUpload 
-                  onImageUploaded={handleImageUploaded}
-                  currentImage={formData.imageUrl}
-                />
+                <div className="p-4 bg-muted/20 rounded-3xl border border-border/30">
+                  <label className="text-sm font-bold text-foreground/80 mb-3 block ml-1">Product Image</label>
+                  <ImageUpload 
+                    onImageUploaded={handleImageUploaded}
+                    currentImage={formData.imageUrl}
+                  />
+                </div>
 
-                <div className="flex gap-2 pt-4">
-                  <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground">
-                    {submitting ? 'Saving...' : editingProduct ? 'Update' : 'Create'}
+                <div className="flex gap-4 pt-4">
+                  <Button type="submit" disabled={submitting} className="flex-1 rounded-2xl h-12 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+                    {submitting ? 'Saving...' : editingProduct ? 'Update Product' : 'Create Product'}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setShowForm(false)}
-                    className="border-border text-foreground"
+                    className="rounded-2xl h-12 px-8 border-border/50 font-bold hover:bg-muted/50"
                   >
                     Cancel
                   </Button>

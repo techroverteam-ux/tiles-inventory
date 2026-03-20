@@ -58,10 +58,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       
       {/* Sidebar */}
       <aside className={cn(
-        "fixed left-0 top-16 sm:top-20 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] bg-card border-r border-border transition-[width,transform] duration-300 ease-out z-40 flex flex-col",
-        isOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full md:w-16 md:translate-x-0"
+        "fixed left-0 top-16 sm:top-20 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] border-r border-border/50 transition-[width,transform] duration-300 ease-out z-40 flex flex-col glass backdrop-blur-3xl",
+        isOpen ? "w-64 translate-x-0" : "w-64 -translate-x-full md:w-20 md:translate-x-0"
       )}>
-        <nav className="space-y-1.5 flex-1 p-3">
+        <nav className="space-y-2 flex-1 p-4 overflow-y-auto overflow-x-hidden scrollbar-thin-violet pb-20">
           {navigation.map((item) => {
             const isActive = pathname === item.href
             return (
@@ -70,23 +70,25 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   href={item.href}
                   onClick={handleNavItemClick}
                   className={cn(
-                    "relative flex h-11 items-center rounded-lg text-sm font-medium transition-all duration-200",
-                    isOpen ? "justify-start gap-3 px-3" : "justify-center px-0",
+                    "relative flex h-12 items-center rounded-xl text-sm font-bold transition-all duration-200",
+                    isOpen ? "justify-start gap-4 px-4" : "justify-center px-0",
                     isActive 
-                      ? "bg-accent text-accent-foreground" 
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      ? "bg-primary/10 text-primary shadow-sm" 
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:scale-[1.02]"
                   )}
                 >
-                  <item.icon className="h-5 w-5 flex-shrink-0" />
+                   <item.icon className={cn("h-6 w-6 flex-shrink-0 transition-colors duration-300", isActive ? "text-primary" : "text-muted-foreground/70 group-hover:text-primary group-hover:scale-110")} />
                   <span
                     className={cn(
-                      "overflow-hidden whitespace-nowrap transition-all duration-200",
-                      isOpen ? "w-auto opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-1"
+                      "overflow-hidden whitespace-nowrap transition-all duration-300",
+                      isOpen ? "w-auto opacity-100 translate-x-0" : "w-0 opacity-0 -translate-x-2"
                     )}
                   >
                     {item.name}
                   </span>
-                  {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-primary" />}
+                  {isActive && (
+                    <span className="absolute left-0 top-3 bottom-3 w-1.5 rounded-r-full bg-primary shadow-[0_0_15px_hsla(var(--primary)/0.5)]" />
+                  )}
                 </Link>
                 
                 {/* Tooltip for collapsed sidebar */}

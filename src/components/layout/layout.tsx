@@ -263,16 +263,16 @@ export default function Layout({ children }: LayoutProps) {
         <SessionProvider>
           <ProtectedRoute>
             <NotificationProvider>
-        <div className="min-h-screen max-w-full overflow-x-hidden bg-background text-foreground flex flex-col">
+        <div className="min-h-screen max-w-full overflow-x-hidden bg-background text-foreground flex flex-col bg-mesh">
           {/* Header */}
-          <header className="bg-card border-b border-border px-3 sm:px-4 md:px-6 h-16 sm:h-20 flex items-center justify-between fixed top-0 left-0 right-0 z-50 shadow-sm gap-2 sm:gap-4">
+          <header className="px-3 sm:px-4 md:px-6 h-16 sm:h-20 flex items-center justify-between fixed top-0 left-0 right-0 z-50 glass backdrop-blur-3xl border-b border-border/50 gap-2 sm:gap-4">
             <div className="flex items-center gap-3">
               {/* Mobile Hamburger Menu */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 md:hidden"
+                className="p-2 md:hidden hover:bg-primary/10 hover:text-primary transition-all duration-300 active:scale-95"
               >
                 <Menu className="h-5 w-5 text-muted-foreground" />
               </Button>
@@ -282,32 +282,35 @@ export default function Layout({ children }: LayoutProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 hidden md:inline-flex"
+                className="p-2 hidden md:inline-flex hover:bg-primary/10 hover:text-primary transition-all duration-300 active:scale-95"
               >
                 <Menu className="h-5 w-5 text-muted-foreground" />
               </Button>
               
               {/* Logo */}
-              <div className="flex items-center">
-                <img
-                  src="/logo.jpeg?v=1"
-                  alt="Logo"
-                  className="h-7 sm:h-8 w-auto object-contain"
-                  onError={(e) => {
-                    console.error('Header logo failed to load')
-                    e.currentTarget.style.display = 'none'
-                  }}
-                />
+              <div className="flex items-center group cursor-pointer" onClick={() => router.push('/')}>
+                <div className="relative">
+                  <img
+                    src="/logo.jpeg?v=1"
+                    alt="Logo"
+                    className="h-8 sm:h-10 w-auto object-contain rounded-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-lg group-hover:shadow-primary/20"
+                    onError={(e) => {
+                      console.error('Header logo failed to load')
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                  <div className="absolute inset-0 rounded-xl bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                </div>
               </div>
             </div>
 
             <div ref={searchBoxRef} className="hidden sm:flex items-center gap-4 flex-1 max-w-xl mx-3 sm:mx-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <div className="relative flex-1 group">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 transition-colors group-focus-within:text-primary" />
                 <Input
                   ref={desktopInputRef}
-                  placeholder="Search brands, categories, sizes, products, orders..."
-                  className="pl-10 text-sm"
+                  placeholder="Search brands, products, orders..."
+                  className="pl-11 h-11 bg-muted/20 border-border/40 text-sm focus:bg-background transition-all duration-300 rounded-2xl group-hover:border-primary/30"
                   value={globalSearch}
                   onChange={(e) => setGlobalSearch(e.target.value)}
                   onFocus={() => setShowSearchResults(true)}
@@ -317,8 +320,8 @@ export default function Layout({ children }: LayoutProps) {
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive"
                     onClick={() => {
                       setGlobalSearch('')
                       setSearchResults([])
@@ -326,29 +329,31 @@ export default function Layout({ children }: LayoutProps) {
                       desktopInputRef.current?.focus()
                     }}
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-3.5 w-3.5" />
                   </Button>
                 )}
                 {renderSearchResults()}
               </div>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <Button
                 variant="ghost"
-                size="sm"
-                className="p-2 sm:hidden"
+                size="icon"
+                className="p-2 sm:hidden hover:bg-primary/10 hover:text-primary"
                 onClick={() => {
                   setMobileSearchOpen(true)
                   setShowSearchResults(true)
                   setActiveSearchIndex(-1)
                 }}
               >
-                <Search className="h-5 w-5 text-muted-foreground" />
+                <Search className="h-5 w-5" />
               </Button>
-              <QuickAddPanel />
-              <ThemeToggle />
-              <NotificationDropdown />
+              <div className="flex items-center gap-1.5 px-1.5 py-1 bg-muted/20 rounded-2xl border border-border/30">
+                <QuickAddPanel />
+                <ThemeToggle />
+                <NotificationDropdown />
+              </div>
               <UserDropdown />
             </div>
           </header>

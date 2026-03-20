@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { LoadingPage } from '@/components/ui/skeleton'
 import { ExportButton, ExportColumn } from '@/lib/excel-export'
-import { BarChart3, Calendar, Filter, Search } from 'lucide-react'
+import { BarChart3, Calendar, Filter, Search, PieChart, TrendingUp } from 'lucide-react'
 import { useToast } from '@/contexts/ToastContext'
+import { cn } from '@/lib/utils'
 
 type ReportType = 'sales' | 'purchase' | 'inventory'
 
@@ -212,16 +213,28 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="page-container">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="page-title">Reports</h1>
-          <p className="page-subtitle mt-1">Generate and export Sales, Purchase, and Inventory reports</p>
+    <div className="w-full px-3 sm:px-4 md:px-6 space-y-8 pb-10">
+      {/* Header */}
+      <div className="page-header">
+        <div className="space-y-1">
+          <h1 className="page-title">Analytics & Reports</h1>
+          <p className="text-muted-foreground font-medium flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary/60" />
+            Generate insights and export data for your business
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowFilters((prev) => !prev)}>
-            <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-            Filters
+        <div className="flex flex-wrap gap-2 pt-2 sm:pt-0">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowFilters((prev) => !prev)}
+            className={cn(
+              "rounded-xl border-border/50 font-bold gap-2 transition-all",
+              showFilters ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted/50"
+            )}
+          >
+            <Filter className="h-4 w-4" />
+            {showFilters ? 'Hide Filters' : 'Show Filters'}
           </Button>
           <ExportButton
             data={rows}
@@ -231,173 +244,171 @@ export default function ReportsPage() {
             reportTitle={`${reportTitle} (${formatDateDisplay(dateFrom)} to ${formatDateDisplay(dateTo)})`}
             headerColor={COMPANY_LOGO_HEADER_COLOR}
             disabled={rows.length === 0}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto rounded-xl font-bold shadow-lg shadow-primary/10"
           />
         </div>
       </div>
 
       {showFilters && (
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-foreground">
-            <Calendar className="h-5 w-5 text-primary" />
-            Report Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="text-sm font-medium text-foreground">Report Type</label>
-              <Select value={reportType} onValueChange={(v) => setReportType(v as ReportType)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sales">Sales Report</SelectItem>
-                  <SelectItem value="purchase">Purchase Report</SelectItem>
-                  <SelectItem value="inventory">Inventory Report</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <Card className="border-border/50 rounded-3xl overflow-hidden glass-card shadow-premium animate-in slide-in-from-top-4 duration-300">
+          <CardHeader className="pb-4 border-b border-border/30 bg-muted/20">
+            <CardTitle className="flex items-center gap-2 text-xl font-bold text-foreground">
+              <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                <Calendar className="h-5 w-5" />
+              </div>
+              Report Parameters
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="space-y-2 lg:col-span-1">
+                <label className="text-sm font-bold text-foreground/80 ml-1">Report Category</label>
+                <Select value={reportType} onValueChange={(v) => setReportType(v as ReportType)}>
+                  <SelectTrigger className="rounded-2xl bg-muted/20 border-border/40 transition-all h-12">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    <SelectItem value="sales">Sales Transactions</SelectItem>
+                    <SelectItem value="purchase">Inventory Purchases</SelectItem>
+                    <SelectItem value="inventory">Batch Stock Report</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div>
-              <label className="text-sm font-medium text-foreground">From Date</label>
-              <div className="mt-1 flex items-center gap-2">
-                <Input
-                  type="text"
-                  value={dateFrom ? formatDateDisplay(dateFrom) : ''}
-                  placeholder="DD-MMM-YYYY"
-                  readOnly
-                  onClick={() => openNativeDatePicker(fromDateInputRef)}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => openNativeDatePicker(fromDateInputRef)}
-                  aria-label="Open from date calendar"
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground/80 ml-1">Period From</label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1 group">
+                    <Input
+                      type="text"
+                      value={dateFrom ? formatDateDisplay(dateFrom) : ''}
+                      placeholder="DD-MMM-YYYY"
+                      readOnly
+                      className="rounded-2xl bg-muted/20 border-border/40 h-12 pr-10 cursor-pointer hover:bg-muted/30 transition-all"
+                      onClick={() => openNativeDatePicker(fromDateInputRef)}
+                    />
+                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors pointer-events-none" />
+                  </div>
+                  <input
+                    ref={fromDateInputRef}
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="sr-only"
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground/80 ml-1">Period To</label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1 group">
+                    <Input
+                      type="text"
+                      value={dateTo ? formatDateDisplay(dateTo) : ''}
+                      placeholder="DD-MMM-YYYY"
+                      readOnly
+                      className="rounded-2xl bg-muted/20 border-border/40 h-12 pr-10 cursor-pointer hover:bg-muted/30 transition-all"
+                      onClick={() => openNativeDatePicker(toDateInputRef)}
+                    />
+                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors pointer-events-none" />
+                  </div>
+                  <input
+                    ref={toDateInputRef}
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="sr-only"
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground/80 ml-1">Brand</label>
+                <Select value={brandId || '__all__'} onValueChange={(value) => setBrandId(value === '__all__' ? '' : value)}>
+                  <SelectTrigger className="rounded-2xl bg-muted/20 border-border/40 transition-all h-12">
+                    <SelectValue placeholder="All Brands" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    <SelectItem value="__all__">All Brands</SelectItem>
+                    {brands.map((brand) => (
+                      <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground/80 ml-1">Category</label>
+                <Select value={categoryId || '__all__'} onValueChange={(value) => setCategoryId(value === '__all__' ? '' : value)}>
+                  <SelectTrigger className="rounded-2xl bg-muted/20 border-border/40 transition-all h-12">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    <SelectItem value="__all__">All Categories</SelectItem>
+                    {filteredCategories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground/80 ml-1">Size Specification</label>
+                <Select value={sizeId || '__all__'} onValueChange={(value) => setSizeId(value === '__all__' ? '' : value)}>
+                  <SelectTrigger className="rounded-2xl bg-muted/20 border-border/40 transition-all h-12">
+                    <SelectValue placeholder="All Sizes" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    <SelectItem value="__all__">All Sizes</SelectItem>
+                    {filteredSizes.map((size) => (
+                      <SelectItem key={size.id} value={size.id}>{size.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground/80 ml-1">Physical Location</label>
+                <Select value={locationId || '__all__'} onValueChange={(value) => setLocationId(value === '__all__' ? '' : value)}>
+                  <SelectTrigger className="rounded-2xl bg-muted/20 border-border/40 transition-all h-12">
+                    <SelectValue placeholder="All Locations" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl">
+                    <SelectItem value="__all__">All Locations</SelectItem>
+                    {locations.map((location) => (
+                      <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-end lg:col-span-1">
+                <Button 
+                  onClick={searchReport} 
+                  disabled={loading} 
+                  className="w-full rounded-2xl h-12 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
                 >
-                  <Calendar className="h-4 w-4" />
+                  <Search className="h-5 w-5 mr-2" />
+                  {loading ? 'Searching...' : 'Explore Data'}
                 </Button>
-                <input
-                  ref={fromDateInputRef}
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="sr-only"
-                  aria-hidden="true"
-                  tabIndex={-1}
-                />
               </div>
             </div>
-
-            <div>
-              <label className="text-sm font-medium text-foreground">To Date</label>
-              <div className="mt-1 flex items-center gap-2">
-                <Input
-                  type="text"
-                  value={dateTo ? formatDateDisplay(dateTo) : ''}
-                  placeholder="DD-MMM-YYYY"
-                  readOnly
-                  onClick={() => openNativeDatePicker(toDateInputRef)}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => openNativeDatePicker(toDateInputRef)}
-                  aria-label="Open to date calendar"
-                >
-                  <Calendar className="h-4 w-4" />
-                </Button>
-                <input
-                  ref={toDateInputRef}
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="sr-only"
-                  aria-hidden="true"
-                  tabIndex={-1}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-foreground">Brand</label>
-              <Select value={brandId || '__all__'} onValueChange={(value) => setBrandId(value === '__all__' ? '' : value)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="All brands" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All brands</SelectItem>
-                  {brands.map((brand) => (
-                    <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-foreground">Category</label>
-              <Select value={categoryId || '__all__'} onValueChange={(value) => setCategoryId(value === '__all__' ? '' : value)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All categories</SelectItem>
-                  {filteredCategories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-foreground">Size</label>
-              <Select value={sizeId || '__all__'} onValueChange={(value) => setSizeId(value === '__all__' ? '' : value)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="All sizes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All sizes</SelectItem>
-                  {filteredSizes.map((size) => (
-                    <SelectItem key={size.id} value={size.id}>{size.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-foreground">Location</label>
-              <Select value={locationId || '__all__'} onValueChange={(value) => setLocationId(value === '__all__' ? '' : value)}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="All locations" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All locations</SelectItem>
-                  {locations.map((location) => (
-                    <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="flex justify-end mt-4">
-            <Button onClick={searchReport} disabled={loading} className="min-w-32">
-              <Search className="h-4 w-4 mr-2" />
-              {loading ? 'Searching...' : 'Search'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
       )}
 
-      <Card className="bg-card border-border">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-foreground">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            {reportTitle}
+      <Card className="border-border/50 rounded-3xl overflow-hidden glass-card shadow-premium">
+        <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/30 bg-muted/20">
+          <CardTitle className="flex items-center gap-2 text-xl font-bold text-foreground">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+              <BarChart3 className="h-5 w-5" />
+            </div>
+            {reportTitle} Visualized
           </CardTitle>
           <ExportButton
             data={rows}
@@ -407,30 +418,39 @@ export default function ReportsPage() {
             reportTitle={`${reportTitle} (${formatDateDisplay(dateFrom)} to ${formatDateDisplay(dateTo)})`}
             headerColor={COMPANY_LOGO_HEADER_COLOR}
             disabled={rows.length === 0}
+            className="rounded-xl font-bold border-border/50"
           />
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {loading ? (
-            <LoadingPage view="list" showHeader={false} items={8} />
+            <div className="p-10">
+              <LoadingPage view="list" showHeader={false} items={8} />
+            </div>
           ) : rows.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground">
-              Click Search to generate report data and view it in table.
+            <div className="text-center py-20 flex flex-col items-center justify-center gap-4">
+              <div className="p-6 rounded-full bg-muted/20 text-muted-foreground">
+                <PieChart className="h-12 w-12 opacity-20" />
+              </div>
+              <div className="max-w-xs">
+                <p className="text-lg font-bold text-foreground/50">No Data to Display</p>
+                <p className="text-sm text-muted-foreground mt-1">Configure your filters and click 'Explore Data' to generate insights here.</p>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-b border-border/50 bg-muted/30">
                     {columns.map((column) => (
-                      <TableHead key={column.key} className="font-semibold">{column.label}</TableHead>
+                      <TableHead key={column.key} className="font-bold text-foreground py-4 px-6 uppercase tracking-wider text-[10px]">{column.label}</TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.map((row, index) => (
-                    <TableRow key={index}>
+                    <TableRow key={index} className="border-b border-border/20 hover:bg-muted/10 transition-colors group">
                       {columns.map((column) => (
-                        <TableCell key={`${index}-${column.key}`}>
+                        <TableCell key={`${index}-${column.key}`} className="py-4 px-6 font-medium text-foreground/80 group-hover:text-foreground transition-colors">
                           {formatCellValue(column.key, row[column.key])}
                         </TableCell>
                       ))}

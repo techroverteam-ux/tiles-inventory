@@ -109,10 +109,11 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Check if size name already exists
+    // Check if size name already exists (only active ones)
     const existingSize = await prisma.size.findFirst({
       where: {
-        name: { equals: name.trim(), mode: 'insensitive' }
+        name: { equals: name.trim(), mode: 'insensitive' },
+        isActive: true
       }
     })
     

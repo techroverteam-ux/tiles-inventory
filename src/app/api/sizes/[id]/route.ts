@@ -64,7 +64,7 @@ export async function PUT(
       )
     }
 
-    // Check if name is already taken by another size in the same brand and category
+    // Check if name is already taken by another size (including inactive ones)
     const duplicateSize = await prisma.size.findFirst({
       where: {
         name: { equals: name.trim(), mode: 'insensitive' },
@@ -73,10 +73,21 @@ export async function PUT(
     })
 
     if (duplicateSize) {
-      return NextResponse.json(
-        { error: 'Size name already exists' },
-        { status: 400 }
-      )
+      if (duplicateSize.isActive) {
+        return NextResponse.json(
+          { error: 'Size name already exists' },
+          { status: 400 }
+        )
+      } else {
+        // Rename the inactive duplicate to free up the name
+        await prisma.size.update({
+          where: { id: duplicateSize.id },
+          data: { 
+            name: `${duplicateSize.name}_deleted_${Date.now()}`,
+            updatedAt: new Date()
+          }
+        })
+      }
     }
 
     const size = await (prisma as any).size.update({
@@ -144,6 +155,7 @@ export async function DELETE(
     await prisma.size.update({
       where: { id },
       data: {
+        name: `${existingSize.name}_del_${Date.now()}`,
         isActive: false,
         updatedAt: new Date(),
       },

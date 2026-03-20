@@ -164,6 +164,21 @@ export async function POST(request: NextRequest) {
         return relationCheck.error
       }
 
+      // Check if product with same code already exists (only active ones)
+      const existingProduct = await prisma.product.findFirst({
+        where: { 
+          code: { equals: code, mode: 'insensitive' },
+          isActive: true
+        }
+      })
+
+      if (existingProduct) {
+        return NextResponse.json({
+          error: 'Duplicate entry',
+          details: 'A product with this code already exists'
+        }, { status: 409 })
+      }
+
       const product = await prisma.product.create({
         data: {
           name,
@@ -230,6 +245,21 @@ export async function POST(request: NextRequest) {
         }, { status: 400 })
       }
       actualFinishTypeId = defaultFinishType.id
+    }
+
+    // Check if product with same code already exists (only active ones)
+    const existingProduct = await prisma.product.findFirst({
+      where: { 
+        code: { equals: code, mode: 'insensitive' },
+        isActive: true
+      }
+    })
+
+    if (existingProduct) {
+      return NextResponse.json({
+        error: 'Duplicate entry',
+        details: 'A product with this code already exists'
+      }, { status: 409 })
     }
 
     const product = await prisma.product.create({

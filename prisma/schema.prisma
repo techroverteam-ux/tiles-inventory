@@ -47,7 +47,7 @@ model Brand {
   products       Product[]
   purchaseOrders PurchaseOrder[]
 
-  @@map("brands")
+  @@map("brand")
 }
 
 model Category {

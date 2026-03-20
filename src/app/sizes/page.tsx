@@ -14,8 +14,9 @@ import { Pagination, usePagination } from '@/components/ui/pagination'
 import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/table-filters'
 import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
-import { Filter, Plus, Edit, Trash2 } from 'lucide-react'
+import { Filter, Plus, Edit, Trash2, Package, Ruler } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
+import { cn } from '@/lib/utils'
 
 interface Size {
   id: string
@@ -269,59 +270,67 @@ export default function SizesPage() {
   }
 
   const renderGridItem = useCallback((size: Size) => (
-    <Card className="h-full hover:shadow-lg transition-shadow bg-card border-border">
+    <Card className="h-full hover:shadow-premium transition-all duration-300 border-border/50 group">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-lg font-semibold text-card-foreground">
+            <CardTitle className="text-lg font-bold text-card-foreground group-hover:text-primary transition-colors">
               {size.name}
             </CardTitle>
           </div>
-          <Badge variant={size.isActive ? 'default' : 'secondary'}>
+          <Badge 
+            variant={size.isActive ? 'default' : 'secondary'}
+            className={cn(size.isActive ? "bg-primary/20 text-primary border-none" : "")}
+          >
             {size.isActive ? 'Active' : 'Inactive'}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
         {size.description && (
-          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-2 italic">
             {size.description}
           </p>
         )}
-        {(size.length || size.width) && (
-          <div className="text-sm text-muted-foreground mb-3">
-            Dimensions: {size.length || '?'} x {size.width || '?'} mm
+        <div className="flex flex-col gap-2 mb-4">
+          {(size.length || size.width) && (
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground bg-primary/5 p-2 rounded-lg border border-primary/10">
+              <Ruler className="h-4 w-4 text-primary" />
+              <span>{size.length || '?'} × {size.width || '?'} mm</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground ml-1">
+            <Package className="h-3 w-3" />
+            <span>Products: {size._count?.products || 0}</span>
           </div>
-        )}
-        <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
-          <span>Products: {size._count?.products || 0}</span>
         </div>
-        <div className="text-xs text-muted-foreground mb-4 space-y-1">
-          <div>Created: {formatDate(size.createdAt)}</div>
+        
+        <div className="text-xs text-muted-foreground mb-6 space-y-1 bg-muted/30 p-2.5 rounded-xl border border-border/30">
+          <div className="flex justify-between"><span>Created:</span> <span className="font-medium text-foreground">{formatDate(size.createdAt)}</span></div>
           {size.updatedAt && size.updatedAt !== size.createdAt && (
-            <div>Updated: {formatDate(size.updatedAt)}</div>
+            <div className="flex justify-between"><span>Updated:</span> <span className="font-medium text-foreground">{formatDate(size.updatedAt)}</span></div>
           )}
           {size.createdBy && (
-            <div>By: {size.createdBy.name}</div>
+            <div className="flex justify-between"><span>By:</span> <span className="font-medium text-foreground">{size.createdBy.name}</span></div>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <Button
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); handleEdit(size); }}
-            className="flex-1 border-border text-foreground hover:bg-accent gap-1"
+            className="rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-2 font-bold"
           >
-            <Edit className="h-3 w-3" />
+            <Edit className="h-3.5 w-3.5" />
             Edit
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); setDeleteSize(size); }}
-            className="flex-1 text-destructive hover:text-destructive border-border hover:bg-destructive/10 gap-1"
+            className="rounded-xl text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10 hover:border-destructive/30 gap-2 font-bold"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-3.5 w-3.5" />
             Delete
           </Button>
         </div>
@@ -331,58 +340,65 @@ export default function SizesPage() {
 
   const renderListRow = useCallback((size: Size) => (
     <>
-      <td className="px-4 py-3">
-        <div className="font-medium text-foreground">{size.name}</div>
-        <div className="text-sm text-muted-foreground">
-          {size.length && size.width ? `${size.length} x ${size.width} mm` : 'No dimensions'}
+      <td className="px-6 py-4">
+        <div className="font-bold text-foreground group-hover:text-primary transition-colors">{size.name}</div>
+        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+          <Ruler className="h-3 w-3" />
+          {size.length && size.width ? `${size.length} × ${size.width} mm` : 'No dimensions'}
         </div>
       </td>
 
-      <td className="px-4 py-3">
-        <div className="text-sm text-muted-foreground max-w-xs truncate">
+      <td className="px-6 py-4">
+        <div className="text-sm text-muted-foreground max-w-xs truncate italic">
           {size.description || 'No description'}
         </div>
       </td>
-      <td className="px-4 py-3">
-        <Badge variant={size.isActive ? 'default' : 'secondary'}>
+      <td className="px-6 py-4">
+        <Badge 
+          variant={size.isActive ? 'default' : 'secondary'}
+          className={cn(size.isActive ? "bg-primary/20 text-primary border-none" : "")}
+        >
           {size.isActive ? 'Active' : 'Inactive'}
         </Badge>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        {size._count?.products || 0}
+      <td className="px-6 py-4 text-sm font-medium text-foreground">
+        <div className="flex items-center gap-2">
+          <Package className="h-4 w-4 text-muted-foreground" />
+          {size._count?.products || 0}
+        </div>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        <div>{formatDate(size.createdAt)}</div>
+      <td className="px-6 py-4 text-sm text-muted-foreground">
+        <div className="font-medium text-foreground">{formatDate(size.createdAt)}</div>
         <div className="text-xs">{size.createdBy?.name || 'System'}</div>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
+      <td className="px-6 py-4 text-sm text-muted-foreground">
         {size.updatedAt && size.updatedAt !== size.createdAt ? (
           <div>
-            <div>{formatDate(size.updatedAt)}</div>
+            <div className="font-medium text-foreground">{formatDate(size.updatedAt)}</div>
             <div className="text-xs">{size.updatedBy?.name || 'System'}</div>
           </div>
         ) : (
-          <span className="text-xs">-</span>
+          <span className="text-xs opacity-30 text-muted-foreground">No updates</span>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-6 py-4">
         <div className="flex gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={(e) => { e.stopPropagation(); handleEdit(size); }}
-            className="text-foreground hover:bg-accent gap-1"
+            className="rounded-xl hover:bg-primary/10 hover:text-primary gap-2 font-bold px-3 transition-all"
           >
-            <Edit className="h-3 w-3" />
+            <Edit className="h-4 w-4" />
             Edit
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={(e) => { e.stopPropagation(); setDeleteSize(size); }}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
+            className="rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 font-bold px-3 transition-all"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-4 w-4" />
             Delete
           </Button>
         </div>
@@ -467,83 +483,90 @@ export default function SizesPage() {
       />
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="bg-card border-border max-w-2xl">
+        <DialogContent className="glass backdrop-blur-3xl border-border/50 max-w-2xl rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
           <DialogHeader>
-            <DialogTitle className="text-card-foreground font-semibold">
+            <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
               {editingSize ? 'Edit Size' : 'Add New Size'}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-foreground">Name</label>
+          <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground/80 ml-1">Name</label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g., 600x600mm"
-                  className="bg-background border-input text-foreground"
+                  className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Description</label>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground/80 ml-1">Description</label>
                 <Input
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Enter description (optional)"
-                  className="bg-background border-input text-foreground"
+                  className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-foreground">Length (mm)</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-primary/5 rounded-2xl border border-primary/10">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-primary/80 ml-1 flex items-center gap-2">
+                  <Ruler className="h-4 w-4" />
+                  Length (mm)
+                </label>
                 <Input
                   type="number"
                   value={formData.length}
                   onChange={(e) => setFormData({ ...formData, length: e.target.value })}
-                  placeholder="Enter length in mm"
-                  className="bg-background border-input text-foreground"
+                  placeholder="Enter length"
+                  className="rounded-xl bg-background border-primary/20 focus:border-primary transition-all h-11"
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Width (mm)</label>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-primary/80 ml-1 flex items-center gap-2">
+                  <Ruler className="h-4 w-4" />
+                  Width (mm)
+                </label>
                 <Input
                   type="number"
                   value={formData.width}
                   onChange={(e) => setFormData({ ...formData, width: e.target.value })}
-                  placeholder="Enter width in mm"
-                  className="bg-background border-input text-foreground"
+                  placeholder="Enter width"
+                  className="rounded-xl bg-background border-primary/20 focus:border-primary transition-all h-11"
                 />
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-3 p-4 bg-muted/20 rounded-2xl border border-border/30 group hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}>
               <input
                 type="checkbox"
                 id="isActive"
                 checked={formData.isActive}
                 onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                className="rounded border-input"
+                className="h-5 w-5 rounded-lg border-primary/30 text-primary transition-all cursor-pointer"
               />
-              <label htmlFor="isActive" className="text-sm font-medium text-foreground">
-                Active
-              </label>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-foreground">Active Status</span>
+                <span className="text-xs text-muted-foreground">Visible in product selection</span>
+              </div>
             </div>
 
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-3 pt-4">
               <Button
                 type="submit"
                 disabled={submitting}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+                className="flex-1 rounded-2xl h-12 font-bold shadow-lg shadow-primary/20"
               >
-                {submitting ? 'Saving...' : editingSize ? 'Update' : 'Create'}
+                {submitting ? 'Saving...' : editingSize ? 'Update Size' : 'Create Size'}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setShowForm(false)}
-                className="border-border text-foreground hover:bg-accent font-medium"
+                className="rounded-2xl h-12 px-6 border-border/50 font-bold hover:bg-muted/50"
               >
                 Cancel
               </Button>
