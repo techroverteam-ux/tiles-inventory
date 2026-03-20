@@ -32,13 +32,13 @@ export async function GET(request: NextRequest) {
       }),
       prisma.category.findMany({
         where: { isActive: true, OR: [{ name: contains }, { description: contains }] },
-        select: { id: true, name: true, brand: { select: { name: true } } },
+        select: { id: true, name: true },
         take: limit,
         orderBy: { updatedAt: 'desc' }
       }),
       prisma.size.findMany({
         where: { isActive: true, OR: [{ name: contains }, { description: contains }] },
-        select: { id: true, name: true, category: { select: { name: true } } },
+        select: { id: true, name: true },
         take: limit,
         orderBy: { updatedAt: 'desc' }
       }),
@@ -92,13 +92,13 @@ export async function GET(request: NextRequest) {
         type: 'Category',
         label: item.name,
         href: '/categories',
-        subtitle: item.brand?.name ? `Brand: ${item.brand.name}` : 'Category'
+        subtitle: 'Category'
       })),
       ...sizes.map((item) => ({
         type: 'Size',
         label: item.name,
         href: '/sizes',
-        subtitle: item.category?.name ? `Category: ${item.category.name}` : 'Size'
+        subtitle: 'Size'
       })),
       ...products.map((item) => ({
         type: 'Product',

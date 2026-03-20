@@ -15,7 +15,8 @@ const extractNodeText = (node: React.ReactNode): string => {
   }
 
   if (React.isValidElement(node)) {
-    return extractNodeText(node.props.children)
+    const props = node.props as { children?: React.ReactNode }
+    return extractNodeText(props.children)
   }
 
   return ""

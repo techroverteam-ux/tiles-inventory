@@ -57,7 +57,6 @@ async function main() {
     data: {
       name: 'Wall Tiles',
       description: 'Decorative ceramic wall tiles',
-      brandId: ceraBrand.id,
       isActive: true,
     },
   })
@@ -66,7 +65,6 @@ async function main() {
     data: {
       name: 'Digital Glazed Vitrified Tiles',
       description: 'High-definition digital printed vitrified tiles',
-      brandId: ceraBrand.id,
       isActive: true,
     },
   })
@@ -75,7 +73,6 @@ async function main() {
     data: {
       name: 'Parking Tiles',
       description: 'Heavy-duty tiles for parking areas',
-      brandId: ceraBrand.id,
       isActive: true,
     },
   })
@@ -84,7 +81,6 @@ async function main() {
     data: {
       name: 'Porcelain Tiles',
       description: 'Premium porcelain tiles for luxury applications',
-      brandId: ceraBrand.id,
       isActive: true,
     },
   })
@@ -94,7 +90,6 @@ async function main() {
     data: {
       name: 'Floor Tiles',
       description: 'Durable tiles for flooring applications',
-      brandId: kajariaBrand.id,
       isActive: true,
     },
   })
@@ -103,7 +98,6 @@ async function main() {
     data: {
       name: 'Bathroom Tiles',
       description: 'Water-resistant tiles for bathrooms',
-      brandId: somanyBrand.id,
       isActive: true,
     },
   })
@@ -117,8 +111,6 @@ async function main() {
       description: 'Standard small format tile',
       length: 300,
       width: 300,
-      brandId: ceraBrand.id,
-      categoryId: wallTilesCategory.id,
       isActive: true,
     },
   })
@@ -129,8 +121,6 @@ async function main() {
       description: 'Popular wall tile format',
       length: 300,
       width: 600,
-      brandId: ceraBrand.id,
-      categoryId: wallTilesCategory.id,
       isActive: true,
     },
   })
@@ -141,8 +131,6 @@ async function main() {
       description: 'Standard wall tile size',
       length: 300,
       width: 450,
-      brandId: ceraBrand.id,
-      categoryId: wallTilesCategory.id,
       isActive: true,
     },
   })
@@ -153,8 +141,6 @@ async function main() {
       description: 'Standard large format tile',
       length: 600,
       width: 600,
-      brandId: ceraBrand.id,
-      categoryId: digitalGlazedCategory.id,
       isActive: true,
     },
   })
@@ -165,8 +151,6 @@ async function main() {
       description: 'Large format rectangular tile',
       length: 600,
       width: 1200,
-      brandId: ceraBrand.id,
-      categoryId: porcelainTilesCategory.id,
       isActive: true,
     },
   })
@@ -177,8 +161,6 @@ async function main() {
       description: 'Extra large format tile',
       length: 800,
       width: 1600,
-      brandId: ceraBrand.id,
-      categoryId: porcelainTilesCategory.id,
       isActive: true,
     },
   })
@@ -189,8 +171,6 @@ async function main() {
       description: 'Premium large format tile',
       length: 1200,
       width: 1800,
-      brandId: ceraBrand.id,
-      categoryId: porcelainTilesCategory.id,
       isActive: true,
     },
   })
@@ -201,8 +181,6 @@ async function main() {
       description: 'Slab format tile',
       length: 800,
       width: 2400,
-      brandId: ceraBrand.id,
-      categoryId: porcelainTilesCategory.id,
       isActive: true,
     },
   })
@@ -213,8 +191,6 @@ async function main() {
       description: 'Extra large slab format',
       length: 800,
       width: 3000,
-      brandId: ceraBrand.id,
-      categoryId: porcelainTilesCategory.id,
       isActive: true,
     },
   })
@@ -226,8 +202,6 @@ async function main() {
       description: 'Large format floor tile',
       length: 800,
       width: 800,
-      brandId: somanyBrand.id,
-      categoryId: bathroomCategory.id,
       isActive: true,
     },
   })
@@ -266,8 +240,6 @@ async function main() {
     data: {
       name: 'SUBWAY',
       description: 'Classic subway tile collection',
-      brandId: ceraBrand.id,
-      categoryId: wallTilesCategory.id,
       isActive: true,
     },
   })
@@ -276,8 +248,6 @@ async function main() {
     data: {
       name: 'LUCIDO',
       description: 'Glossy finish tile collection',
-      brandId: ceraBrand.id,
-      categoryId: digitalGlazedCategory.id,
       isActive: true,
     },
   })
@@ -286,8 +256,6 @@ async function main() {
     data: {
       name: 'IDENTITY',
       description: 'Contemporary design collection',
-      brandId: ceraBrand.id,
-      categoryId: porcelainTilesCategory.id,
       isActive: true,
     },
   })
@@ -296,8 +264,6 @@ async function main() {
     data: {
       name: 'ETERNO',
       description: 'Timeless elegance collection',
-      brandId: ceraBrand.id,
-      categoryId: porcelainTilesCategory.id,
       isActive: true,
     },
   })
@@ -306,8 +272,6 @@ async function main() {
     data: {
       name: 'PATIO',
       description: 'Outdoor and patio tile collection',
-      brandId: ceraBrand.id,
-      categoryId: parkingTilesCategory.id,
       isActive: true,
     },
   })
@@ -316,8 +280,6 @@ async function main() {
     data: {
       name: 'DIGITALE',
       description: 'Digital print technology collection',
-      brandId: ceraBrand.id,
-      categoryId: digitalGlazedCategory.id,
       isActive: true,
     },
   })
