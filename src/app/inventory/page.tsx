@@ -28,6 +28,8 @@ import {
   TrendingDown,
   BarChart3
 } from 'lucide-react'
+import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
+import AddStockForm from '@/components/inventory/AddStockForm'
 
 const formatDate = (dateString: string) => {
   const d = new Date(dateString)
@@ -45,6 +47,7 @@ interface InventoryItem {
     category: { name: string }
     size?: { name: string }
     sqftPerBox: number
+    imageUrl?: string
   }
   location: { name: string }
   batchNumber: string
@@ -82,6 +85,8 @@ export default function InventoryPage() {
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
   const [deleteItem, setDeleteItem] = useState<InventoryItem | null>(null)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedDetailItem, setSelectedDetailItem] = useState<InventoryItem | null>(null)
   const [editFormData, setEditFormData] = useState({
     batchNumber: '',
     quantity: '',
@@ -302,9 +307,13 @@ export default function InventoryPage() {
               <DialogHeader>
                 <DialogTitle className="text-foreground">Add Stock Batch</DialogTitle>
               </DialogHeader>
-              <div className="text-center py-8 text-muted-foreground">
-                Stock batch form will be implemented here
-              </div>
+              <AddStockForm 
+                onSuccess={() => {
+                  setShowAddDialog(false)
+                  fetchInventory()
+                }} 
+                onCancel={() => setShowAddDialog(false)} 
+              />
             </DialogContent>
           </Dialog>
         </div>
@@ -535,7 +544,14 @@ export default function InventoryPage() {
         ) : (
           <>
             {inventory.map((item) => (
-              <MobileCard key={item.id}>
+              <MobileCard 
+                key={item.id}
+                className="cursor-pointer"
+                onClick={() => {
+                  setSelectedDetailItem(item)
+                  setShowDetails(true)
+                }}
+              >
                 <MobileCardHeader
                   title={item.product.name}
                   subtitle={`${item.product.brand.name} • ${item.product.code}`}
@@ -548,14 +564,14 @@ export default function InventoryPage() {
                     </div>
                   }
                   actions={
-                    <>
+                    <div onClick={(e) => e.stopPropagation()} className="flex gap-2">
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleDelete(item)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
-                    </>
+                    </div>
                   }
                 />
                 <MobileCardField label="Category" value={item.product.category.name} />
@@ -645,7 +661,14 @@ export default function InventoryPage() {
                 </TableHeader>
                 <TableBody>
                   {inventory.map((item) => (
-                    <TableRow key={item.id} className="border-b border-border hover:bg-accent/50">
+                    <TableRow 
+                      key={item.id} 
+                      className="border-b border-border hover:bg-accent/50 cursor-pointer"
+                      onClick={() => {
+                        setSelectedDetailItem(item)
+                        setShowDetails(true)
+                      }}
+                    >
                       <TableCell>
                         <div>
                           <div className="font-medium text-foreground">{item.product.name}</div>
@@ -693,7 +716,7 @@ export default function InventoryPage() {
                         }
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
                             <Edit className="h-4 w-4 text-muted-foreground" />
                           </Button>
@@ -810,9 +833,17 @@ export default function InventoryPage() {
         }}
         title="Delete Batch"
         description={deleteItem ? `Are you sure you want to delete batch ${deleteItem.batchNumber}? This will also remove related purchase and sales records.` : ''}
-        onConfirm={handleDeleteConfirm}
+        onConfirm={() => handleDeleteConfirm()}
         confirmText="Delete"
         variant="destructive"
+      />
+
+      <RowDetailsDialog
+        open={showDetails}
+        onOpenChange={setShowDetails}
+        title="Inventory Batch Details"
+        data={selectedDetailItem}
+        imageUrl={selectedDetailItem?.product?.imageUrl}
       />
     </div>
   )

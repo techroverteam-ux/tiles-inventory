@@ -10,18 +10,6 @@ export async function GET(
     const size = await prisma.size.findUnique({
       where: { id },
       include: {
-        brand: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
         _count: {
           select: {
             products: true,
@@ -54,12 +42,12 @@ export async function PUT(
   try {
     const { id } = await params
     const data = await request.json()
-    const { name, description, length, width, brandId, categoryId, isActive } = data
+    const { name, description, length, width, isActive } = data
 
     // Validate required fields
-    if (!name || !name.trim() || !brandId || !categoryId) {
+    if (!name || !name.trim()) {
       return NextResponse.json(
-        { error: 'Size name, brand, and category are required' },
+        { error: 'Size name is required' },
         { status: 400 }
       )
     }
@@ -80,15 +68,13 @@ export async function PUT(
     const duplicateSize = await prisma.size.findFirst({
       where: {
         name: { equals: name.trim(), mode: 'insensitive' },
-        brandId: brandId,
-        categoryId: categoryId,
         id: { not: id }
       }
     })
 
     if (duplicateSize) {
       return NextResponse.json(
-        { error: 'Size name already exists for this brand and category' },
+        { error: 'Size name already exists' },
         { status: 400 }
       )
     }
@@ -100,24 +86,10 @@ export async function PUT(
         description: description?.trim() || null,
         length: length ? parseFloat(length) : null,
         width: width ? parseFloat(width) : null,
-        brandId: brandId,
-        categoryId: categoryId,
         isActive: Boolean(isActive),
         updatedAt: new Date(),
       },
       include: {
-        brand: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
         _count: {
           select: {
             products: true,

@@ -10,6 +10,7 @@ const quickAddLinks = [
   { title: 'Category', subtitle: 'Create a new category', href: '/categories?action=create', icon: Palette, color: 'text-primary' },
   { title: 'Size', subtitle: 'Create a new size', href: '/sizes?action=create', icon: Ruler, color: 'text-primary' },
   { title: 'Product', subtitle: 'Create a new product', href: '/products?action=create', icon: Package, color: 'text-primary' },
+  { title: 'Inventory', subtitle: 'Add stock batch', href: '/inventory?action=create', icon: Package, color: 'text-primary' },
   { title: 'Location', subtitle: 'Create a new location', href: '/locations?action=create', icon: MapPin, color: 'text-primary' },
   { title: 'Purchase Order', subtitle: 'Create purchase order', href: '/purchase-orders?action=create', icon: ShoppingCart, color: 'text-primary' },
   { title: 'Sales Order', subtitle: 'Create sales order', href: '/sales-orders?action=create', icon: TrendingUp, color: 'text-primary' },

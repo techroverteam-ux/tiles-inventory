@@ -62,6 +62,14 @@ export default function MobileQuickActions() {
       href: '/products?action=create',
     },
     {
+      id: 'add-stock',
+      title: 'Add Stock',
+      description: 'Add stock batch',
+      icon: <Package className="h-6 w-6" />,
+      color: 'bg-primary',
+      href: '/inventory?action=create',
+    },
+    {
       id: 'purchase-order',
       title: 'Purchase Order',
       description: 'Create purchase order',

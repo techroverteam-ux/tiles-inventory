@@ -12,7 +12,6 @@ export async function GET(
       include: {
         _count: {
           select: {
-            categories: true,
             products: true,
           },
         }
@@ -43,7 +42,7 @@ export async function PUT(
   try {
     const { id } = await params
     const data = await request.json()
-    const { name, description, contactInfo, isActive } = data
+    const { name, description, isActive } = data
 
     // Validate required fields
     if (!name || !name.trim()) {
@@ -85,14 +84,12 @@ export async function PUT(
       data: {
         name: name.trim(),
         description: description?.trim() || null,
-        contactInfo: contactInfo?.trim() || null,
         isActive: Boolean(isActive),
         updatedAt: new Date(),
       },
       include: {
         _count: {
           select: {
-            categories: true,
             products: true,
           },
         }
@@ -127,31 +124,17 @@ export async function DELETE(
       )
     }
 
-    // Only active linked records should block deleting a brand.
-    const [activeCategoriesCount, activeSizesCount, activeProductsCount] = await prisma.$transaction([
-      prisma.category.count({
-        where: {
-          brandId: id,
-          isActive: true,
-        },
-      }),
-      prisma.size.count({
-        where: {
-          brandId: id,
-          isActive: true,
-        },
-      }),
-      prisma.product.count({
-        where: {
-          brandId: id,
-          isActive: true,
-        },
-      }),
-    ])
+    // Only active products should block deleting a brand (as categories/sizes are now decoupled).
+    const activeProductsCount = await prisma.product.count({
+      where: {
+        brandId: id,
+        isActive: true,
+      },
+    })
 
-    if (activeCategoriesCount > 0 || activeSizesCount > 0 || activeProductsCount > 0) {
+    if (activeProductsCount > 0) {
       return NextResponse.json(
-        { error: 'Cannot delete brand with associated active categories, sizes, or products. Please remove them first.' },
+        { error: 'Cannot delete brand with associated active products. Please remove them first.' },
         { status: 400 }
       )
     }

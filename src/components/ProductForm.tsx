@@ -39,9 +39,7 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
   })
   
   const [sizes, setSizes] = useState<any[]>([])
-  const [filteredSizes, setFilteredSizes] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
-  const [filteredCategories, setFilteredCategories] = useState<any[]>([])
   const [brands, setBrands] = useState<any[]>([])
   const [locations, setLocations] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -50,53 +48,29 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
     fetchDropdownData()
   }, [])
 
-  useEffect(() => {
-    if (formData.brandId) {
-      fetchCategoriesByBrand(formData.brandId)
-    }
-  }, [formData.brandId])
 
-  useEffect(() => {
-    if (formData.brandId && formData.categoryId) {
-      fetchSizesByBrandAndCategory(formData.brandId, formData.categoryId)
-    } else {
-      setFilteredSizes([])
-    }
-  }, [formData.brandId, formData.categoryId])
 
-  const fetchCategoriesByBrand = async (brandId: string) => {
-    try {
-      const response = await fetch(`/api/categories?brandId=${brandId}`)
-      const data = await response.json()
-      setFilteredCategories((data.categories || []).filter((c: any) => c.isActive))
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    }
-  }
 
-  const fetchSizesByBrandAndCategory = async (brandId: string, categoryId: string) => {
-    try {
-      const response = await fetch(`/api/sizes?brandId=${brandId}&categoryId=${categoryId}`)
-      const data = await response.json()
-      setFilteredSizes(data.sizes || [])
-    } catch (error) {
-      console.error('Error fetching sizes:', error)
-    }
-  }
 
   const fetchDropdownData = async () => {
     try {
-      const [brandsRes, locationsRes] = await Promise.all([
+      const [brandsRes, categoriesRes, sizesRes, locationsRes] = await Promise.all([
         fetch('/api/brands'),
+        fetch('/api/categories'),
+        fetch('/api/sizes'),
         fetch('/api/locations')
       ])
 
-      const [brandsData, locationsData] = await Promise.all([
+      const [brandsData, categoriesData, sizesData, locationsData] = await Promise.all([
         brandsRes.json(),
+        categoriesRes.json(),
+        sizesRes.json(),
         locationsRes.json()
       ])
 
       setBrands((brandsData.brands || []).filter((b: any) => b.isActive))
+      setCategories((categoriesData.categories || []).filter((c: any) => c.isActive))
+      setSizes((sizesData.sizes || []).filter((s: any) => s.isActive))
       setLocations((locationsData.locations || []).filter((l: any) => l.isActive))
     } catch (error) {
       console.error('Error fetching dropdown data:', error)
@@ -205,7 +179,7 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Brand *</label>
             <Select value={formData.brandId} onValueChange={(value) => {
-              setFormData({ ...formData, brandId: value, categoryId: '', sizeId: '' })
+              setFormData({ ...formData, brandId: value })
             }} required>
               <SelectTrigger className="bg-background border-input text-foreground">
                 <SelectValue placeholder="Select brand" />
@@ -222,12 +196,12 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Category *</label>
-            <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value, sizeId: '' })} disabled={!formData.brandId} required>
+            <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value })} required>
               <SelectTrigger className="bg-background border-input text-foreground">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border">
-                {filteredCategories.map((category) => (
+                {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id} className="text-popover-foreground">
                     {category.name}
                   </SelectItem>
@@ -238,12 +212,12 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Size *</label>
-            <Select value={formData.sizeId} onValueChange={(value) => setFormData({ ...formData, sizeId: value })} disabled={!formData.categoryId} required>
+            <Select value={formData.sizeId} onValueChange={(value) => setFormData({ ...formData, sizeId: value })} required>
               <SelectTrigger className="bg-background border-input text-foreground">
                 <SelectValue placeholder="Select size" />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border">
-                {filteredSizes.map((size) => (
+                {sizes.map((size) => (
                   <SelectItem key={size.id} value={size.id} className="text-popover-foreground">
                     {size.name}
                   </SelectItem>

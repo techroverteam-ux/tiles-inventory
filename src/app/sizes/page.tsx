@@ -15,6 +15,7 @@ import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/tab
 import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
 import { Filter, Plus, Edit, Trash2 } from 'lucide-react'
+import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 
 interface Size {
   id: string
@@ -22,10 +23,6 @@ interface Size {
   description?: string
   length?: number
   width?: number
-  brandId: string
-  categoryId: string
-  brand: { name: string }
-  category: { name: string }
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -59,8 +56,6 @@ interface FormData {
   description: string
   length: string
   width: string
-  brandId: string
-  categoryId: string
   isActive: boolean
 }
 
@@ -73,21 +68,18 @@ interface ApiResponse {
 
 export default function SizesPage() {
   const [sizes, setSizes] = useState<Size[]>([])
-  const [brands, setBrands] = useState<Brand[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [filteredCategories, setFilteredCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'grid' | 'list'>('list') // Default to list for desktop
   const [showForm, setShowForm] = useState(false)
   const [editingSize, setEditingSize] = useState<Size | null>(null)
   const [deleteSize, setDeleteSize] = useState<Size | null>(null)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedDetailItem, setSelectedDetailItem] = useState<Size | null>(null)
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
     length: '',
     width: '',
-    brandId: '',
-    categoryId: '',
     isActive: true
   })
   const [submitting, setSubmitting] = useState(false)
@@ -117,20 +109,7 @@ export default function SizesPage() {
 
   // Filter configurations
   const filterConfigs: FilterConfig[] = useMemo(() => [
-    {
-      key: 'brandId',
-      label: 'Brand',
-      type: 'select',
-      options: brands.map(brand => ({ value: brand.id, label: brand.name })),
-      placeholder: 'All Brands'
-    },
-    {
-      key: 'categoryId',
-      label: 'Category',
-      type: 'select',
-      options: categories.map(category => ({ value: category.id, label: category.name })),
-      placeholder: 'All Categories'
-    },
+
     {
       key: 'isActive',
       label: 'Status',
@@ -146,7 +125,7 @@ export default function SizesPage() {
       label: 'Created Date',
       type: 'dateRange',
     }
-  ], [brands, categories])
+  ], [])
 
   // Fetch sizes with pagination and filters
   const fetchSizes = useCallback(async () => {
@@ -178,38 +157,11 @@ export default function SizesPage() {
     }
   }, [currentPage, itemsPerPage, search, filters, showToast])
 
-  const fetchBrands = useCallback(async () => {
-    try {
-      const response = await fetch('/api/brands')
-      if (response.ok) {
-        const data = await response.json()
-        setBrands(data.brands?.filter((b: Brand) => b.isActive) || [])
-      }
-    } catch (error) {
-      console.error('Error fetching brands:', error)
-    }
-  }, [])
-
-  const fetchCategories = useCallback(async () => {
-    try {
-      const response = await fetch('/api/categories')
-      if (response.ok) {
-        const data = await response.json()
-        setCategories(data.categories?.filter((c: Category) => c.isActive) || [])
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    }
-  }, [])
-
   useEffect(() => {
     fetchSizes()
   }, [fetchSizes])
 
-  useEffect(() => {
-    fetchBrands()
-    fetchCategories()
-  }, [fetchBrands, fetchCategories])
+
 
   useEffect(() => {
     if (searchParams.get('action') === 'create') {
@@ -219,29 +171,14 @@ export default function SizesPage() {
     }
   }, [searchParams])
 
-  // Fetch filtered categories based on brand selection
-  useEffect(() => {
-    if (formData.brandId) {
-      fetchCategoriesByBrand(formData.brandId)
-    } else {
-      setFilteredCategories([])
-    }
-  }, [formData.brandId])
 
-  const fetchCategoriesByBrand = async (brandId: string) => {
-    try {
-      const response = await fetch(`/api/categories?brandId=${brandId}`)
-      const data = await response.json()
-      setFilteredCategories(data.categories?.filter((c: any) => c.isActive) || [])
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name.trim() || !formData.brandId || !formData.categoryId) {
-      showToast('Please fill in all required fields', 'error')
+    const finalName = formData.name.trim() || (formData.length && formData.width ? `${formData.length}x${formData.width}mm` : '')
+
+    if (!finalName) {
+      showToast('Please enter a name or provide length and width', 'error')
       return
     }
 
@@ -255,6 +192,7 @@ export default function SizesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          name: finalName,
           length: formData.length ? parseFloat(formData.length) : undefined,
           width: formData.width ? parseFloat(formData.width) : undefined
         })
@@ -286,11 +224,8 @@ export default function SizesPage() {
       description: '',
       length: '',
       width: '',
-      brandId: '',
-      categoryId: '',
       isActive: true
     })
-    setFilteredCategories([])
   }
 
   const handleEdit = async (size: Size) => {
@@ -300,20 +235,8 @@ export default function SizesPage() {
       description: size.description || '',
       length: size.length?.toString() || '',
       width: size.width?.toString() || '',
-      brandId: size.brandId,
-      categoryId: size.categoryId,
       isActive: size.isActive
     })
-    // Pre-fetch filtered categories so the dropdown shows the correct value
-    if (size.brandId) {
-      try {
-        const response = await fetch(`/api/categories?brandId=${size.brandId}`)
-        const data = await response.json()
-        setFilteredCategories(data.categories?.filter((c: any) => c.isActive) || [])
-      } catch (error) {
-        console.error('Error fetching categories:', error)
-      }
-    }
     setShowForm(true)
   }
 
@@ -353,9 +276,6 @@ export default function SizesPage() {
             <CardTitle className="text-lg font-semibold text-card-foreground">
               {size.name}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {size.brand.name} - {size.category.name}
-            </p>
           </div>
           <Badge variant={size.isActive ? 'default' : 'secondary'}>
             {size.isActive ? 'Active' : 'Inactive'}
@@ -389,7 +309,7 @@ export default function SizesPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleEdit(size)}
+            onClick={(e) => { e.stopPropagation(); handleEdit(size); }}
             className="flex-1 border-border text-foreground hover:bg-accent gap-1"
           >
             <Edit className="h-3 w-3" />
@@ -398,7 +318,7 @@ export default function SizesPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDeleteSize(size)}
+            onClick={(e) => { e.stopPropagation(); setDeleteSize(size); }}
             className="flex-1 text-destructive hover:text-destructive border-border hover:bg-destructive/10 gap-1"
           >
             <Trash2 className="h-3 w-3" />
@@ -417,12 +337,7 @@ export default function SizesPage() {
           {size.length && size.width ? `${size.length} x ${size.width} mm` : 'No dimensions'}
         </div>
       </td>
-      <td className="px-4 py-3">
-        <div className="text-sm">
-          <div className="text-foreground">{size.brand.name}</div>
-          <div className="text-muted-foreground">{size.category.name}</div>
-        </div>
-      </td>
+
       <td className="px-4 py-3">
         <div className="text-sm text-muted-foreground max-w-xs truncate">
           {size.description || 'No description'}
@@ -455,7 +370,7 @@ export default function SizesPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleEdit(size)}
+            onClick={(e) => { e.stopPropagation(); handleEdit(size); }}
             className="text-foreground hover:bg-accent gap-1"
           >
             <Edit className="h-3 w-3" />
@@ -464,7 +379,7 @@ export default function SizesPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setDeleteSize(size)}
+            onClick={(e) => { e.stopPropagation(); setDeleteSize(size); }}
             className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
           >
             <Trash2 className="h-3 w-3" />
@@ -537,12 +452,16 @@ export default function SizesPage() {
         onViewChange={setView}
         loading={loading}
         autoResponsive={true}
+        onItemClick={(item) => {
+          setSelectedDetailItem(item)
+          setShowDetails(true)
+        }}
         gridProps={{
           renderItem: renderGridItem,
           columns: 3
         }}
         listProps={{
-          headers: ['Size', 'Dimensions', 'Brand & Category', 'Status', 'Products', 'Created', 'Updated', 'Actions'],
+          headers: ['Size', 'Description', 'Status', 'Products', 'Created', 'Updated', 'Actions'],
           renderRow: renderListRow
         }}
       />
@@ -557,50 +476,13 @@ export default function SizesPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-foreground">Name *</label>
+                <label className="text-sm font-medium text-foreground">Name</label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g., 600x600mm"
-                  required
                   className="bg-background border-input text-foreground"
                 />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Brand *</label>
-                <select
-                  value={formData.brandId}
-                  onChange={(e) => setFormData({ ...formData, brandId: e.target.value, categoryId: '' })}
-                  required
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                >
-                  <option value="">Select a brand</option>
-                  {brands.map((brand) => (
-                    <option key={brand.id} value={brand.id}>
-                      {brand.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-foreground">Category *</label>
-                <select
-                  value={formData.categoryId}
-                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                  disabled={!formData.brandId}
-                  required
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground disabled:opacity-50"
-                >
-                  <option value="">Select a category</option>
-                  {filteredCategories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Description</label>
@@ -691,6 +573,13 @@ export default function SizesPage() {
         variant={deleteConfirmation.variant}
         onConfirm={handleDeleteConfirm}
         icon={deleteConfirmation.icon}
+      />
+
+      <RowDetailsDialog
+        open={showDetails}
+        onOpenChange={setShowDetails}
+        title="Size Details"
+        data={selectedDetailItem}
       />
     </div>
   )

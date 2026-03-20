@@ -15,15 +15,12 @@ import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/tab
 import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
 import { Filter, Plus, Edit, Trash2 } from 'lucide-react'
+import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 
 interface Category {
   id: string
   name: string
   description?: string
-  brandId: string
-  brand: {
-    name: string
-  }
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -40,16 +37,11 @@ interface Category {
   }
 }
 
-interface Brand {
-  id: string
-  name: string
-  isActive: boolean
-}
+
 
 interface FormData {
   name: string
   description: string
-  brandId: string
   isActive: boolean
 }
 
@@ -62,16 +54,16 @@ interface ApiResponse {
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
-  const [brands, setBrands] = useState<Brand[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'grid' | 'list'>('list') // Default to list for desktop
   const [showForm, setShowForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [deleteCategory, setDeleteCategory] = useState<Category | null>(null)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedDetailItem, setSelectedDetailItem] = useState<Category | null>(null)
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
-    brandId: '',
     isActive: true
   })
   const [submitting, setSubmitting] = useState(false)
@@ -101,13 +93,7 @@ export default function CategoriesPage() {
 
   // Filter configurations
   const filterConfigs: FilterConfig[] = useMemo(() => [
-    {
-      key: 'brandId',
-      label: 'Brand',
-      type: 'select',
-      options: brands.map(brand => ({ value: brand.id, label: brand.name })),
-      placeholder: 'All Brands'
-    },
+
     {
       key: 'isActive',
       label: 'Status',
@@ -123,7 +109,7 @@ export default function CategoriesPage() {
       label: 'Created Date',
       type: 'dateRange',
     }
-  ], [brands])
+  ], [])
 
   // Fetch categories with pagination and filters
   const fetchCategories = useCallback(async () => {
@@ -155,25 +141,13 @@ export default function CategoriesPage() {
     }
   }, [currentPage, itemsPerPage, search, filters, showToast])
 
-  const fetchBrands = useCallback(async () => {
-    try {
-      const response = await fetch('/api/brands')
-      if (response.ok) {
-        const data = await response.json()
-        setBrands(data.brands?.filter((b: Brand) => b.isActive) || [])
-      }
-    } catch (error) {
-      console.error('Error fetching brands:', error)
-    }
-  }, [])
+
 
   useEffect(() => {
     fetchCategories()
   }, [fetchCategories])
 
-  useEffect(() => {
-    fetchBrands()
-  }, [fetchBrands])
+
 
   useEffect(() => {
     if (searchParams.get('action') === 'create') {
@@ -185,8 +159,8 @@ export default function CategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name.trim() || !formData.brandId) {
-      showToast('Please fill in all required fields', 'error')
+    if (!formData.name.trim()) {
+      showToast('Please fill in Name', 'error')
       return
     }
 
@@ -225,7 +199,6 @@ export default function CategoriesPage() {
     setFormData({
       name: '',
       description: '',
-      brandId: '',
       isActive: true
     })
   }
@@ -235,7 +208,6 @@ export default function CategoriesPage() {
     setFormData({
       name: category.name,
       description: category.description || '',
-      brandId: category.brandId,
       isActive: category.isActive
     })
     setShowForm(true)
@@ -277,9 +249,6 @@ export default function CategoriesPage() {
             <CardTitle className="text-lg font-semibold text-card-foreground">
               {category.name}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {category.brand.name}
-            </p>
           </div>
           <Badge variant={category.isActive ? 'default' : 'secondary'}>
             {category.isActive ? 'Active' : 'Inactive'}
@@ -308,7 +277,7 @@ export default function CategoriesPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleEdit(category)}
+            onClick={(e) => { e.stopPropagation(); handleEdit(category); }}
             className="flex-1 gap-1"
           >
             <Edit className="h-3 w-3" />
@@ -317,7 +286,7 @@ export default function CategoriesPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDeleteCategory(category)}
+            onClick={(e) => { e.stopPropagation(); setDeleteCategory(category); }}
             className="flex-1 text-destructive hover:text-destructive gap-1"
           >
             <Trash2 className="h-3 w-3" />
@@ -332,7 +301,6 @@ export default function CategoriesPage() {
     <>
       <td className="px-4 py-3">
         <div className="font-medium text-foreground">{category.name}</div>
-        <div className="text-sm text-muted-foreground">{category.brand.name}</div>
       </td>
       <td className="px-4 py-3">
         <div className="text-sm text-muted-foreground max-w-xs truncate">
@@ -366,7 +334,7 @@ export default function CategoriesPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleEdit(category)}
+            onClick={(e) => { e.stopPropagation(); handleEdit(category); }}
             className="gap-1"
           >
             <Edit className="h-3 w-3" />
@@ -375,7 +343,7 @@ export default function CategoriesPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setDeleteCategory(category)}
+            onClick={(e) => { e.stopPropagation(); setDeleteCategory(category); }}
             className="text-destructive hover:text-destructive gap-1"
           >
             <Trash2 className="h-3 w-3" />
@@ -443,12 +411,16 @@ export default function CategoriesPage() {
         onViewChange={setView}
         loading={loading}
         autoResponsive={true}
+        onItemClick={(item) => {
+          setSelectedDetailItem(item)
+          setShowDetails(true)
+        }}
         gridProps={{
           renderItem: renderGridItem,
           columns: 3
         }}
         listProps={{
-          headers: ['Name & Brand', 'Description', 'Status', 'Products', 'Created', 'Updated', 'Actions'],
+          headers: ['Name', 'Description', 'Status', 'Products', 'Created', 'Updated', 'Actions'],
           renderRow: renderListRow
         }}
       />
@@ -471,22 +443,7 @@ export default function CategoriesPage() {
                 className="bg-background border-input text-foreground"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Brand *</label>
-              <select
-                value={formData.brandId}
-                onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
-                required
-                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-              >
-                <option value="">Select a brand</option>
-                {brands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+
             <div>
               <label className="text-sm font-medium text-foreground">Description</label>
               <Input
@@ -546,6 +503,13 @@ export default function CategoriesPage() {
         variant={deleteConfirmation.variant}
         onConfirm={handleDeleteConfirm}
         icon={deleteConfirmation.icon}
+      />
+
+      <RowDetailsDialog
+        open={showDetails}
+        onOpenChange={setShowDetails}
+        title="Category Details"
+        data={selectedDetailItem}
       />
     </div>
   )

@@ -10,12 +10,6 @@ export async function GET(
     const category = await prisma.category.findUnique({
       where: { id },
       include: {
-        brand: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
         _count: {
           select: {
             products: true,
@@ -48,12 +42,12 @@ export async function PUT(
   try {
     const { id } = await params
     const data = await request.json()
-    const { name, description, brandId, isActive } = data
+    const { name, description, isActive } = data
 
     // Validate required fields
-    if (!name || !name.trim() || !brandId) {
+    if (!name || !name.trim()) {
       return NextResponse.json(
-        { error: 'Category name and brand are required' },
+        { error: 'Category name is required' },
         { status: 400 }
       )
     }
@@ -74,14 +68,13 @@ export async function PUT(
     const duplicateCategory = await prisma.category.findFirst({
       where: {
         name: { equals: name.trim(), mode: 'insensitive' },
-        brandId: brandId,
         id: { not: id }
       }
     })
 
     if (duplicateCategory) {
       return NextResponse.json(
-        { error: 'Category name already exists for this brand' },
+        { error: 'Category name already exists' },
         { status: 400 }
       )
     }
@@ -91,17 +84,10 @@ export async function PUT(
       data: {
         name: name.trim(),
         description: description?.trim() || null,
-        brandId: brandId,
         isActive: Boolean(isActive),
         updatedAt: new Date(),
       },
       include: {
-        brand: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
         _count: {
           select: {
             products: true,
@@ -138,25 +124,17 @@ export async function DELETE(
       )
     }
 
-    // Only active linked data should block deletion.
-    const [activeProductsCount, activeSizesCount] = await prisma.$transaction([
-      prisma.product.count({
-        where: {
-          categoryId: id,
-          isActive: true,
-        },
-      }),
-      prisma.size.count({
-        where: {
-          categoryId: id,
-          isActive: true,
-        },
-      }),
-    ])
+    // Only active products should block deletion.
+    const activeProductsCount = await prisma.product.count({
+      where: {
+        categoryId: id,
+        isActive: true,
+      },
+    })
 
-    if (activeProductsCount > 0 || activeSizesCount > 0) {
+    if (activeProductsCount > 0) {
       return NextResponse.json(
-        { error: 'Cannot delete category with associated active products or sizes. Please remove them first.' },
+        { error: 'Cannot delete category with associated active products. Please remove them first.' },
         { status: 400 }
       )
     }

@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || (hasExplicitPagination ? '25' : '1000'))
     const search = searchParams.get('search') || ''
     const isActive = searchParams.get('isActive')
-    const brandId = searchParams.get('brandId')
     const dateFrom = searchParams.get('dateFrom') || searchParams.get('createdAtFrom')
     const dateTo = searchParams.get('dateTo') || searchParams.get('createdAtTo')
 
@@ -20,14 +19,11 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { brand: { is: { name: { contains: search, mode: 'insensitive' } } } },
+        { description: { contains: search, mode: 'insensitive' } }
       ]
     }
 
-    if (brandId) {
-      where.brandId = brandId
-    }
+
 
     if (isActive === null || isActive === undefined || isActive === '') {
       where.isActive = true
@@ -50,12 +46,6 @@ export async function GET(request: NextRequest) {
     const categories = await prisma.category.findMany({
       where,
       include: {
-        brand: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
         _count: {
           select: {
             products: true,
@@ -94,27 +84,26 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     
-    const { name, description, brandId, isActive = true } = data
+    const { name, description, isActive = true } = data
     
     // Validate required fields
-    if (!name || !name.trim() || !brandId) {
+    if (!name || !name.trim()) {
       return NextResponse.json(
-        { error: 'Category name and brand are required' },
+        { error: 'Category name is required' },
         { status: 400 }
       )
     }
     
-    // Check if category name already exists for this brand
+    // Check if category name already exists
     const existingCategory = await prisma.category.findFirst({
       where: {
-        name: { equals: name.trim(), mode: 'insensitive' },
-        brandId: brandId
+        name: { equals: name.trim(), mode: 'insensitive' }
       }
     })
     
     if (existingCategory) {
       return NextResponse.json(
-        { error: 'Category name already exists for this brand' },
+        { error: 'Category name already exists' },
         { status: 400 }
       )
     }
@@ -123,16 +112,9 @@ export async function POST(request: NextRequest) {
       data: {
         name: name.trim(),
         description: description?.trim() || null,
-        brandId: brandId,
         isActive: Boolean(isActive),
       },
       include: {
-        brand: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
         _count: {
           select: {
             products: true,

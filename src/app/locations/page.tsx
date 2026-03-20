@@ -15,6 +15,7 @@ import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/tab
 import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
 import { Filter, Plus, Edit, Trash2 } from 'lucide-react'
+import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 
 interface Location {
   id: string
@@ -56,6 +57,8 @@ export default function LocationsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingLocation, setEditingLocation] = useState<Location | null>(null)
   const [deleteLocation, setDeleteLocation] = useState<Location | null>(null)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedDetailItem, setSelectedDetailItem] = useState<Location | null>(null)
   const [formData, setFormData] = useState<FormData>({
     name: '',
     address: '',
@@ -257,7 +260,7 @@ export default function LocationsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleEdit(location)}
+            onClick={(e) => { e.stopPropagation(); handleEdit(location); }}
             className="flex-1 border-border text-foreground hover:bg-accent gap-1"
           >
             <Edit className="h-3 w-3" />
@@ -266,7 +269,7 @@ export default function LocationsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDeleteLocation(location)}
+            onClick={(e) => { e.stopPropagation(); setDeleteLocation(location); }}
             className="flex-1 text-destructive hover:text-destructive border-border hover:bg-destructive/10 gap-1"
           >
             <Trash2 className="h-3 w-3" />
@@ -314,7 +317,7 @@ export default function LocationsPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleEdit(location)}
+            onClick={(e) => { e.stopPropagation(); handleEdit(location); }}
             className="text-foreground hover:bg-accent gap-1"
           >
             <Edit className="h-3 w-3" />
@@ -323,7 +326,7 @@ export default function LocationsPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setDeleteLocation(location)}
+            onClick={(e) => { e.stopPropagation(); setDeleteLocation(location); }}
             className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
           >
             <Trash2 className="h-3 w-3" />
@@ -396,6 +399,10 @@ export default function LocationsPage() {
         onViewChange={setView}
         loading={loading}
         autoResponsive={true}
+        onItemClick={(item) => {
+          setSelectedDetailItem(item)
+          setShowDetails(true)
+        }}
         gridProps={{
           renderItem: renderGridItem,
           columns: 3
@@ -487,6 +494,13 @@ export default function LocationsPage() {
         variant={deleteConfirmation.variant}
         onConfirm={handleDeleteConfirm}
         icon={deleteConfirmation.icon}
+      />
+
+      <RowDetailsDialog
+        open={showDetails}
+        onOpenChange={setShowDetails}
+        title="Location Details"
+        data={selectedDetailItem}
       />
     </div>
   )

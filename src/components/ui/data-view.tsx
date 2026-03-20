@@ -48,9 +48,10 @@ interface GridViewProps {
   renderItem: (item: any) => React.ReactNode
   columns?: number
   loading?: boolean
+  onItemClick?: (item: any) => void
 }
 
-export function GridView({ items, renderItem, columns = 3, loading = false }: GridViewProps) {
+export function GridView({ items, renderItem, columns = 3, loading = false, onItemClick }: GridViewProps) {
   const gridCols = {
     1: 'grid-cols-1',
     2: 'grid-cols-1 md:grid-cols-2',
@@ -65,7 +66,11 @@ export function GridView({ items, renderItem, columns = 3, loading = false }: Gr
   return (
     <div className={`grid gap-4 ${gridCols[columns as keyof typeof gridCols] || gridCols[3]}`}>
       {items.map((item, index) => (
-        <div key={item.id?.toString() || index} className="h-full">
+        <div 
+          key={item.id?.toString() || index} 
+          className={`h-full ${onItemClick ? 'cursor-pointer transition-transform hover:scale-[1.02]' : ''}`}
+          onClick={() => onItemClick && onItemClick(item)}
+        >
           {renderItem(item)}
         </div>
       ))}
@@ -80,6 +85,7 @@ interface ListViewProps {
   tableMinWidthClass?: string
   tableMaxHeightClass?: string
   loading?: boolean
+  onItemClick?: (item: any) => void
 }
 
 export function ListView({
@@ -88,7 +94,8 @@ export function ListView({
   renderRow,
   tableMinWidthClass = 'min-w-[900px]',
   tableMaxHeightClass = 'max-h-[65vh]',
-  loading = false
+  loading = false,
+  onItemClick
 }: ListViewProps) {
   if (loading) {
     return <LoadingPage view="list" showHeader={false} items={8} />
@@ -114,7 +121,8 @@ export function ListView({
             {items.map((item, index) => (
               <tr
                 key={item.id?.toString() || index}
-                className="hover:bg-muted/30 transition-colors"
+                className={`hover:bg-muted/30 transition-colors ${onItemClick ? 'cursor-pointer' : ''}`}
+                onClick={() => onItemClick && onItemClick(item)}
               >
                 {renderRow(item)}
               </tr>
@@ -161,6 +169,7 @@ interface DataViewProps {
   actions?: React.ReactNode
   loading?: boolean
   autoResponsive?: boolean // New prop to enable automatic responsive behavior
+  onItemClick?: (item: any) => void
 }
 
 export function DataView({
@@ -172,7 +181,8 @@ export function DataView({
   title,
   actions,
   loading = false,
-  autoResponsive = true
+  autoResponsive = true,
+  onItemClick
 }: DataViewProps) {
   const isMobile = useResponsiveView()
   
@@ -219,6 +229,7 @@ export function DataView({
           renderItem={gridProps.renderItem}
           columns={gridProps.columns}
           loading={loading}
+          onItemClick={onItemClick}
         />
       ) : actualView === 'list' && listProps ? (
         <ListView
@@ -228,6 +239,7 @@ export function DataView({
           tableMinWidthClass={listProps.tableMinWidthClass}
           tableMaxHeightClass={listProps.tableMaxHeightClass}
           loading={loading}
+          onItemClick={onItemClick}
         />
       ) : (
         <div className="text-center py-8 text-muted-foreground">

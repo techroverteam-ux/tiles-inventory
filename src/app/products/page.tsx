@@ -16,6 +16,7 @@ import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
 import ImageUpload from '@/components/ui/image-upload'
 import { Filter, Plus, Edit, Trash2 } from 'lucide-react'
+import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 
 interface Product {
   id: string
@@ -73,13 +74,13 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<any[]>([])
   const [sizes, setSizes] = useState<any[]>([])
   const [finishTypes, setFinishTypes] = useState<any[]>([])
-  const [filteredCategories, setFilteredCategories] = useState<any[]>([])
-  const [filteredSizes, setFilteredSizes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'grid' | 'list'>('list') // Default to list for desktop
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedDetailItem, setSelectedDetailItem] = useState<Product | null>(null)
   const [formData, setFormData] = useState<FormData>({
     name: '',
     code: '',
@@ -218,42 +219,11 @@ export default function ProductsPage() {
     }
   }, [searchParams])
 
-  useEffect(() => {
-    if (formData.brandId) {
-      fetchCategoriesByBrand(formData.brandId)
-    } else {
-      setFilteredCategories([])
-      setFilteredSizes([])
-    }
-  }, [formData.brandId])
 
-  useEffect(() => {
-    if (formData.brandId && formData.categoryId) {
-      fetchSizesByBrandAndCategory(formData.brandId, formData.categoryId)
-    } else {
-      setFilteredSizes([])
-    }
-  }, [formData.brandId, formData.categoryId])
 
-  const fetchCategoriesByBrand = async (brandId: string) => {
-    try {
-      const response = await fetch(`/api/categories?brandId=${brandId}`)
-      const data = await response.json()
-      setFilteredCategories(data.categories?.filter((c: any) => c.isActive) || [])
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    }
-  }
 
-  const fetchSizesByBrandAndCategory = async (brandId: string, categoryId: string) => {
-    try {
-      const response = await fetch(`/api/sizes?brandId=${brandId}&categoryId=${categoryId}`)
-      const data = await response.json()
-      setFilteredSizes(data.sizes || [])
-    } catch (error) {
-      console.error('Error fetching sizes:', error)
-    }
-  }
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -309,8 +279,6 @@ export default function ProductsPage() {
       pcsPerBox: '',
       imageUrl: ''
     })
-    setFilteredCategories([])
-    setFilteredSizes([])
   }
 
   const handleEdit = async (product: Product) => {
@@ -326,25 +294,6 @@ export default function ProductsPage() {
       pcsPerBox: product.pcsPerBox.toString(),
       imageUrl: product.imageUrl || ''
     })
-    // Pre-fetch filtered categories and sizes so dropdowns show the correct values
-    if (product.brandId) {
-      try {
-        const catResponse = await fetch(`/api/categories?brandId=${product.brandId}`)
-        const catData = await catResponse.json()
-        setFilteredCategories(catData.categories?.filter((c: any) => c.isActive) || [])
-      } catch (error) {
-        console.error('Error fetching categories:', error)
-      }
-    }
-    if (product.brandId && product.categoryId) {
-      try {
-        const sizeResponse = await fetch(`/api/sizes?brandId=${product.brandId}&categoryId=${product.categoryId}`)
-        const sizeData = await sizeResponse.json()
-        setFilteredSizes(sizeData.sizes || [])
-      } catch (error) {
-        console.error('Error fetching sizes:', error)
-      }
-    }
     setShowForm(true)
   }
 
@@ -428,7 +377,7 @@ export default function ProductsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleEdit(product)}
+            onClick={(e) => { e.stopPropagation(); handleEdit(product); }}
             className="flex-1 gap-1"
           >
             <Edit className="h-3 w-3" />
@@ -437,7 +386,7 @@ export default function ProductsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleDelete(product)}
+            onClick={(e) => { e.stopPropagation(); handleDelete(product); }}
             className="flex-1 text-destructive hover:text-destructive gap-1"
           >
             <Trash2 className="h-3 w-3" />
@@ -506,7 +455,7 @@ export default function ProductsPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleEdit(product)}
+            onClick={(e) => { e.stopPropagation(); handleEdit(product); }}
             className="gap-1"
           >
             <Edit className="h-3 w-3" />
@@ -515,7 +464,7 @@ export default function ProductsPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleDelete(product)}
+            onClick={(e) => { e.stopPropagation(); handleDelete(product); }}
             className="text-destructive hover:text-destructive gap-1"
           >
             <Trash2 className="h-3 w-3" />
@@ -600,7 +549,7 @@ export default function ProductsPage() {
                     <label className="text-sm font-medium text-foreground">Brand *</label>
                     <select
                       value={formData.brandId}
-                      onChange={(e) => setFormData({ ...formData, brandId: e.target.value, categoryId: '', sizeId: '' })}
+                      onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
                       required
                       className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
                     >
@@ -616,13 +565,12 @@ export default function ProductsPage() {
                     <label className="text-sm font-medium text-foreground">Category *</label>
                     <select
                       value={formData.categoryId}
-                      onChange={(e) => setFormData({ ...formData, categoryId: e.target.value, sizeId: '' })}
-                      disabled={!formData.brandId}
+                      onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                       required
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground disabled:opacity-50"
+                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
                     >
                       <option value="">Select a category</option>
-                      {filteredCategories.map((category) => (
+                      {categories.map((category) => (
                         <option key={category.id} value={category.id}>
                           {category.name}
                         </option>
@@ -637,11 +585,10 @@ export default function ProductsPage() {
                     <select
                       value={formData.sizeId}
                       onChange={(e) => setFormData({ ...formData, sizeId: e.target.value })}
-                      disabled={!formData.categoryId}
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground disabled:opacity-50"
+                      className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
                     >
                       <option value="">Select a size</option>
-                      {filteredSizes.map((size) => (
+                      {sizes.map((size) => (
                         <option key={size.id} value={size.id}>
                           {size.name}
                         </option>
@@ -731,6 +678,10 @@ export default function ProductsPage() {
         onViewChange={setView}
         loading={loading}
         autoResponsive={true}
+        onItemClick={(item) => {
+          setSelectedDetailItem(item)
+          setShowDetails(true)
+        }}
           gridProps={{
             renderItem: renderGridItem,
             columns: 3
@@ -762,6 +713,14 @@ export default function ProductsPage() {
         onConfirm={handleDeleteConfirm}
         confirmText="Delete"
         variant="destructive"
+      />
+
+      <RowDetailsDialog
+        open={showDetails}
+        onOpenChange={setShowDetails}
+        title="Product Details"
+        data={selectedDetailItem}
+        imageUrl={selectedDetailItem?.imageUrl}
       />
     </div>
   )

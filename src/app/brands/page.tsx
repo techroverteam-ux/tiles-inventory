@@ -15,6 +15,7 @@ import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/tab
 import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
 import { Filter, Plus, Edit, Trash2 } from 'lucide-react'
+import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 
 interface Brand {
   id: string
@@ -41,7 +42,6 @@ interface Brand {
 interface FormData {
   name: string
   description: string
-  contactInfo: string
   isActive: boolean
 }
 
@@ -59,10 +59,11 @@ export default function BrandsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
   const [deleteBrand, setDeleteBrand] = useState<Brand | null>(null)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedDetailItem, setSelectedDetailItem] = useState<Brand | null>(null)
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
-    contactInfo: '',
     isActive: true
   })
   const [submitting, setSubmitting] = useState(false)
@@ -193,7 +194,6 @@ export default function BrandsPage() {
     setFormData({
       name: '',
       description: '',
-      contactInfo: '',
       isActive: true
     })
   }
@@ -203,7 +203,6 @@ export default function BrandsPage() {
     setFormData({
       name: brand.name,
       description: brand.description || '',
-      contactInfo: brand.contactInfo || '',
       isActive: brand.isActive
     })
     setShowForm(true)
@@ -245,9 +244,6 @@ export default function BrandsPage() {
             <CardTitle className="text-lg font-semibold text-card-foreground">
               {brand.name}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {brand.contactInfo || 'No contact info'}
-            </p>
           </div>
           <Badge variant={brand.isActive ? 'default' : 'secondary'}>
             {brand.isActive ? 'Active' : 'Inactive'}
@@ -277,7 +273,7 @@ export default function BrandsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleEdit(brand)}
+            onClick={(e) => { e.stopPropagation(); handleEdit(brand); }}
             className="flex-1 border-border text-foreground hover:bg-accent gap-1"
           >
             <Edit className="h-3 w-3" />
@@ -286,7 +282,7 @@ export default function BrandsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setDeleteBrand(brand)}
+            onClick={(e) => { e.stopPropagation(); setDeleteBrand(brand); }}
             className="flex-1 text-destructive hover:text-destructive border-border hover:bg-destructive/10 gap-1"
           >
             <Trash2 className="h-3 w-3" />
@@ -301,7 +297,6 @@ export default function BrandsPage() {
     <>
       <td className="px-4 py-3">
         <div className="font-medium text-foreground">{brand.name}</div>
-        <div className="text-sm text-muted-foreground">{brand.contactInfo || 'No contact'}</div>
       </td>
       <td className="px-4 py-3">
         <div className="text-sm text-muted-foreground max-w-xs truncate">
@@ -338,7 +333,7 @@ export default function BrandsPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleEdit(brand)}
+            onClick={(e) => { e.stopPropagation(); handleEdit(brand); }}
             className="text-foreground hover:bg-accent gap-1"
           >
             <Edit className="h-3 w-3" />
@@ -347,7 +342,7 @@ export default function BrandsPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setDeleteBrand(brand)}
+            onClick={(e) => { e.stopPropagation(); setDeleteBrand(brand); }}
             className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
           >
             <Trash2 className="h-3 w-3" />
@@ -428,15 +423,7 @@ export default function BrandsPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Contact Info</label>
-                    <Input
-                      value={formData.contactInfo}
-                      onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })}
-                      placeholder="Enter contact info"
-                      className="bg-background border-input text-foreground"
-                    />
-                  </div>
+
 
                   <div className="flex items-center space-x-2">
                     <input
@@ -484,12 +471,16 @@ export default function BrandsPage() {
         onViewChange={setView}
         loading={loading}
         autoResponsive={true}
+        onItemClick={(item) => {
+          setSelectedDetailItem(item)
+          setShowDetails(true)
+        }}
         gridProps={{
           renderItem: renderGridItem,
           columns: 3
         }}
         listProps={{
-          headers: ['Name & Contact', 'Description', 'Status', 'Categories', 'Products', 'Created', 'Updated', 'Actions'],
+          headers: ['Name', 'Description', 'Status', 'Categories', 'Products', 'Created', 'Updated', 'Actions'],
           renderRow: renderListRow
         }}
       />
@@ -515,6 +506,14 @@ export default function BrandsPage() {
         variant={deleteConfirmation.variant}
         onConfirm={handleDeleteConfirm}
         icon={deleteConfirmation.icon}
+      />
+
+      {/* Row Details Dialog */}
+      <RowDetailsDialog
+        open={showDetails}
+        onOpenChange={setShowDetails}
+        title="Brand Details"
+        data={selectedDetailItem}
       />
     </div>
   )

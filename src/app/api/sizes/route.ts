@@ -8,8 +8,6 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || (hasExplicitPagination ? '25' : '1000'))
     const search = searchParams.get('search') || ''
-    const brandId = searchParams.get('brandId')
-    const categoryId = searchParams.get('categoryId')
     const isActive = searchParams.get('isActive')
     const dateFrom = searchParams.get('dateFrom') || searchParams.get('createdAtFrom')
     const dateTo = searchParams.get('dateTo') || searchParams.get('createdAtTo')
@@ -22,21 +20,11 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { brand: { name: { contains: search, mode: 'insensitive' } } },
-        { category: { name: { contains: search, mode: 'insensitive' } } }
+        { description: { contains: search, mode: 'insensitive' } }
       ]
     }
     
-    // Filter by brand
-    if (brandId) {
-      where.brandId = brandId
-    }
-    
-    // Filter by category
-    if (categoryId) {
-      where.categoryId = categoryId
-    }
+
     
     // Default list behavior: show active items unless status is explicitly requested
     if (isActive === null || isActive === undefined || isActive === '') {
@@ -61,8 +49,6 @@ export async function GET(request: NextRequest) {
     const sizes = await prisma.size.findMany({
       where,
       include: {
-        brand: { select: { id: true, name: true } },
-        category: { select: { id: true, name: true } },
         _count: { select: { products: true } }
       },
       orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
@@ -113,68 +99,55 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     
-    const { name, description, length, width, brandId, categoryId, isActive = true } = data
+    const { name, description, length, width, isActive = true } = data
     
     // Validate required fields
-    if (!name || !name.trim() || !brandId || !categoryId) {
+    if (!name || !name.trim()) {
       return NextResponse.json(
-        { error: 'Size name, brand, and category are required' },
+        { error: 'Size name is required' },
         { status: 400 }
       )
     }
     
-    // Check if size name already exists for this brand and category
+    // Check if size name already exists
     const existingSize = await prisma.size.findFirst({
       where: {
-        name: { equals: name.trim(), mode: 'insensitive' },
-        brandId: brandId,
-        categoryId: categoryId
+        name: { equals: name.trim(), mode: 'insensitive' }
       }
     })
     
     if (existingSize) {
       return NextResponse.json(
-        { error: 'Size name already exists for this brand and category' },
+        { error: 'Size name already exists' },
         { status: 400 }
       )
     }
 
-    const size = await (prisma as any).size.create({
+    const parsedLength = (length !== undefined && length !== null && length !== '') ? parseFloat(String(length)) : null
+    const parsedWidth = (width !== undefined && width !== null && width !== '') ? parseFloat(String(width)) : null
+
+    if ((length && isNaN(parsedLength!)) || (width && isNaN(parsedWidth!))) {
+      return NextResponse.json(
+        { error: 'Invalid dimensions provided' },
+        { status: 400 }
+      )
+    }
+
+    const size = await prisma.size.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
-        length: length ? parseFloat(length) : null,
-        width: width ? parseFloat(width) : null,
-        brandId: brandId,
-        categoryId: categoryId,
+        length: parsedLength,
+        width: parsedWidth,
         isActive: Boolean(isActive),
-      },
-      include: {
-        brand: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        _count: {
-          select: {
-            products: true,
-          },
-        }
-      },
+      }
     })
 
     return NextResponse.json({ size }, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Size creation error:', error)
     return NextResponse.json(
-      { error: 'Failed to create size' },
+      { error: `Failed to create size: ${error.message || 'Unknown error'}` },
       { status: 500 }
     )
   }

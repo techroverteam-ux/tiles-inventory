@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import SalesOrderForm from '@/components/SalesOrderForm'
 import { useToast } from '@/contexts/ToastContext'
+import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 
 const formatDate = (dateString: string) => {
   const d = new Date(dateString)
@@ -55,6 +56,8 @@ export default function SalesOrdersPage() {
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null)
   const [deleteOrder, setDeleteOrder] = useState<SalesOrder | null>(null)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedDetailItem, setSelectedDetailItem] = useState<SalesOrder | null>(null)
   
   const [filters, setFilters] = useState({
     brandId: '',
@@ -269,7 +272,14 @@ export default function SalesOrdersPage() {
                 </TableHeader>
                 <TableBody>
                   {orders.map((order) => (
-                    <TableRow key={order.id} className="border-b border-border hover:bg-accent/50">
+                    <TableRow 
+                      key={order.id} 
+                      className="border-b border-border hover:bg-accent/50 cursor-pointer"
+                      onClick={() => {
+                        setSelectedDetailItem(order)
+                        setShowDetails(true)
+                      }}
+                    >
                       <TableCell>
                         <div className="font-medium text-foreground">{order.orderNumber}</div>
                       </TableCell>
@@ -320,7 +330,7 @@ export default function SalesOrdersPage() {
                         }
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="sm" onClick={() => handleView(order)}>
                             <Eye className="h-4 w-4 text-muted-foreground" />
                           </Button>
@@ -387,6 +397,13 @@ export default function SalesOrdersPage() {
         onConfirm={handleDeleteConfirm}
         confirmText="Delete"
         variant="destructive"
+      />
+
+      <RowDetailsDialog
+        open={showDetails}
+        onOpenChange={setShowDetails}
+        title="Sales Order Details"
+        data={selectedDetailItem}
       />
     </div>
   )

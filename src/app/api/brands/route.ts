@@ -20,8 +20,7 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { contactInfo: { contains: search, mode: 'insensitive' } }
+        { description: { contains: search, mode: 'insensitive' } }
       ]
     }
     
@@ -95,7 +94,7 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     
-    const { name, description, contactInfo, isActive = true } = data
+    const { name, description, isActive = true } = data
     
     // Validate required fields
     if (!name || !name.trim()) {
@@ -121,7 +120,6 @@ export async function POST(request: NextRequest) {
       data: {
         name: name.trim(),
         description: description?.trim() || null,
-        contactInfo: contactInfo?.trim() || null,
         isActive: Boolean(isActive),
       },
       include: {

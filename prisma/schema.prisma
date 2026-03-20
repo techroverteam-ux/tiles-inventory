@@ -38,15 +38,12 @@ model Notification {
 
 model Brand {
   id             String          @id @default(auto()) @map("_id") @db.ObjectId
-  name           String
+  name           String          @unique
   description    String?
   contactInfo    String?
   isActive       Boolean         @default(true)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  categories     Category[]
-  collections    Collection[]
-  sizes          Size[]
   products       Product[]
   purchaseOrders PurchaseOrder[]
 
@@ -55,31 +52,23 @@ model Brand {
 
 model Category {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
+  name        String    @unique
   description String?
-  brandId     String    @db.ObjectId
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  brand       Brand     @relation(fields: [brandId], references: [id])
-  sizes       Size[]
   products    Product[]
-  collections Collection[]
 
   @@map("categories")
 }
 
 model Collection {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
+  name        String    @unique
   description String?
-  brandId     String    @db.ObjectId
-  categoryId  String?   @db.ObjectId
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  brand       Brand     @relation(fields: [brandId], references: [id])
-  category    Category? @relation(fields: [categoryId], references: [id])
   products    Product[]
 
   @@map("collections")
@@ -87,17 +76,13 @@ model Collection {
 
 model Size {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
+  name        String    @unique
   description String?
   length      Float?
   width       Float?
-  brandId     String    @db.ObjectId
-  categoryId  String    @db.ObjectId
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  brand       Brand     @relation(fields: [brandId], references: [id])
-  category    Category  @relation(fields: [categoryId], references: [id])
   products    Product[]
 
   @@map("sizes")
@@ -105,7 +90,7 @@ model Size {
 
 model FinishType {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
+  name        String    @unique
   description String?
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())

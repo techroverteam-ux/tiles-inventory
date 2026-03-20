@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import PurchaseOrderForm from '@/components/PurchaseOrderForm'
 import { useToast } from '@/contexts/ToastContext'
+import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 
 const formatDate = (dateString: string) => {
   const d = new Date(dateString)
@@ -60,6 +61,8 @@ export default function PurchaseOrdersPage() {
   const [showLocationDialog, setShowLocationDialog] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null)
   const [deleteOrder, setDeleteOrder] = useState<PurchaseOrder | null>(null)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedDetailItem, setSelectedDetailItem] = useState<PurchaseOrder | null>(null)
   const [selectedLocation, setSelectedLocation] = useState('')
   const [changingStatus, setChangingStatus] = useState<string | null>(null)
   
@@ -373,7 +376,14 @@ export default function PurchaseOrdersPage() {
                 </TableHeader>
                 <TableBody>
                   {orders.map((order) => (
-                    <TableRow key={order.id} className="border-b border-border hover:bg-accent/50">
+                    <TableRow 
+                      key={order.id} 
+                      className="border-b border-border hover:bg-accent/50 cursor-pointer"
+                      onClick={() => {
+                        setSelectedDetailItem(order)
+                        setShowDetails(true)
+                      }}
+                    >
                       <TableCell>
                         <div className="font-medium text-foreground">{order.orderNumber}</div>
                       </TableCell>
@@ -396,21 +406,23 @@ export default function PurchaseOrdersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Select 
-                          value={order.status} 
-                          onValueChange={(value) => handleStatusChange(order.id, value)}
-                          disabled={changingStatus === order.id}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="PENDING">Pending</SelectItem>
-                            <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                            <SelectItem value="DELIVERED">Delivered</SelectItem>
-                            <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Select 
+                            value={order.status} 
+                            onValueChange={(value) => handleStatusChange(order.id, value)}
+                            disabled={changingStatus === order.id}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="PENDING">Pending</SelectItem>
+                              <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                              <SelectItem value="DELIVERED">Delivered</SelectItem>
+                              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="font-medium text-foreground">
@@ -433,7 +445,7 @@ export default function PurchaseOrdersPage() {
                         }
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="sm" onClick={() => handleView(order)}>
                             <Eye className="h-4 w-4 text-muted-foreground" />
                           </Button>
@@ -543,6 +555,13 @@ export default function PurchaseOrdersPage() {
         onConfirm={handleDeleteConfirm}
         confirmText="Delete"
         variant="destructive"
+      />
+
+      <RowDetailsDialog
+        open={showDetails}
+        onOpenChange={setShowDetails}
+        title="Purchase Order Details"
+        data={selectedDetailItem}
       />
     </div>
   )
