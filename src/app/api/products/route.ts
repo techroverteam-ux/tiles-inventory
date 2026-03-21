@@ -145,10 +145,10 @@ export async function POST(request: NextRequest) {
       const sqftPerBox = Number(data.sqftPerBox) || 1
       const pcsPerBox = Number(data.pcsPerBox) || 1
 
-      if (!name || !code || !brandId || !categoryId) {
+      if (!name || !code || !brandId || !categoryId || !imageUrl) {
         return NextResponse.json({
           error: 'Missing required fields',
-          details: 'Name, code, brand, and category are required'
+          details: 'Name, code, brand, category, and image are required'
         }, { status: 400 })
       }
 
@@ -213,10 +213,10 @@ export async function POST(request: NextRequest) {
     const existingImageUrl = (formData.get('imageUrl') as string) || null
     const image = formData.get('image') as File | null
 
-    if (!name || !code || !brandId || !categoryId) {
+    if (!name || !code || !brandId || !categoryId || (!existingImageUrl && (!image || image.size === 0))) {
       return NextResponse.json({
         error: 'Missing required fields',
-        details: 'Name, code, brand, and category are required'
+        details: 'Name, code, brand, category, and image are required'
       }, { status: 400 })
     }
 

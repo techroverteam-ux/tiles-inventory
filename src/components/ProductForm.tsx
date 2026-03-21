@@ -86,8 +86,8 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
     setLoading(true)
 
     try {
-      if (!formData.name.trim()) {
-        showToast('Please enter a product name', 'error')
+      if (!formData.name.trim() || !formData.code.trim() || !formData.categoryId || !formData.brandId || !formData.stock || !formData.imageUrl || (!product && (!formData.locationId || !formData.batchName.trim()))) {
+        showToast('Please fill all mandatory fields including product image', 'error')
         setLoading(false)
         return
       }
@@ -148,6 +148,14 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
       setLoading(false)
     }
   }
+
+  const isFormValid = formData.name.trim() !== '' &&
+    formData.code.trim() !== '' &&
+    formData.categoryId !== '' &&
+    formData.brandId !== '' &&
+    formData.stock !== '' &&
+    formData.imageUrl !== '' &&
+    (product ? true : (formData.locationId !== '' && formData.batchName.trim() !== ''))
 
   return (
     <div className="bg-card text-card-foreground border border-border rounded-lg">
@@ -255,7 +263,7 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
         />
 
         <div className="flex gap-2 pt-4">
-          <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90" disabled={loading}>
+          <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90" disabled={loading || !isFormValid}>
             {loading ? (product ? 'Updating...' : 'Creating...') : (product ? 'Update' : 'Create')}
           </Button>
           <Button type="button" variant="outline" onClick={() => onSuccess()} className="border-border text-foreground hover:bg-accent">

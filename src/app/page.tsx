@@ -12,7 +12,10 @@ import {
   Package, 
   ShoppingCart, 
   TrendingUp, 
-  AlertTriangle 
+  AlertTriangle,
+  Download,
+  Loader2,
+  Check
 } from 'lucide-react'
 import { 
   BarChart, 
@@ -23,6 +26,8 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts'
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -43,6 +48,8 @@ export default function Dashboard() {
   const [lowStockItems, setLowStockItems] = useState<any[]>([])
   const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [downloadSuccess, setDownloadSuccess] = useState(false)
 
   useEffect(() => {
     fetchDashboardData()
@@ -65,6 +72,128 @@ export default function Dashboard() {
       console.error('Error fetching dashboard data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGenerateReport = async () => {
+    setIsGenerating(true)
+    try {
+      const doc = new jsPDF()
+      
+      try {
+        const logoUrl = encodeURI('/HOT LOGO TRANSPARENT.PNG')
+        const img = new Image()
+        img.src = logoUrl
+        await new Promise((resolve, reject) => {
+          img.onload = () => resolve(true)
+          img.onerror = () => reject(new Error('Image failed to load'))
+        })
+        doc.addImage(img, 'PNG', 14, 10, 40, 20)
+      } catch (err) {
+        console.warn('Could not load logo for PDF:', err)
+      }
+
+      // Title
+      doc.setFontSize(22)
+      doc.setTextColor(40, 40, 40)
+      doc.text("House of Tiles", 60, 20)
+      
+      doc.setFontSize(14)
+      doc.setTextColor(100, 100, 100)
+      doc.text("Executive Dashboard Report", 60, 28)
+      
+      doc.setFontSize(10)
+      doc.setTextColor(150, 150, 150)
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 40)
+      
+      // Horizontal Line
+      doc.setDrawColor(200, 200, 200)
+      doc.line(14, 45, 196, 45)
+
+      // Stats Section
+      doc.setFontSize(14)
+      doc.setTextColor(40, 40, 40)
+      doc.text("Overview", 14, 55)
+
+      autoTable(doc, {
+        startY: 60,
+        head: [['Metric', 'Value']],
+        body: [
+          ['Total Brands (Active Partners)', stats.totalBrands],
+          ['Total Categories', stats.totalCategories],
+          ['Total Sizes', stats.totalSizes],
+          ['Total Products in Catalog', stats.totalProducts.toLocaleString()],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [88, 28, 135] },
+        margin: { left: 14, right: 14 }
+      })
+
+      const lastAutoTable = (doc as any).lastAutoTable
+
+      doc.setFontSize(14)
+      doc.setTextColor(40, 40, 40)
+      doc.text("Inventory & Orders", 14, lastAutoTable.finalY + 15)
+
+      autoTable(doc, {
+        startY: lastAutoTable.finalY + 20,
+        head: [['Metric', 'Value']],
+        body: [
+          ['Low Stock Items (Needs Attention)', stats.lowStockItems],
+          ['Pending Purchase Orders', stats.purchaseOrders],
+          ['Total Sales Transactions', stats.salesOrders.toLocaleString()],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [88, 28, 135] },
+        bodyStyles: { textColor: [40, 40, 40] },
+        margin: { left: 14, right: 14 },
+        didParseCell: function(data) {
+          if (data.row.index === 0 && data.section === 'body' && stats.lowStockItems > 0) {
+            data.cell.styles.textColor = [220, 38, 38]
+            data.cell.styles.fontStyle = 'bold'
+          }
+        }
+      })
+
+      const secondAutoTable = (doc as any).lastAutoTable
+
+      if (salesData && salesData.length > 0) {
+        doc.setFontSize(14)
+        doc.setTextColor(40, 40, 40)
+        doc.text("Financial Performance (Monthly)", 14, secondAutoTable.finalY + 15)
+        
+        autoTable(doc, {
+          startY: secondAutoTable.finalY + 20,
+          head: [['Month', 'Sales Revenue (INR)', 'Purchase Costs (INR)']],
+          body: salesData.map(d => [d.month, parseFloat(d.sales).toLocaleString(), parseFloat(d.purchases).toLocaleString()]),
+          theme: 'grid',
+          headStyles: { fillColor: [16, 185, 129] },
+          margin: { left: 14, right: 14 }
+        })
+      }
+
+      // Footer
+      const pageCount = (doc as any).internal.getNumberOfPages()
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i)
+        doc.setFontSize(8)
+        doc.setTextColor(150, 150, 150)
+        doc.text(
+          `Page ${i} of ${pageCount} - House of Tiles Internal Document`,
+          14,
+          doc.internal.pageSize.height - 10
+        )
+      }
+
+      doc.save(`HouseOfTiles_Report_${new Date().toISOString().split('T')[0]}.pdf`)
+
+      setDownloadSuccess(true)
+      setTimeout(() => setDownloadSuccess(false), 2000)
+    } catch (error) {
+      console.error('Error generating PDF report:', error)
+      alert("Failed to generate report. Please try again.")
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -107,8 +236,18 @@ export default function Dashboard() {
               Operational
             </div>
           </div>
-          <Button variant="outline" className="rounded-xl border-border/50 font-bold hover:bg-muted/50 transition-all h-11 px-6 shadow-sm">
-            Generate Report
+          <Button 
+            variant="outline" 
+            className={`rounded-xl border-border/50 font-bold transition-all h-11 px-6 shadow-sm gap-2 ${downloadSuccess ? 'bg-success/10 text-success hover:bg-success/20 border-success/30' : 'hover:bg-muted/50'}`}
+            onClick={handleGenerateReport}
+            disabled={isGenerating || loading}
+          >
+            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : 
+             downloadSuccess ? <Check className="h-4 w-4" /> : 
+             <Download className="h-4 w-4" />}
+            {isGenerating ? 'Generating...' : 
+             downloadSuccess ? 'Downloaded!' : 
+             'Generate Report'}
           </Button>
         </motion.div>
       </motion.div>
