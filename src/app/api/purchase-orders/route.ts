@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,6 +40,8 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           brand: true,
+          createdBy: { select: { name: true } },
+          updatedBy: { select: { name: true } },
           items: {
             include: {
               product: {
@@ -49,7 +52,7 @@ export async function GET(request: NextRequest) {
               },
             },
           },
-        },
+        } as any,
         orderBy: {
           [sortBy]: sortOrder,
         },
@@ -80,6 +83,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
+    const user = requireAuth(request)
     
     // Find or create product based on brand, category, and size
     let product = await prisma.product.findFirst({
@@ -95,14 +99,6 @@ export async function POST(request: NextRequest) {
       const category = await prisma.category.findUnique({ where: { id: data.categoryId } })
       const size = await prisma.size.findUnique({ where: { id: data.sizeId } })
       const brand = await prisma.brand.findUnique({ where: { id: data.brandId } })
-      
-      // Get a default finish type
-      let finishType = await prisma.finishType.findFirst({ where: { isActive: true } })
-      if (!finishType) {
-        finishType = await prisma.finishType.create({
-          data: { name: 'Standard', isActive: true },
-        })
-      }
 
       product = await prisma.product.create({
         data: {
@@ -111,11 +107,12 @@ export async function POST(request: NextRequest) {
           brandId: data.brandId,
           categoryId: data.categoryId,
           sizeId: data.sizeId,
-          finishTypeId: finishType.id,
           sqftPerBox: size?.length && size?.width ? (size.length * size.width) / 144 : 1,
           pcsPerBox: 1,
           isActive: true,
-        },
+          createdById: user.userId,
+          updatedById: user.userId,
+        } as any,
       })
     }
 
@@ -147,7 +144,8 @@ export async function POST(request: NextRequest) {
         where: { id: batch.id },
         data: {
           batchNumber: batchName,
-        },
+          updatedById: user.userId,
+        } as any,
       })
     } else {
       // Create new batch
@@ -159,7 +157,9 @@ export async function POST(request: NextRequest) {
           quantity: 0,
           purchasePrice: 0,
           sellingPrice: 0,
-        },
+          createdById: user.userId,
+          updatedById: user.userId,
+        } as any,
       })
     }
 
@@ -181,10 +181,14 @@ export async function POST(request: NextRequest) {
               quantity: quantity,
               unitPrice: unitPrice,
               totalPrice: amount,
-            },
+              createdById: user.userId,
+              updatedById: user.userId,
+            } as any,
           ],
         },
-      },
+        createdById: user.userId,
+        updatedById: user.userId,
+      } as any,
       include: {
         brand: true,
         items: {

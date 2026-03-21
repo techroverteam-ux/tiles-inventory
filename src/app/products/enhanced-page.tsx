@@ -24,7 +24,6 @@ interface Product {
   brandId: string
   categoryId: string
   sizeId: string
-  finishTypeId: string
   sqftPerBox: number
   pcsPerBox: number
   imageUrl?: string
@@ -33,7 +32,6 @@ interface Product {
   brand: { name: string }
   category: { name: string }
   size: { name: string }
-  finishType: { name: string }
   _count?: {
     batches: number
   }
@@ -45,7 +43,6 @@ interface FormData {
   brandId: string
   categoryId: string
   sizeId: string
-  finishTypeId: string
   sqftPerBox: string
   pcsPerBox: string
   imageUrl: string
@@ -63,7 +60,6 @@ export default function ProductsPage() {
   const [brands, setBrands] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [sizes, setSizes] = useState<any[]>([])
-  const [finishTypes, setFinishTypes] = useState<any[]>([])
   const [filteredCategories, setFilteredCategories] = useState<any[]>([])
   const [filteredSizes, setFilteredSizes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -77,7 +73,6 @@ export default function ProductsPage() {
     brandId: '',
     categoryId: '',
     sizeId: '',
-    finishTypeId: '',
     sqftPerBox: '',
     pcsPerBox: '',
     imageUrl: ''
@@ -171,24 +166,21 @@ export default function ProductsPage() {
   // Fetch dropdown data
   const fetchDropdownData = useCallback(async () => {
     try {
-      const [brandsRes, categoriesRes, sizesRes, finishTypesRes] = await Promise.all([
+      const [brandsRes, categoriesRes, sizesRes] = await Promise.all([
         fetch('/api/brands'),
         fetch('/api/categories'),
-        fetch('/api/sizes'),
-        fetch('/api/finish-types')
+        fetch('/api/sizes')
       ])
 
-      const [brandsData, categoriesData, sizesData, finishTypesData] = await Promise.all([
+      const [brandsData, categoriesData, sizesData] = await Promise.all([
         brandsRes.json(),
         categoriesRes.json(),
-        sizesRes.json(),
-        finishTypesRes.json()
+        sizesRes.json()
       ])
 
       setBrands(brandsData.brands?.filter((b: any) => b.isActive) || [])
       setCategories(categoriesData.categories?.filter((c: any) => c.isActive) || [])
       setSizes(sizesData.sizes?.filter((s: any) => s.isActive) || [])
-      setFinishTypes(finishTypesData.finishTypes?.filter((f: any) => f.isActive) || [])
     } catch (error) {
       console.error('Error fetching dropdown data:', error)
     }
@@ -241,7 +233,7 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name.trim() || !formData.code.trim() || !formData.brandId || !formData.categoryId || !formData.finishTypeId) {
+    if (!formData.name.trim() || !formData.code.trim() || !formData.brandId || !formData.categoryId) {
       showToast('Please fill in all required fields', 'error')
       return
     }
@@ -288,7 +280,6 @@ export default function ProductsPage() {
       brandId: '',
       categoryId: '',
       sizeId: '',
-      finishTypeId: '',
       sqftPerBox: '',
       pcsPerBox: '',
       imageUrl: ''
@@ -305,7 +296,6 @@ export default function ProductsPage() {
       brandId: product.brandId,
       categoryId: product.categoryId,
       sizeId: product.sizeId || '',
-      finishTypeId: product.finishTypeId,
       sqftPerBox: product.sqftPerBox.toString(),
       pcsPerBox: product.pcsPerBox.toString(),
       imageUrl: product.imageUrl || ''
@@ -369,7 +359,6 @@ export default function ProductsPage() {
           <div>Brand: {product.brand.name}</div>
           <div>Category: {product.category.name}</div>
           <div>Size: {product.size.name}</div>
-          <div>Finish: {product.finishType.name}</div>
           <div>Box: {product.pcsPerBox} pcs / {product.sqftPerBox} sqft</div>
         </div>
         <div className="flex gap-2">
@@ -421,9 +410,6 @@ export default function ProductsPage() {
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
         {product.size.name}
-      </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        {product.finishType.name}
       </td>
       <td className="px-4 py-3 text-sm text-muted-foreground">
         {product.pcsPerBox} pcs<br />
@@ -592,22 +578,6 @@ export default function ProductsPage() {
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground">Finish Type *</label>
-                      <select
-                        value={formData.finishTypeId}
-                        onChange={(e) => setFormData({ ...formData, finishTypeId: e.target.value })}
-                        required
-                        className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                      >
-                        <option value="">Select finish type</option>
-                        {finishTypes.map((finish) => (
-                          <option key={finish.id} value={finish.id}>
-                            {finish.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -662,7 +632,7 @@ export default function ProductsPage() {
           columns: 3
         }}
         listProps={{
-          headers: ['Product', 'Brand & Category', 'Size', 'Finish', 'Box Info', 'Status', 'Actions'],
+          headers: ['Product', 'Brand & Category', 'Size', 'Box Info', 'Status', 'Actions'],
           renderRow: renderListRow
         }}
       />

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const data = await request.json()
+    const user = requireAuth(request)
     
     const order = await prisma.purchaseOrder.update({
       where: { id },
@@ -13,7 +15,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         brandId: data.brandId,
         orderDate: new Date(data.orderDate),
         expectedDate: data.expectedDate ? new Date(data.expectedDate) : null,
-      }
+        updatedById: user.userId,
+      } as any
     })
     
     return NextResponse.json(order)

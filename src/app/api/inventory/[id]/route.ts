@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const data = await request.json()
+    const user = requireAuth(request)
     
     const batch = await prisma.batch.update({
       where: { id },
@@ -13,7 +15,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         quantity: data.quantity,
         purchasePrice: data.purchasePrice,
         sellingPrice: data.sellingPrice,
-      },
+        updatedById: user.userId,
+      } as any,
       include: {
         product: {
           include: {
@@ -23,7 +26,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           },
         },
         location: true,
-      },
+        createdBy: { select: { name: true } },
+        updatedBy: { select: { name: true } },
+      } as any,
     })
 
     return NextResponse.json(batch)

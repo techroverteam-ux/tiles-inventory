@@ -139,6 +139,12 @@
     opacity: 0.9;
     filter: invert(1) brightness(1.1);
   }
+
+  /* Universal No-Wrap for Tables */
+  table th,
+  table td {
+    white-space: nowrap !important;
+  }
 }
 
 @layer utilities {
@@ -446,6 +452,29 @@
 
   .scrollbar-thin-violet::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--primary) / 0.4);
+  }
+
+  /* Table Container Utility */
+  .table-container {
+    @apply w-full overflow-x-auto overflow-y-auto scrollbar-thin-violet;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Responsive Typography */
+  @layer base {
+    html {
+      font-size: 14px;
+    }
+    @screen sm {
+      html {
+        font-size: 15px;
+      }
+    }
+    @screen md {
+      html {
+        font-size: 16px;
+      }
+    }
   }
 
   /* Page Header and Title */

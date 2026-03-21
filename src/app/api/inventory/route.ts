@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -71,6 +72,8 @@ export async function GET(request: NextRequest) {
             },
           },
           location: true,
+          createdBy: { select: { name: true } },
+          updatedBy: { select: { name: true } },
         },
         orderBy: {
           [sortBy]: sortOrder,
@@ -115,6 +118,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
+    const user = requireAuth(request)
     
     const batch = await prisma.batch.create({
       data: {
@@ -126,6 +130,8 @@ export async function POST(request: NextRequest) {
         purchasePrice: data.purchasePrice,
         sellingPrice: data.sellingPrice,
         expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+        createdById: user.userId,
+        updatedById: user.userId,
       },
       include: {
         product: {
@@ -135,6 +141,7 @@ export async function POST(request: NextRequest) {
           },
         },
         location: true,
+        createdBy: { select: { name: true } },
       },
     })
 

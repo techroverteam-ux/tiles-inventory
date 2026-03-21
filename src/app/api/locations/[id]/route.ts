@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
@@ -10,12 +11,14 @@ export async function GET(
     const location = await prisma.location.findUnique({
       where: { id },
       include: {
+        createdBy: { select: { name: true } },
+        updatedBy: { select: { name: true } },
         _count: {
           select: {
             batches: true,
           },
         }
-      },
+      } as any,
     })
 
     if (!location) {
@@ -72,6 +75,8 @@ export async function PUT(
       }
     })
 
+    const user = requireAuth(request)
+
     if (duplicateLocation) {
       if (duplicateLocation.isActive) {
         return NextResponse.json(
@@ -96,15 +101,18 @@ export async function PUT(
         name: name.trim(),
         address: address?.trim() || null,
         isActive: Boolean(isActive),
+        updatedById: user.userId,
         updatedAt: new Date()
-      },
+      } as any,
       include: {
+        createdBy: { select: { name: true } },
+        updatedBy: { select: { name: true } },
         _count: {
           select: {
             batches: true,
           },
         }
-      }
+      } as any
     })
 
     return NextResponse.json({ location })

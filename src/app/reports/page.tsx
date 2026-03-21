@@ -437,7 +437,7 @@ export default function ReportsPage() {
               </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="table-container">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border/50 bg-muted/30">

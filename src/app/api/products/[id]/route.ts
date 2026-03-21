@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { put } from '@vercel/blob'
+import { requireAuth } from '@/lib/auth'
 
 async function uploadImageFile(image: File | null) {
   if (!image || image.size === 0) {
@@ -27,17 +28,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     if (contentType.includes('application/json')) {
       const data = await request.json()
+      const user = requireAuth(request)
       const name = data.name?.trim()
       const code = data.code?.trim()
       const brandId = data.brandId
       const categoryId = data.categoryId
       const sizeId = data.sizeId || null
-      const finishTypeId = data.finishTypeId || null
 
-      if (!name || !code || !brandId || !categoryId || !finishTypeId) {
+      if (!name || !code || !brandId || !categoryId) {
         return NextResponse.json({
           error: 'Missing required fields',
-          details: 'Name, code, brand, category, and finish type are required'
+          details: 'Name, code, brand, and category are required'
         }, { status: 400 })
       }
 
@@ -47,9 +48,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         brandId,
         categoryId,
         sizeId,
-        finishTypeId,
         sqftPerBox: Number(data.sqftPerBox) || 1,
         pcsPerBox: Number(data.pcsPerBox) || 1,
+        updatedById: user.userId,
       }
 
       if (typeof data.imageUrl === 'string') {
@@ -91,12 +92,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const formData = await request.formData()
+    const user = requireAuth(request)
     const name = (formData.get('name') as string)?.trim()
     const code = (formData.get('code') as string)?.trim()
     const brandId = formData.get('brandId') as string
     const categoryId = formData.get('categoryId') as string
     const sizeId = (formData.get('sizeId') as string) || null
-    const finishTypeId = (formData.get('finishTypeId') as string) || null
     const stock = formData.get('stock') as string
     const pcsPerBox = formData.get('pcsPerBox') as string
     const sqftPerBox = formData.get('sqftPerBox') as string
@@ -111,32 +112,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     let imageUrl = await uploadImageFile(image)
 
-    let actualFinishTypeId = finishTypeId
-    if (!actualFinishTypeId) {
-      const existingProduct = await prisma.product.findUnique({
-        where: { id },
-        select: { finishTypeId: true }
-      })
-
-      if (!existingProduct) {
-        return NextResponse.json({
-          error: 'Product not found',
-          details: 'The product you are trying to update does not exist'
-        }, { status: 404 })
-      }
-
-      actualFinishTypeId = existingProduct.finishTypeId
-    }
-
     const updateData: any = {
       name,
       code,
       brandId,
       categoryId,
       sizeId,
-      finishTypeId: actualFinishTypeId,
       sqftPerBox: parseFloat(sqftPerBox || '1') || 1,
       pcsPerBox: parseInt(pcsPerBox || stock || '1') || 1,
+      updatedById: user.userId,
     }
 
     if (imageUrl) {

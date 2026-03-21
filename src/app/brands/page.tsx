@@ -274,12 +274,12 @@ export default function BrandsPage() {
             <div className="flex justify-between"><span>By:</span> <span className="font-medium text-foreground">{brand.createdBy.name}</span></div>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           <Button
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); handleEdit(brand); }}
-            className="rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-2 font-bold"
+            className="flex-1 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-2 font-bold h-9"
           >
             <Edit className="h-3.5 w-3.5" />
             Edit
@@ -288,7 +288,7 @@ export default function BrandsPage() {
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); setDeleteBrand(brand); }}
-            className="rounded-xl text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10 hover:border-destructive/30 gap-2 font-bold"
+            className="flex-1 rounded-xl text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10 hover:border-destructive/30 gap-2 font-bold h-9"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Delete

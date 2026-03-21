@@ -26,6 +26,7 @@ import {
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/motion'
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -85,15 +86,20 @@ export default function Dashboard() {
 
   return (
     <div className="w-full px-3 sm:px-4 md:px-6 space-y-8 pb-10">
-      <div className="flex flex-col gap-4 p-6 glass rounded-[2.5rem] border border-border/50 shadow-premium bg-gradient-to-br from-primary/10 via-transparent to-transparent sm:flex-row sm:items-center sm:justify-between transition-all duration-500 hover:border-primary/20">
-        <div className="space-y-1">
+      <motion.div 
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="flex flex-col gap-4 p-6 glass rounded-[2.5rem] border border-border/50 shadow-premium bg-gradient-to-br from-primary/10 via-transparent to-transparent sm:flex-row sm:items-center sm:justify-between transition-all duration-500 hover:border-primary/20"
+      >
+        <motion.div variants={itemVariants} className="space-y-1">
           <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 tracking-tight">House of Tiles Dashboard</h1>
           <p className="text-muted-foreground font-medium flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary/60" />
             Real-time insights and operational overview of your business
           </p>
-        </div>
-        <div className="flex items-center gap-3">
+        </motion.div>
+        <motion.div variants={itemVariants} className="flex items-center gap-3">
           <div className="hidden md:flex flex-col items-end px-4 border-r border-border/50">
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">System Status</span>
             <div className="flex items-center gap-1.5 text-success font-bold text-xs uppercase leading-none">
@@ -104,76 +110,97 @@ export default function Dashboard() {
           <Button variant="outline" className="rounded-xl border-border/50 font-bold hover:bg-muted/50 transition-all h-11 px-6 shadow-sm">
             Generate Report
           </Button>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <DashboardCard
-          title="Brands"
-          value={stats.totalBrands}
-          subtitle="Active Partners"
-          icon={<Users />}
-          href="/brands"
-          color="primary"
-        />
-        <DashboardCard
-          title="Categories"
-          value={stats.totalCategories}
-          subtitle="Types of products"
-          icon={<Palette />}
-          href="/categories"
-          color="info"
-        />
-        <DashboardCard
-          title="Sizes"
-          value={stats.totalSizes}
-          subtitle="Variations available"
-          icon={<Ruler />}
-          href="/sizes"
-          color="warning"
-        />
-        <DashboardCard
-          title="Products"
-          value={stats.totalProducts.toLocaleString()}
-          subtitle="Total items in catalog"
-          icon={<Package />}
-          href="/products"
-          color="success"
-        />
-        <DashboardCard
-          title="Inventory"
-          value={stats.totalProducts.toLocaleString()}
-          subtitle="In-stock units"
-          icon={<Package />}
-          href="/inventory"
-          color="primary"
-        />
-        <DashboardCard
-          title="Purchase Orders"
-          value={stats.purchaseOrders}
-          subtitle="Incoming stock orders"
-          icon={<ShoppingCart />}
-          href="/purchase-orders"
-          color="info"
-        />
-        <DashboardCard
-          title="Sales Orders"
-          value={stats.salesOrders.toLocaleString()}
-          subtitle="Total transactions"
-          icon={<TrendingUp />}
-          href="/sales-orders"
-          color="success"
-        />
-        <DashboardCard
-          title="Low Stock"
-          value={stats.lowStockItems}
-          subtitle="Items need attention"
-          icon={<AlertTriangle />}
-          href="/inventory?status=low-stock"
-          color="destructive"
-        />
-      </div>
+      <motion.div 
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+      >
+        <motion.div variants={itemVariants}>
+          <DashboardCard
+            title="Brands"
+            value={stats.totalBrands}
+            subtitle="Active Partners"
+            icon={<Users />}
+            href="/brands"
+            color="primary"
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <DashboardCard
+            title="Categories"
+            value={stats.totalCategories}
+            subtitle="Types of products"
+            icon={<Palette />}
+            href="/categories"
+            color="info"
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <DashboardCard
+            title="Sizes"
+            value={stats.totalSizes}
+            subtitle="Variations available"
+            icon={<Ruler />}
+            href="/sizes"
+            color="warning"
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <DashboardCard
+            title="Products"
+            value={stats.totalProducts.toLocaleString()}
+            subtitle="Total items in catalog"
+            icon={<Package />}
+            href="/products"
+            color="success"
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <DashboardCard
+            title="Inventory"
+            value={stats.totalProducts.toLocaleString()}
+            subtitle="In-stock units"
+            icon={<Package />}
+            href="/inventory"
+            color="primary"
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <DashboardCard
+            title="Purchase Orders"
+            value={stats.purchaseOrders}
+            subtitle="Incoming stock orders"
+            icon={<ShoppingCart />}
+            href="/purchase-orders"
+            color="info"
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <DashboardCard
+            title="Sales Orders"
+            value={stats.salesOrders.toLocaleString()}
+            subtitle="Total transactions"
+            icon={<TrendingUp />}
+            href="/sales-orders"
+            color="success"
+          />
+        </motion.div>
+        <motion.div variants={itemVariants}>
+          <DashboardCard
+            title="Low Stock"
+            value={stats.lowStockItems}
+            subtitle="Items need attention"
+            icon={<AlertTriangle />}
+            href="/inventory?status=low-stock"
+            color="destructive"
+          />
+        </motion.div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Sales Chart */}
