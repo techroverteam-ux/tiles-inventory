@@ -94,10 +94,11 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Check if category name already exists
+    // Check if category name already exists (only active ones)
     const existingCategory = await prisma.category.findFirst({
-      where: {
-        name: { equals: name.trim(), mode: 'insensitive' }
+      where: { 
+        name: { equals: name.trim(), mode: 'insensitive' },
+        isActive: true
       }
     })
     
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const category = await (prisma as any).category.create({
+    const category = await prisma.category.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,

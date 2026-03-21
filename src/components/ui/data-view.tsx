@@ -102,10 +102,10 @@ export function ListView({
   }
 
   return (
-    <div className="bg-card rounded-lg border border-border overflow-hidden">
-      <div className={`mobile-table-scroll overflow-auto overscroll-auto scroll-smooth ${tableMaxHeightClass}`}>
+    <div className="glass rounded-2xl border border-border/50 overflow-hidden shadow-sm">
+      <div className={`mobile-table-scroll overflow-auto overscroll-auto scroll-smooth no-scrollbar ${tableMaxHeightClass}`}>
         <table className={`desktop-table-nowrap w-full ${tableMinWidthClass}`}>
-          <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/75">
+          <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur-xl border-b border-border/50">
             <tr>
               {headers.map((header, index) => (
                 <th

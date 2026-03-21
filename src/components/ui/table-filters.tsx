@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 export interface FilterOption {
   value: string
@@ -211,28 +212,28 @@ export function TableFilters({
   }
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-6 ${className}`}>
       {/* Search and Filter Toggle */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="page-header">
         {title ? (
           <div>
-            <h1 className="text-xl md:text-2xl font-semibold text-foreground">{title}</h1>
+            <h1 className="page-title">{title}</h1>
           </div>
         ) : (
           <div />
         )}
 
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+        <div className="flex flex-wrap items-center gap-3 sm:justify-end">
           {actions}
 
           {showSearch && (
-            <div className="relative min-w-0 flex-1 max-w-full sm:max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <div className="relative min-w-0 flex-1 max-w-full sm:max-w-sm group">
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 transition-colors group-focus-within:text-primary" />
               <Input
                 placeholder={searchPlaceholder}
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
-                className="pl-10 h-9"
+                className="pl-10 h-10 bg-muted/20 border-border/40 focus:bg-background transition-all rounded-xl"
                 disabled={loading}
               />
               {localSearch && (
@@ -240,9 +241,9 @@ export function TableFilters({
                   variant="ghost"
                   size="sm"
                   onClick={() => setLocalSearch('')}
-                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 rounded-full"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-4 w-4" />
                 </Button>
               )}
             </div>
@@ -253,13 +254,16 @@ export function TableFilters({
               variant="outline"
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className="h-9 gap-2 whitespace-nowrap"
+              className={cn(
+                "h-10 px-4 gap-2 whitespace-nowrap rounded-xl transition-all",
+                showFilters ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : ""
+              )}
               disabled={loading}
             >
               <Filter className="h-4 w-4" />
               Filters
               {getActiveFiltersCount() > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs">
+                <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs bg-primary/20 text-primary border-none">
                   {getActiveFiltersCount()}
                 </Badge>
               )}
@@ -271,7 +275,7 @@ export function TableFilters({
               variant="ghost"
               size="sm"
               onClick={clearAllFilters}
-              className="h-9 gap-2 whitespace-nowrap text-muted-foreground"
+              className="h-10 px-3 gap-2 whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl"
               disabled={loading}
             >
               <RotateCcw className="h-4 w-4" />
@@ -283,7 +287,7 @@ export function TableFilters({
 
       {/* Filter Controls */}
       {showFilters && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-start lg:items-center gap-3 p-4 bg-muted/30 rounded-lg border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-start lg:items-center gap-4 p-5 glass backdrop-blur-2xl rounded-2xl border border-border/50 animate-in slide-in-from-top-2 duration-300 shadow-premium">
           {filters.map(renderFilter)}
         </div>
       )}

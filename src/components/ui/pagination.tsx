@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 interface PaginationProps {
   currentPage: number
@@ -96,7 +97,7 @@ export function Pagination({
           size="sm"
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1 || loading}
-          className="h-9 w-9 p-0"
+          className="h-9 w-9 p-0 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
         >
           <ChevronsLeft className="h-4 w-4" />
         </Button>
@@ -106,7 +107,7 @@ export function Pagination({
           size="sm"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1 || loading}
-          className="h-9 w-9 p-0"
+          className="h-9 w-9 p-0 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -115,14 +116,19 @@ export function Pagination({
           {getVisiblePages().map((page, index) => (
             <div key={index}>
               {page === '...' ? (
-                <span className="px-2 py-1 text-muted-foreground">...</span>
+                <span className="px-2 py-1 text-muted-foreground font-medium">...</span>
               ) : (
                 <Button
                   variant={currentPage === page ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => onPageChange(page as number)}
                   disabled={loading}
-                  className="h-9 w-9 p-0"
+                  className={cn(
+                    "h-9 w-9 p-0 rounded-xl transition-all active:scale-90",
+                    currentPage === page 
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                      : "border-border/50 hover:bg-primary/10 hover:text-primary"
+                  )}
                 >
                   {page}
                 </Button>
@@ -136,7 +142,7 @@ export function Pagination({
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages || loading}
-          className="h-9 w-9 p-0"
+          className="h-9 w-9 p-0 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -146,7 +152,7 @@ export function Pagination({
           size="sm"
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages || loading}
-          className="h-9 w-9 p-0"
+          className="h-9 w-9 p-0 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
         >
           <ChevronsRight className="h-4 w-4" />
         </Button>

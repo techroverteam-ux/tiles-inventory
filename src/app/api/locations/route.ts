@@ -82,9 +82,12 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Check if location name already exists
+    // Check if location name already exists (only active ones)
     const existingLocation = await prisma.location.findFirst({
-      where: { name: { equals: name.trim(), mode: 'insensitive' } }
+      where: { 
+        name: { equals: name.trim(), mode: 'insensitive' },
+        isActive: true
+      }
     })
     
     if (existingLocation) {

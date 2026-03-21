@@ -6,8 +6,8 @@ const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-  <div className="relative w-full">
-    <div className="mobile-table-scroll overflow-auto overscroll-auto scroll-smooth max-h-[65vh]">
+  <div className="relative w-full rounded-[2.5rem] border border-border/50 bg-card/40 backdrop-blur-xl overflow-hidden shadow-premium transition-all duration-500 hover:border-primary/10">
+    <div className="mobile-table-scroll overflow-auto overscroll-auto scroll-smooth no-scrollbar max-h-[65vh]">
       <table
         ref={ref}
         className={cn("desktop-table-nowrap w-full min-w-[760px] md:min-w-[900px] caption-bottom text-sm", className)}
@@ -25,7 +25,7 @@ const TableHeader = React.forwardRef<
   <thead
     ref={ref}
     className={cn(
-      "sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 [&_tr]:border-b",
+      "sticky top-0 z-10 bg-muted/80 backdrop-blur-xl border-b border-border/50 transition-colors",
       className
     )}
     {...props}
@@ -67,7 +67,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+      "border-b border-border/40 transition-colors hover:bg-primary/5 data-[state=selected]:bg-primary/10",
       className
     )}
     {...props}

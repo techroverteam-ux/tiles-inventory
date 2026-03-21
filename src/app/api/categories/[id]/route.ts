@@ -64,7 +64,7 @@ export async function PUT(
       )
     }
 
-    // Check if name is already taken by another category in the same brand
+    // Check if name is already taken by another category (including inactive ones)
     const duplicateCategory = await prisma.category.findFirst({
       where: {
         name: { equals: name.trim(), mode: 'insensitive' },
@@ -73,10 +73,21 @@ export async function PUT(
     })
 
     if (duplicateCategory) {
-      return NextResponse.json(
-        { error: 'Category name already exists' },
-        { status: 400 }
-      )
+      if (duplicateCategory.isActive) {
+        return NextResponse.json(
+          { error: 'Category name already exists' },
+          { status: 400 }
+        )
+      } else {
+        // Rename the inactive duplicate to free up the name
+        await prisma.category.update({
+          where: { id: duplicateCategory.id },
+          data: { 
+            name: `${duplicateCategory.name}_deleted_${Date.now()}`,
+            updatedAt: new Date()
+          }
+        })
+      }
     }
 
     const category = await (prisma as any).category.update({
@@ -142,6 +153,7 @@ export async function DELETE(
     await prisma.category.update({
       where: { id },
       data: {
+        name: `${existingCategory.name}_del_${Date.now()}`,
         isActive: false,
         updatedAt: new Date(),
       },

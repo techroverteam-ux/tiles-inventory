@@ -64,15 +64,8 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(totalCount / limit)
 
-    // Attach createdBy/updatedBy from stored name fields
-    const brandsWithMeta = (brands as any[]).map(b => ({
-      ...b,
-      createdBy: b.createdByName ? { name: b.createdByName, email: '' } : null,
-      updatedBy: b.updatedByName ? { name: b.updatedByName, email: '' } : null,
-    }))
-
     return NextResponse.json({
-      brands: brandsWithMeta,
+      brands,
       totalCount,
       totalPages,
       currentPage: page,
@@ -103,9 +96,12 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Check if brand name already exists
+    // Check if brand name already exists (only active ones)
     const existingBrand = await prisma.brand.findFirst({
-      where: { name: { equals: name.trim(), mode: 'insensitive' } }
+      where: { 
+        name: { equals: name.trim(), mode: 'insensitive' },
+        isActive: true
+      }
     })
     
     if (existingBrand) {
@@ -115,7 +111,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const brand = await (prisma as any).brand.create({
+    const brand = await prisma.brand.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
@@ -124,7 +120,6 @@ export async function POST(request: NextRequest) {
       include: {
         _count: {
           select: {
-            categories: true,
             products: true,
           },
         }

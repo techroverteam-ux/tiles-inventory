@@ -14,8 +14,9 @@ import { Pagination, usePagination } from '@/components/ui/pagination'
 import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/table-filters'
 import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
-import { Filter, Plus, Edit, Trash2 } from 'lucide-react'
+import { Filter, Plus, Edit, Trash2, Package } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
+import { cn } from '@/lib/utils'
 
 interface Brand {
   id: string
@@ -34,7 +35,6 @@ interface Brand {
     email: string
   }
   _count?: {
-    categories: number
     products: number
   }
 }
@@ -237,55 +237,60 @@ export default function BrandsPage() {
   }
 
   const renderGridItem = useCallback((brand: Brand) => (
-    <Card className="h-full hover:shadow-lg transition-shadow bg-card border-border">
+    <Card className="h-full hover:shadow-premium transition-all duration-300 border-border/50 group">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-lg font-semibold text-card-foreground">
+            <CardTitle className="text-lg font-bold text-card-foreground group-hover:text-primary transition-colors">
               {brand.name}
             </CardTitle>
           </div>
-          <Badge variant={brand.isActive ? 'default' : 'secondary'}>
+          <Badge 
+            variant={brand.isActive ? 'default' : 'secondary'}
+            className={cn(brand.isActive ? "bg-primary/20 text-primary border-none" : "")}
+          >
             {brand.isActive ? 'Active' : 'Inactive'}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
         {brand.description && (
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-2 italic">
             {brand.description}
           </p>
         )}
         <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
-          <span>Categories: {brand._count?.categories || 0}</span>
-          <span>Products: {brand._count?.products || 0}</span>
+          <span className="flex items-center gap-1.5 font-medium">
+            <Package className="h-3 w-3" />
+            Products: {brand._count?.products || 0}
+          </span>
         </div>
-        <div className="text-xs text-muted-foreground mb-4 space-y-1">
-          <div>Created: {formatDate(brand.createdAt)}</div>
+        <div className="text-xs text-muted-foreground mb-6 space-y-1 bg-muted/30 p-2.5 rounded-xl border border-border/30">
+          <div className="flex justify-between"><span>Created:</span> <span className="font-medium text-foreground">{formatDate(brand.createdAt)}</span></div>
           {brand.updatedAt && brand.updatedAt !== brand.createdAt && (
-            <div>Updated: {formatDate(brand.updatedAt)}</div>
+            <div className="flex justify-between"><span>Updated:</span> <span className="font-medium text-foreground">{formatDate(brand.updatedAt)}</span></div>
           )}
           {brand.createdBy && (
-            <div>By: {brand.createdBy.name}</div>
+            <div className="flex justify-between"><span>By:</span> <span className="font-medium text-foreground">{brand.createdBy.name}</span></div>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <Button
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); handleEdit(brand); }}
-            className="flex-1 border-border text-foreground hover:bg-accent gap-1"
+            className="rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-2 font-bold"
           >
-            <Edit className="h-3 w-3" />
+            <Edit className="h-3.5 w-3.5" />
             Edit
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); setDeleteBrand(brand); }}
-            className="flex-1 text-destructive hover:text-destructive border-border hover:bg-destructive/10 gap-1"
+            className="rounded-xl text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10 hover:border-destructive/30 gap-2 font-bold"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-3.5 w-3.5" />
             Delete
           </Button>
         </div>
@@ -295,57 +300,60 @@ export default function BrandsPage() {
 
   const renderListRow = useCallback((brand: Brand) => (
     <>
-      <td className="px-4 py-3">
-        <div className="font-medium text-foreground">{brand.name}</div>
+      <td className="px-6 py-4">
+        <div className="font-bold text-foreground group-hover:text-primary transition-colors">{brand.name}</div>
       </td>
-      <td className="px-4 py-3">
-        <div className="text-sm text-muted-foreground max-w-xs truncate">
+      <td className="px-6 py-4">
+        <div className="text-sm text-muted-foreground max-w-xs truncate italic">
           {brand.description || 'No description'}
         </div>
       </td>
-      <td className="px-4 py-3">
-        <Badge variant={brand.isActive ? 'default' : 'secondary'}>
+      <td className="px-6 py-4">
+        <Badge 
+          variant={brand.isActive ? 'default' : 'secondary'}
+          className={cn(brand.isActive ? "bg-primary/20 text-primary border-none" : "")}
+        >
           {brand.isActive ? 'Active' : 'Inactive'}
         </Badge>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        {brand._count?.categories || 0}
+      <td className="px-6 py-4 text-sm font-medium text-foreground">
+        <div className="flex items-center gap-2">
+          <Package className="h-4 w-4 text-muted-foreground" />
+          {brand._count?.products || 0}
+        </div>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        {brand._count?.products || 0}
-      </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
-        <div>{formatDate(brand.createdAt)}</div>
+      <td className="px-6 py-4 text-sm text-muted-foreground">
+        <div className="font-medium text-foreground">{formatDate(brand.createdAt)}</div>
         <div className="text-xs">{brand.createdBy?.name || 'System'}</div>
       </td>
-      <td className="px-4 py-3 text-sm text-muted-foreground">
+      <td className="px-6 py-4 text-sm text-muted-foreground">
         {brand.updatedAt && brand.updatedAt !== brand.createdAt ? (
           <div>
-            <div>{formatDate(brand.updatedAt)}</div>
+            <div className="font-medium text-foreground">{formatDate(brand.updatedAt)}</div>
             <div className="text-xs">{brand.updatedBy?.name || 'System'}</div>
           </div>
         ) : (
-          <span className="text-xs">-</span>
+          <span className="text-xs opacity-30 text-muted-foreground">No updates</span>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-6 py-4">
         <div className="flex gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={(e) => { e.stopPropagation(); handleEdit(brand); }}
-            className="text-foreground hover:bg-accent gap-1"
+            className="rounded-xl hover:bg-primary/10 hover:text-primary gap-2 font-bold px-3 transition-all"
           >
-            <Edit className="h-3 w-3" />
+            <Edit className="h-4 w-4" />
             Edit
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={(e) => { e.stopPropagation(); setDeleteBrand(brand); }}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
+            className="rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 font-bold px-3 transition-all"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-4 w-4" />
             Delete
           </Button>
         </div>
@@ -395,55 +403,58 @@ export default function BrandsPage() {
                   Add Brand
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-card border-border max-w-md">
+              <DialogContent className="glass backdrop-blur-3xl border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
                 <DialogHeader>
-                  <DialogTitle className="text-card-foreground font-semibold">
+                  <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
                     {editingBrand ? 'Edit Brand' : 'Add New Brand'}
                   </DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Name *</label>
+                <form onSubmit={handleSubmit} className="space-y-5 pt-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-foreground/80 ml-1">Name <span className="text-destructive">*</span></label>
                     <Input
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Enter brand name"
                       required
-                      className="bg-background border-input text-foreground"
+                      className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
                     />
                   </div>
 
-                  <div>
-                    <label className="text-sm font-medium text-foreground">Description</label>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-foreground/80 ml-1">Description</label>
                     <Input
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       placeholder="Enter description"
-                      className="bg-background border-input text-foreground"
+                      className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
                     />
                   </div>
 
 
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-3 p-4 bg-muted/20 rounded-2xl border border-border/30 group hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}>
                     <input
                       type="checkbox"
                       checked={formData.isActive}
                       onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                      className="rounded border-input"
+                      className="h-5 w-5 rounded-lg border-primary/30 text-primary transition-all cursor-pointer"
                     />
-                    <label className="text-sm font-medium text-foreground">Active</label>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-foreground">Active Status</span>
+                      <span className="text-xs text-muted-foreground">Visible in product selection</span>
+                    </div>
                   </div>
 
-                  <div className="flex gap-2 pt-4">
-                    <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground">
-                      {submitting ? 'Saving...' : editingBrand ? 'Update' : 'Create'}
+                  <div className="flex gap-3 pt-6">
+                    <Button type="submit" disabled={submitting} className="flex-1 rounded-2xl h-12 font-bold shadow-lg shadow-primary/20">
+                      {submitting ? 'Saving...' : editingBrand ? 'Update Brand' : 'Create Brand'}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setShowForm(false)}
-                      className="border-border text-foreground"
+                      className="rounded-2xl h-12 px-6 border-border/50 font-bold hover:bg-muted/50"
                     >
                       Cancel
                     </Button>
@@ -480,7 +491,7 @@ export default function BrandsPage() {
           columns: 3
         }}
         listProps={{
-          headers: ['Name', 'Description', 'Status', 'Categories', 'Products', 'Created', 'Updated', 'Actions'],
+          headers: ['Name', 'Description', 'Status', 'Products', 'Created', 'Updated', 'Actions'],
           renderRow: renderListRow
         }}
       />

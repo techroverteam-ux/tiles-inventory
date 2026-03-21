@@ -64,7 +64,7 @@ export async function PUT(
       )
     }
 
-    // Check if name is already taken by another location
+    // Check if name is already taken by another location (including inactive ones)
     const duplicateLocation = await prisma.location.findFirst({
       where: {
         name: { equals: name.trim(), mode: 'insensitive' },
@@ -73,10 +73,21 @@ export async function PUT(
     })
 
     if (duplicateLocation) {
-      return NextResponse.json(
-        { error: 'Location name already exists' },
-        { status: 400 }
-      )
+      if (duplicateLocation.isActive) {
+        return NextResponse.json(
+          { error: 'Location name already exists' },
+          { status: 400 }
+        )
+      } else {
+        // Rename the inactive duplicate to free up the name
+        await prisma.location.update({
+          where: { id: duplicateLocation.id },
+          data: { 
+            name: `${duplicateLocation.name}_deleted_${Date.now()}`,
+            updatedAt: new Date()
+          }
+        })
+      }
     }
 
     const location = await prisma.location.update({
@@ -142,6 +153,7 @@ export async function DELETE(
     await prisma.location.update({
       where: { id },
       data: {
+        name: `${existingLocation.name}_del_${Date.now()}`,
         isActive: false,
         updatedAt: new Date(),
       },
