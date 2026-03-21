@@ -87,13 +87,13 @@ export async function GET(request: NextRequest) {
     // Map inventory with prices and batch names from purchase and sales orders
     const inventoryWithPrices = inventory.map(item => {
       // Get the most recent batch name from purchase items or use the batch table value
-      const latestBatchName = item.product.purchaseItems[0]?.batchNumber || item.batchNumber
+      const latestBatchName = item.product?.purchaseItems?.[0]?.batchNumber || item.batchNumber
       
       return {
         ...item,
         batchNumber: latestBatchName,
-        purchasePrice: item.product.purchaseItems[0]?.unitPrice || 0,
-        sellingPrice: item.product.salesItems[0]?.unitPrice || 0,
+        purchasePrice: item.product?.purchaseItems?.[0]?.unitPrice || 0,
+        sellingPrice: item.product?.salesItems?.[0]?.unitPrice || 0,
       }
     })
 

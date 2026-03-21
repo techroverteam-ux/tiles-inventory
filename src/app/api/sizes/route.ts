@@ -105,19 +105,29 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Check if size name already exists (only active ones)
-    const existingSize = await prisma.size.findFirst({
+    // Check if size name already exists
+    const duplicateSize = await prisma.size.findFirst({
       where: {
-        name: { equals: name.trim(), mode: 'insensitive' },
-        isActive: true
+        name: { equals: name.trim(), mode: 'insensitive' }
       }
     })
     
-    if (existingSize) {
-      return NextResponse.json(
-        { error: 'Size name already exists' },
-        { status: 400 }
-      )
+    if (duplicateSize) {
+      if (duplicateSize.isActive) {
+        return NextResponse.json(
+          { error: 'Size name already exists' },
+          { status: 400 }
+        )
+      } else {
+        // Rename the inactive duplicate to free up the name
+        await prisma.size.update({
+          where: { id: duplicateSize.id },
+          data: { 
+            name: `${duplicateSize.name}_deleted_${Date.now()}`,
+            updatedAt: new Date()
+          }
+        })
+      }
     }
 
     const parsedLength = (length !== undefined && length !== null && length !== '') ? parseFloat(String(length)) : null

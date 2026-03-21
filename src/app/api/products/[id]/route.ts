@@ -35,10 +35,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       const categoryId = data.categoryId
       const sizeId = data.sizeId || null
 
-      if (!name || !code || !brandId || !categoryId) {
+      if (!name || !code || !brandId || !categoryId || !data.imageUrl) {
         return NextResponse.json({
           error: 'Missing required fields',
-          details: 'Name, code, brand, and category are required'
+          details: 'Name, code, brand, category, and image are required'
         }, { status: 400 })
       }
 

@@ -222,8 +222,8 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name.trim() || !formData.code.trim() || !formData.brandId || !formData.categoryId) {
-      showToast('Please fill in all required fields', 'error')
+    if (!formData.name.trim() || !formData.code.trim() || !formData.brandId || !formData.categoryId || !formData.imageUrl) {
+      showToast('Please fill in all required fields including product image', 'error')
       return
     }
 
@@ -534,6 +534,12 @@ export default function ProductsPage() {
     return <LoadingPage view={view} title="Products" />
   }
 
+  const isFormValid = formData.name.trim() !== '' && 
+    formData.code.trim() !== '' && 
+    formData.brandId !== '' && 
+    formData.categoryId !== '' && 
+    formData.imageUrl !== ''
+
   return (
     <div className="w-full px-3 sm:px-4 md:px-6 space-y-6">
       {/* Filters */}
@@ -680,7 +686,7 @@ export default function ProductsPage() {
                 </div>
 
                 <div className="p-4 bg-muted/20 rounded-3xl border border-border/30">
-                  <label className="text-sm font-bold text-foreground/80 mb-3 block ml-1">Product Image</label>
+                  <label className="text-sm font-bold text-foreground/80 mb-3 block ml-1">Product Image <span className="text-destructive">*</span></label>
                   <ImageUpload 
                     onImageUploaded={handleImageUploaded}
                     currentImage={formData.imageUrl}
@@ -688,7 +694,7 @@ export default function ProductsPage() {
                 </div>
 
                 <div className="flex gap-4 pt-4">
-                  <Button type="submit" disabled={submitting} className="flex-1 rounded-2xl h-12 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+                  <Button type="submit" disabled={submitting || !isFormValid} className="flex-1 rounded-2xl h-12 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
                     {submitting ? 'Saving...' : editingProduct ? 'Update Product' : 'Create Product'}
                   </Button>
                   <Button

@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       where: {
         brandId: data.brandId,
         categoryId: data.categoryId,
-        sizeId: data.sizeId,
+        sizeId: data.sizeId || null,
       },
     })
 
@@ -102,11 +102,11 @@ export async function POST(request: NextRequest) {
 
       product = await prisma.product.create({
         data: {
-          name: `${brand?.name} ${category?.name} ${size?.name}`,
+          name: `${brand?.name || ''} ${category?.name || ''} ${size?.name || ''}`.trim().replace(/\s+/g, ' '),
           code: `${brand?.name?.substring(0, 3).toUpperCase()}-${Date.now()}`,
           brandId: data.brandId,
           categoryId: data.categoryId,
-          sizeId: data.sizeId,
+          sizeId: data.sizeId || null,
           sqftPerBox: size?.length && size?.width ? (size.length * size.width) / 144 : 1,
           pcsPerBox: 1,
           isActive: true,
