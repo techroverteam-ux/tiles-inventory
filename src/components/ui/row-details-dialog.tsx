@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { ZoomIn } from 'lucide-react'
 
 interface RowDetailsDialogProps {
   open: boolean
@@ -13,6 +14,7 @@ interface RowDetailsDialogProps {
   title: string
   data: any
   imageUrl?: string
+  onImageClick?: (src: string) => void
 }
 
 function formatKeyName(key: string) {
@@ -89,7 +91,7 @@ function renderValue(value: any): React.ReactNode {
   return <span className="break-words">{String(formattedValue)}</span>
 }
 
-export function RowDetailsDialog({ open, onOpenChange, title, data, imageUrl }: RowDetailsDialogProps) {
+export function RowDetailsDialog({ open, onOpenChange, title, data, imageUrl, onImageClick }: RowDetailsDialogProps) {
   if (!data) return null
 
   // Ensure data is an object before getting entries
@@ -108,15 +110,21 @@ export function RowDetailsDialog({ open, onOpenChange, title, data, imageUrl }: 
         </DialogHeader>
         <div className="flex-1 overflow-y-auto">
           {displayImageUrl && (
-            <div className="w-full h-64 md:h-80 relative bg-muted flex items-center justify-center border-b">
+            <div 
+              className="w-full h-64 md:h-80 relative bg-muted flex items-center justify-center border-b cursor-zoom-in group"
+              onClick={() => onImageClick && onImageClick(displayImageUrl)}
+            >
               <img 
                 src={displayImageUrl} 
                 alt={title}
-                className="max-w-full max-h-full object-contain"
+                className="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none'
                 }}
               />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-opacity h-10 w-10 drop-shadow-lg" />
+              </div>
             </div>
           )}
           <div className="p-6 space-y-4">

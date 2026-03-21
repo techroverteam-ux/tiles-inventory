@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const data = await request.json()
+    const user = requireAuth(request)
     
     // Get existing order with items
     const existingOrder = await prisma.salesOrder.findUnique({
@@ -23,8 +25,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         data: {
           quantity: {
             increment: existingOrder.items[0].quantity
-          }
-        }
+          },
+          updatedById: user.userId,
+        } as any
       })
     }
 
@@ -41,13 +44,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       const category = await prisma.category.findUnique({ where: { id: data.categoryId } })
       const size = await prisma.size.findUnique({ where: { id: data.sizeId } })
       const brand = await prisma.brand.findUnique({ where: { id: data.brandId } })
-      
-      let finishType = await prisma.finishType.findFirst({ where: { isActive: true } })
-      if (!finishType) {
-        finishType = await prisma.finishType.create({
-          data: { name: 'Standard', isActive: true },
-        })
-      }
 
       product = await prisma.product.create({
         data: {
@@ -56,11 +52,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           brandId: data.brandId,
           categoryId: data.categoryId,
           sizeId: data.sizeId,
-          finishTypeId: finishType.id,
           sqftPerBox: size?.length && size?.width ? (size.length * size.width) / 144 : 1,
           pcsPerBox: 1,
           isActive: true,
-        },
+          createdById: user.userId,
+          updatedById: user.userId,
+        } as any,
       })
     }
 
@@ -81,12 +78,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           quantity: 0,
           purchasePrice: 0,
           sellingPrice: 0,
-        },
+          createdById: user.userId,
+          updatedById: user.userId,
+        } as any,
       })
     } else if (data.batchName) {
       batch = await prisma.batch.update({
         where: { id: batch.id },
-        data: { batchNumber: data.batchName },
+        data: { 
+          batchNumber: data.batchName,
+          updatedById: user.userId,
+        } as any,
       })
     }
 
@@ -101,7 +103,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         quantity: {
           decrement: quantity,
         },
-      },
+        updatedById: user.userId,
+      } as any,
     })
 
     // Delete old items
@@ -125,10 +128,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
               quantity: quantity,
               unitPrice: unitPrice,
               totalPrice: amount,
-            },
+              createdById: user.userId,
+              updatedById: user.userId,
+            } as any,
           ],
         },
-      },
+        updatedById: user.userId,
+      } as any,
       include: {
         items: {
           include: {

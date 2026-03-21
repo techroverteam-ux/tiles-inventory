@@ -356,10 +356,10 @@ export const commonColumns = {
     { key: 'brand.name', label: 'Brand', width: 20 },
     { key: 'category.name', label: 'Category', width: 20 },
     { key: 'size.name', label: 'Size', width: 15 },
-    { key: 'finishType.name', label: 'Finish Type', width: 20 },
     { key: 'sqftPerBox', label: 'Sq Ft/Box', width: 12, format: (value: number) => value?.toString() || '0' },
     { key: 'pcsPerBox', label: 'Pcs/Box', width: 12, format: (value: number) => value?.toString() || '0' },
     { key: 'isActive', label: 'Status', width: 10, format: (value: boolean) => value ? 'Active' : 'Inactive' },
+    { key: 'createdBy.name', label: 'Created By', width: 15 },
     { key: 'createdAt', label: 'Created Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) }
   ] as ExportColumn[]
 }

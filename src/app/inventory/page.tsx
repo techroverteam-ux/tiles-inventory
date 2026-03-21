@@ -58,8 +58,8 @@ interface InventoryItem {
   expiryDate?: string
   createdAt: string
   updatedAt?: string
-  createdByName?: string
-  updatedByName?: string
+  createdBy?: { name: string }
+  updatedBy?: { name: string }
 }
 
 interface Filters {
@@ -685,17 +685,17 @@ export default function InventoryPage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         <div>{formatDate(item.createdAt)}</div>
-                        <div className="text-xs">{item.createdByName || 'System'}</div>
+                        <div className="text-xs">{item.createdBy?.name || 'System'}</div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         {item.updatedAt && item.updatedAt !== item.createdAt
                           ? (
                             <>
                               <div>{formatDate(item.updatedAt)}</div>
-                              <div className="text-xs">{item.updatedByName || 'System'}</div>
+                              <div className="text-xs">{item.updatedBy?.name || 'System'}</div>
                             </>
                           )
-                          : <span className="text-xs">-</span>
+                          : <span className="text-xs opacity-30 text-muted-foreground">No updates</span>
                         }
                       </TableCell>
                       <TableCell className="text-right">

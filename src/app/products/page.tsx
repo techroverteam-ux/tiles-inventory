@@ -15,8 +15,9 @@ import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/tab
 import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
 import ImageUpload from '@/components/ui/image-upload'
-import { Filter, Plus, Edit, Trash2, Hash, Layers, Box, Maximize, Package } from 'lucide-react'
+import { Filter, Plus, Edit, Trash2, Hash, Layers, Box, Maximize, Package, ZoomIn } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
+import { ImagePreview } from '@/components/ui/image-preview'
 import { cn } from '@/lib/utils'
 
 interface Product {
@@ -26,7 +27,6 @@ interface Product {
   brandId: string
   categoryId: string
   sizeId: string
-  finishTypeId: string
   sqftPerBox: number
   pcsPerBox: number
   imageUrl?: string
@@ -44,7 +44,6 @@ interface Product {
   brand: { name: string }
   category: { name: string }
   size?: { name: string }
-  finishType: { name: string }
   _count?: {
     batches: number
   }
@@ -56,7 +55,6 @@ interface FormData {
   brandId: string
   categoryId: string
   sizeId: string
-  finishTypeId: string
   sqftPerBox: string
   pcsPerBox: string
   imageUrl: string
@@ -74,7 +72,6 @@ export default function ProductsPage() {
   const [brands, setBrands] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [sizes, setSizes] = useState<any[]>([])
-  const [finishTypes, setFinishTypes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'grid' | 'list'>('list') // Default to list for desktop
   const [showForm, setShowForm] = useState(false)
@@ -88,7 +85,6 @@ export default function ProductsPage() {
     brandId: '',
     categoryId: '',
     sizeId: '',
-    finishTypeId: '',
     sqftPerBox: '',
     pcsPerBox: '',
     imageUrl: ''
@@ -97,6 +93,7 @@ export default function ProductsPage() {
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [previewImage, setPreviewImage] = useState<{ src: string, alt: string } | null>(null)
   
   const { showToast } = useToast()
   const searchParams = useSearchParams()
@@ -181,24 +178,21 @@ export default function ProductsPage() {
   // Fetch dropdown data
   const fetchDropdownData = useCallback(async () => {
     try {
-      const [brandsRes, categoriesRes, sizesRes, finishTypesRes] = await Promise.all([
+      const [brandsRes, categoriesRes, sizesRes] = await Promise.all([
         fetch('/api/brands'),
         fetch('/api/categories'),
-        fetch('/api/sizes'),
-        fetch('/api/finish-types')
+        fetch('/api/sizes')
       ])
 
-      const [brandsData, categoriesData, sizesData, finishTypesData] = await Promise.all([
+      const [brandsData, categoriesData, sizesData] = await Promise.all([
         brandsRes.json(),
         categoriesRes.json(),
-        sizesRes.json(),
-        finishTypesRes.json()
+        sizesRes.json()
       ])
 
       setBrands(brandsData.brands?.filter((b: any) => b.isActive) || [])
       setCategories(categoriesData.categories?.filter((c: any) => c.isActive) || [])
       setSizes(sizesData.sizes?.filter((s: any) => s.isActive) || [])
-      setFinishTypes(finishTypesData.finishTypes?.filter((f: any) => f.isActive) || [])
     } catch (error) {
       console.error('Error fetching dropdown data:', error)
     }
@@ -228,7 +222,7 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name.trim() || !formData.code.trim() || !formData.brandId || !formData.categoryId || !formData.finishTypeId) {
+    if (!formData.name.trim() || !formData.code.trim() || !formData.brandId || !formData.categoryId) {
       showToast('Please fill in all required fields', 'error')
       return
     }
@@ -275,7 +269,6 @@ export default function ProductsPage() {
       brandId: '',
       categoryId: '',
       sizeId: '',
-      finishTypeId: '',
       sqftPerBox: '',
       pcsPerBox: '',
       imageUrl: ''
@@ -290,7 +283,6 @@ export default function ProductsPage() {
       brandId: product.brandId,
       categoryId: product.categoryId,
       sizeId: product.sizeId || '',
-      finishTypeId: product.finishTypeId,
       sqftPerBox: product.sqftPerBox.toString(),
       pcsPerBox: product.pcsPerBox.toString(),
       imageUrl: product.imageUrl || ''
@@ -336,13 +328,26 @@ export default function ProductsPage() {
 
   const renderGridItem = (product: Product) => (
     <Card className="h-full hover:shadow-premium transition-all duration-300 border-border/50 group overflow-hidden">
-      <div className="relative aspect-video overflow-hidden bg-muted/30">
+      <div 
+        className="relative aspect-video overflow-hidden bg-muted/30 cursor-zoom-in group/image"
+        onClick={(e) => {
+          if (product.imageUrl) {
+            e.stopPropagation()
+            setPreviewImage({ src: product.imageUrl, alt: product.name })
+          }
+        }}
+      >
         {product.imageUrl ? (
-          <img
-            src={product.imageUrl}
-            alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
+          <>
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover/image:bg-black/20 transition-colors flex items-center justify-center">
+              <ZoomIn className="text-white opacity-0 group-hover/image:opacity-100 transition-opacity drop-shadow-lg h-8 w-8" />
+            </div>
+          </>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground/20">
             <Package className="h-12 w-12" />
@@ -418,13 +423,29 @@ export default function ProductsPage() {
     <>
       <td className="px-6 py-4">
         <div className="flex items-center space-x-4">
-          <div className="h-12 w-12 rounded-xl overflow-hidden bg-muted/30 border border-border/50 flex-shrink-0">
+          <div 
+            className={cn(
+              "h-12 w-12 rounded-xl overflow-hidden bg-muted/30 border border-border/50 flex-shrink-0 relative group/thumb",
+              product.imageUrl ? "cursor-zoom-in" : ""
+            )}
+            onClick={(e) => {
+              if (product.imageUrl) {
+                e.stopPropagation()
+                setPreviewImage({ src: product.imageUrl, alt: product.name })
+              }
+            }}
+          >
             {product.imageUrl ? (
-              <img
-                src={product.imageUrl}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
+              <>
+                <img
+                  src={product.imageUrl}
+                  alt={product.name}
+                  className="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/20 transition-colors flex items-center justify-center">
+                  <ZoomIn className="text-white opacity-0 group-hover/thumb:opacity-100 transition-opacity h-4 w-4" />
+                </div>
+              </>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground/20">
                 <Package className="h-6 w-6" />
@@ -450,11 +471,6 @@ export default function ProductsPage() {
         <div className="flex items-center gap-1.5">
           <Maximize className="h-4 w-4 text-muted-foreground" />
           {product.size?.name || '-'}
-        </div>
-      </td>
-      <td className="px-6 py-4 text-sm text-muted-foreground">
-        <div className="px-2.5 py-1 rounded-lg bg-muted/50 border border-border/50 inline-block font-medium">
-          {product.finishType.name}
         </div>
       </td>
       <td className="px-6 py-4 text-sm text-muted-foreground">
@@ -637,22 +653,6 @@ export default function ProductsPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80 ml-1">Finish Type <span className="text-destructive">*</span></label>
-                    <select
-                      value={formData.finishTypeId}
-                      onChange={(e) => setFormData({ ...formData, finishTypeId: e.target.value })}
-                      required
-                      className="w-full h-12 px-4 rounded-2xl bg-muted/20 border border-border/40 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none"
-                    >
-                      <option value="" className="bg-background">Select finish type</option>
-                      {finishTypes.map((finish) => (
-                        <option key={finish.id} value={finish.id} className="bg-background">
-                          {finish.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 bg-primary/5 rounded-3xl border border-primary/10">
@@ -732,7 +732,7 @@ export default function ProductsPage() {
             columns: 3
           }}
           listProps={{
-            headers: ['Product', 'Brand & Category', 'Size', 'Finish', 'Box Info', 'Status', 'Created', 'Updated', 'Actions'],
+            headers: ['Product', 'Brand & Category', 'Size', 'Box Info', 'Status', 'Created', 'Updated', 'Actions'],
             renderRow: renderListRow
           }}
         />
@@ -766,6 +766,14 @@ export default function ProductsPage() {
         title="Product Details"
         data={selectedDetailItem}
         imageUrl={selectedDetailItem?.imageUrl}
+        onImageClick={(src) => setPreviewImage({ src, alt: selectedDetailItem?.name || '' })}
+      />
+
+      <ImagePreview
+        isOpen={!!previewImage}
+        onClose={() => setPreviewImage(null)}
+        src={previewImage?.src || null}
+        alt={previewImage?.alt || ''}
       />
     </div>
   )

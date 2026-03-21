@@ -45,8 +45,8 @@ interface PurchaseOrder {
   items: any[]
   createdAt: string
   updatedAt?: string
-  createdByName?: string
-  updatedByName?: string
+  createdBy?: { name: string }
+  updatedBy?: { name: string }
 }
 
 export default function PurchaseOrdersPage() {
@@ -456,17 +456,17 @@ export default function PurchaseOrdersPage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         <div>{formatDate(order.createdAt)}</div>
-                        <div className="text-xs">{order.createdByName || 'System'}</div>
+                        <div className="text-xs">{order.createdBy?.name || 'System'}</div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         {order.updatedAt && order.updatedAt !== order.createdAt
                           ? (
                             <>
                               <div>{formatDate(order.updatedAt)}</div>
-                              <div className="text-xs">{order.updatedByName || 'System'}</div>
+                              <div className="text-xs">{order.updatedBy?.name || 'System'}</div>
                             </>
                           )
-                          : <span className="text-xs">-</span>
+                          : <span className="text-xs opacity-30 text-muted-foreground">No updates</span>
                         }
                       </TableCell>
                       <td className="px-6 py-4 text-right">

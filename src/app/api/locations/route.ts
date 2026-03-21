@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,12 +35,14 @@ export async function GET(request: NextRequest) {
     const locations = await prisma.location.findMany({
       where,
       include: {
+        createdBy: { select: { name: true } },
+        updatedBy: { select: { name: true } },
         _count: {
           select: {
             batches: true,
           },
         }
-      },
+      } as any,
       orderBy: [
         { isActive: 'desc' },
         { createdAt: 'desc' }
@@ -90,6 +93,8 @@ export async function POST(request: NextRequest) {
       }
     })
     
+    const user = requireAuth(request)
+
     if (existingLocation) {
       return NextResponse.json(
         { error: 'Location name already exists' },
@@ -101,15 +106,18 @@ export async function POST(request: NextRequest) {
       data: {
         name: name.trim(),
         address: address?.trim() || null,
-        isActive: Boolean(isActive)
-      },
+        isActive: Boolean(isActive),
+        createdById: user.userId,
+        updatedById: user.userId,
+      } as any,
       include: {
+        createdBy: { select: { name: true } },
         _count: {
           select: {
             batches: true,
           },
         }
-      }
+      } as any
     })
 
     return NextResponse.json({ location }, { status: 201 })

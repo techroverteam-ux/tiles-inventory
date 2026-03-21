@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -38,7 +39,9 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-      },
+        createdBy: { select: { name: true } },
+        updatedBy: { select: { name: true } },
+      } as any,
       orderBy: {
         [sortBy]: sortOrder,
       },
@@ -46,10 +49,10 @@ export async function GET(request: NextRequest) {
     })
 
     // Add brand info and batch number to each order
-    const ordersWithBrand = orders.map(order => ({
+    const ordersWithBrand = (orders as any[]).map(order => ({
       ...order,
       brand: order.items[0]?.product?.brand || null,
-      items: order.items.map(item => ({
+      items: order.items.map((item: any) => ({
         ...item,
         batchNumber: item.batch?.batchNumber || 'N/A',
       })),
@@ -70,6 +73,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
+    const user = requireAuth(request)
     
     // Find or create product
     let product = await prisma.product.findFirst({
@@ -84,13 +88,6 @@ export async function POST(request: NextRequest) {
       const category = await prisma.category.findUnique({ where: { id: data.categoryId } })
       const size = await prisma.size.findUnique({ where: { id: data.sizeId } })
       const brand = await prisma.brand.findUnique({ where: { id: data.brandId } })
-      
-      let finishType = await prisma.finishType.findFirst({ where: { isActive: true } })
-      if (!finishType) {
-        finishType = await prisma.finishType.create({
-          data: { name: 'Standard', isActive: true },
-        })
-      }
 
       product = await prisma.product.create({
         data: {
@@ -99,11 +96,12 @@ export async function POST(request: NextRequest) {
           brandId: data.brandId,
           categoryId: data.categoryId,
           sizeId: data.sizeId,
-          finishTypeId: finishType.id,
           sqftPerBox: size?.length && size?.width ? (size.length * size.width) / 144 : 1,
           pcsPerBox: 1,
           isActive: true,
-        },
+          createdById: user.userId,
+          updatedById: user.userId,
+        } as any,
       })
     }
 
@@ -120,11 +118,13 @@ export async function POST(request: NextRequest) {
         data: {
           productId: product.id,
           locationId: data.locationId,
-          batchNumber: data.batchName || `BATCH-${Date.now()}`,
+          batchNumber: data.batchNumber || `BATCH-${Date.now()}`,
           quantity: 0,
           purchasePrice: 0,
           sellingPrice: 0,
-        },
+          createdById: user.userId,
+          updatedById: user.userId,
+        } as any,
       })
     } else if (data.batchName) {
       // Update batch number if provided
@@ -132,7 +132,8 @@ export async function POST(request: NextRequest) {
         where: { id: batch.id },
         data: {
           batchNumber: data.batchName,
-        },
+          updatedById: user.userId,
+        } as any,
       })
     }
 
@@ -160,7 +161,8 @@ export async function POST(request: NextRequest) {
         quantity: {
           decrement: quantity,
         },
-      },
+        updatedById: user.userId,
+      } as any,
     })
 
     const order = await prisma.salesOrder.create({
@@ -180,10 +182,14 @@ export async function POST(request: NextRequest) {
               quantity: quantity,
               unitPrice: unitPrice,
               totalPrice: amount,
-            },
+              createdById: user.userId,
+              updatedById: user.userId,
+            } as any,
           ],
         },
-      },
+        createdById: user.userId,
+        updatedById: user.userId,
+      } as any,
       include: {
         items: {
           include: {

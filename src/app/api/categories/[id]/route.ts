@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
@@ -10,6 +11,8 @@ export async function GET(
     const category = await prisma.category.findUnique({
       where: { id },
       include: {
+        createdBy: { select: { name: true } },
+        updatedBy: { select: { name: true } },
         _count: {
           select: {
             products: true,
@@ -72,6 +75,8 @@ export async function PUT(
       }
     })
 
+    const user = requireAuth(request)
+
     if (duplicateCategory) {
       if (duplicateCategory.isActive) {
         return NextResponse.json(
@@ -96,9 +101,12 @@ export async function PUT(
         name: name.trim(),
         description: description?.trim() || null,
         isActive: Boolean(isActive),
+        updatedById: user.userId,
         updatedAt: new Date(),
       },
       include: {
+        createdBy: { select: { name: true } },
+        updatedBy: { select: { name: true } },
         _count: {
           select: {
             products: true,

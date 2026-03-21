@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,12 +47,14 @@ export async function GET(request: NextRequest) {
     const categories = await prisma.category.findMany({
       where,
       include: {
+        createdBy: { select: { name: true } },
+        updatedBy: { select: { name: true } },
         _count: {
           select: {
             products: true,
           },
         }
-      },
+      } as any,
       orderBy: [
         { isActive: 'desc' },
         { createdAt: 'desc' }
@@ -102,6 +105,8 @@ export async function POST(request: NextRequest) {
       }
     })
     
+    const user = requireAuth(request)
+
     if (existingCategory) {
       return NextResponse.json(
         { error: 'Category name already exists' },
@@ -114,14 +119,17 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         description: description?.trim() || null,
         isActive: Boolean(isActive),
-      },
+        createdById: user.userId,
+        updatedById: user.userId,
+      } as any,
       include: {
+        createdBy: { select: { name: true } },
         _count: {
           select: {
             products: true,
           },
         }
-      },
+      } as any,
     })
 
     return NextResponse.json({ category }, { status: 201 })

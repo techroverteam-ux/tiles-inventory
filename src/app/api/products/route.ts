@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { put } from '@vercel/blob'
+import { requireAuth } from '@/lib/auth'
 
 async function uploadImageFile(image: File | null) {
   if (!image || image.size === 0) {
@@ -24,18 +25,15 @@ async function ensureProductRelations({
   brandId,
   categoryId,
   sizeId,
-  finishTypeId,
 }: {
   brandId: string
   categoryId: string
   sizeId?: string | null
-  finishTypeId?: string | null
 }) {
-  const [brand, category, size, finishType] = await Promise.all([
+  const [brand, category, size] = await Promise.all([
     prisma.brand.findUnique({ where: { id: brandId } }),
     prisma.category.findUnique({ where: { id: categoryId } }),
     sizeId ? prisma.size.findUnique({ where: { id: sizeId } }) : null,
-    finishTypeId ? prisma.finishType.findUnique({ where: { id: finishTypeId } }) : null,
   ])
 
   if (!brand) {
@@ -50,11 +48,7 @@ async function ensureProductRelations({
     return { error: NextResponse.json({ error: 'Invalid size', details: 'The selected size does not exist' }, { status: 400 }) }
   }
 
-  if (finishTypeId && !finishType) {
-    return { error: NextResponse.json({ error: 'Invalid finish type', details: 'The selected finish type does not exist' }, { status: 400 }) }
-  }
-
-  return { brand, category, size, finishType }
+  return { brand, category, size }
 }
 
 export async function GET(request: NextRequest) {
@@ -78,7 +72,6 @@ export async function GET(request: NextRequest) {
         { brand: { is: { name: { contains: search, mode: 'insensitive' } } } },
         { category: { is: { name: { contains: search, mode: 'insensitive' } } } },
         { size: { is: { name: { contains: search, mode: 'insensitive' } } } },
-        { finishType: { is: { name: { contains: search, mode: 'insensitive' } } } },
       ]
     }
 
@@ -100,9 +93,10 @@ export async function GET(request: NextRequest) {
         brand: { select: { id: true, name: true } },
         category: { select: { id: true, name: true } },
         size: { select: { id: true, name: true } },
-        finishType: { select: { id: true, name: true } },
+        createdBy: { select: { name: true } },
+        updatedBy: { select: { name: true } },
         _count: { select: { batches: true } }
-      },
+      } as any,
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
@@ -147,19 +141,20 @@ export async function POST(request: NextRequest) {
       const brandId = data.brandId
       const categoryId = data.categoryId
       const sizeId = data.sizeId || null
-      const finishTypeId = data.finishTypeId || null
       const imageUrl = data.imageUrl || null
       const sqftPerBox = Number(data.sqftPerBox) || 1
       const pcsPerBox = Number(data.pcsPerBox) || 1
 
-      if (!name || !code || !brandId || !categoryId || !finishTypeId) {
+      if (!name || !code || !brandId || !categoryId) {
         return NextResponse.json({
           error: 'Missing required fields',
-          details: 'Name, code, brand, category, and finish type are required'
+          details: 'Name, code, brand, and category are required'
         }, { status: 400 })
       }
 
-      const relationCheck = await ensureProductRelations({ brandId, categoryId, sizeId, finishTypeId })
+      const user = requireAuth(request)
+
+      const relationCheck = await ensureProductRelations({ brandId, categoryId, sizeId })
       if ('error' in relationCheck) {
         return relationCheck.error
       }
@@ -186,18 +181,19 @@ export async function POST(request: NextRequest) {
           brandId,
           categoryId,
           sizeId,
-          finishTypeId,
           sqftPerBox,
           pcsPerBox,
           imageUrl,
-        },
+          createdById: user.userId,
+          updatedById: user.userId,
+        } as any,
         include: {
           brand: { select: { id: true, name: true } },
           category: { select: { id: true, name: true } },
           size: { select: { id: true, name: true } },
-          finishType: { select: { id: true, name: true } },
+          createdBy: { select: { name: true } },
           _count: { select: { batches: true } }
-        }
+        } as any
       })
 
       return NextResponse.json({ product }, { status: 201 })
@@ -209,7 +205,6 @@ export async function POST(request: NextRequest) {
     const sizeId = (formData.get('sizeId') as string) || null
     const categoryId = formData.get('categoryId') as string
     const brandId = formData.get('brandId') as string
-    const finishTypeId = (formData.get('finishTypeId') as string) || null
     const locationId = (formData.get('locationId') as string) || null
     const batchName = (formData.get('batchName') as string) || null
     const stock = (formData.get('stock') as string) || null
@@ -225,7 +220,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const relationCheck = await ensureProductRelations({ brandId, categoryId, sizeId, finishTypeId })
+    const relationCheck = await ensureProductRelations({ brandId, categoryId, sizeId })
     if ('error' in relationCheck) {
       return relationCheck.error
     }
@@ -235,17 +230,7 @@ export async function POST(request: NextRequest) {
       imageUrl = await uploadImageFile(image)
     }
 
-    let actualFinishTypeId = finishTypeId
-    if (!actualFinishTypeId) {
-      const defaultFinishType = await prisma.finishType.findFirst({ where: { isActive: true } })
-      if (!defaultFinishType) {
-        return NextResponse.json({
-          error: 'No finish type available',
-          details: 'Please create a finish type first'
-        }, { status: 400 })
-      }
-      actualFinishTypeId = defaultFinishType.id
-    }
+    const user = requireAuth(request)
 
     // Check if product with same code already exists (only active ones)
     const existingProduct = await prisma.product.findFirst({
@@ -269,22 +254,23 @@ export async function POST(request: NextRequest) {
         brandId,
         categoryId,
         sizeId,
-        finishTypeId: actualFinishTypeId,
         sqftPerBox: parseFloat(sqftPerBox || '1') || 1,
         pcsPerBox: parseInt(pcsPerBox || '1') || 1,
         imageUrl,
-      },
+        createdById: user.userId,
+        updatedById: user.userId,
+      } as any,
       include: {
         brand: true,
         category: true,
         size: true,
-        finishType: true,
+        createdBy: { select: { name: true } },
         batches: {
           include: {
             location: true
           }
         }
-      }
+      } as any
     })
 
     if (locationId && batchName && stock) {

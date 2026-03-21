@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,8 +50,10 @@ export async function GET(request: NextRequest) {
     const sizes = await prisma.size.findMany({
       where,
       include: {
+        createdBy: { select: { name: true } },
+        updatedBy: { select: { name: true } },
         _count: { select: { products: true } }
-      },
+      } as any,
       orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
       skip,
       take: limit,
@@ -58,15 +61,8 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(totalCount / limit)
 
-    // Attach createdBy/updatedBy from stored name fields
-    const sizesWithMeta = (sizes as any[]).map(s => ({
-      ...s,
-      createdBy: s.createdByName ? { name: s.createdByName, email: '' } : null,
-      updatedBy: s.updatedByName ? { name: s.updatedByName, email: '' } : null,
-    }))
-
     return NextResponse.json({
-      sizes: sizesWithMeta,
+      sizes,
       totalCount,
       totalPages,
       currentPage: page,
@@ -134,6 +130,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const user = requireAuth(request)
+
     const size = await prisma.size.create({
       data: {
         name: name.trim(),
@@ -141,7 +139,12 @@ export async function POST(request: NextRequest) {
         length: parsedLength,
         width: parsedWidth,
         isActive: Boolean(isActive),
-      }
+        createdById: user.userId,
+        updatedById: user.userId,
+      } as any,
+      include: {
+        createdBy: { select: { name: true } }
+      } as any
     })
 
     return NextResponse.json({ size }, { status: 201 })

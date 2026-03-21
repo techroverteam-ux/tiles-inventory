@@ -139,6 +139,12 @@
     opacity: 0.9;
     filter: invert(1) brightness(1.1);
   }
+
+  /* Universal No-Wrap for Tables */
+  table th,
+  table td {
+    white-space: nowrap !important;
+  }
 }
 
 @layer utilities {
@@ -450,7 +456,7 @@
 
   /* Table Container Utility */
   .table-container {
-    @apply w-full overflow-x-auto overflow-y-hidden scrollbar-thin-violet;
+    @apply w-full overflow-x-auto overflow-y-auto scrollbar-thin-violet;
     -webkit-overflow-scrolling: touch;
   }
 

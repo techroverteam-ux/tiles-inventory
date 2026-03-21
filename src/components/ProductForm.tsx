@@ -29,7 +29,7 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
   const [formData, setFormData] = useState<FormData>({
     name: product?.name || '',
     code: product?.code || '',
-    sizeId: product?.sizeId || product?.finishTypeId || '',
+    sizeId: product?.sizeId || '',
     categoryId: product?.categoryId || '',
     brandId: product?.brandId || '',
     locationId: '',
@@ -101,7 +101,6 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
         sizeId: formData.sizeId,
         categoryId: formData.categoryId,
         brandId: formData.brandId,
-        finishTypeId: formData.sizeId,
         locationId: formData.locationId,
         batchName: formData.batchName.trim(),
         stock: formData.stock,
@@ -204,22 +203,6 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id} className="text-popover-foreground">
                     {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Size *</label>
-            <Select value={formData.sizeId} onValueChange={(value) => setFormData({ ...formData, sizeId: value })} required>
-              <SelectTrigger className="bg-background border-input text-foreground">
-                <SelectValue placeholder="Select size" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border-border">
-                {sizes.map((size) => (
-                  <SelectItem key={size.id} value={size.id} className="text-popover-foreground">
-                    {size.name}
                   </SelectItem>
                 ))}
               </SelectContent>

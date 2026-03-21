@@ -208,33 +208,6 @@ async function main() {
 
   console.log('✅ Sizes created')
 
-  // Create CERA Tiles finish types
-  const glossyFinish = await prisma.finishType.create({
-    data: {
-      name: 'Glossy',
-      description: 'High gloss finish for easy cleaning',
-      isActive: true,
-    },
-  })
-
-  const mattFinish = await prisma.finishType.create({
-    data: {
-      name: 'Matt',
-      description: 'Matte finish for non-slip surface',
-      isActive: true,
-    },
-  })
-
-  const mattGranulaFinish = await prisma.finishType.create({
-    data: {
-      name: 'Matt Granula',
-      description: 'Textured matte finish with granular surface',
-      isActive: true,
-    },
-  })
-
-  console.log('✅ Finish types created')
-
   // Create CERA Tiles collections
   const subwayCollection = await prisma.collection.create({
     data: {
@@ -323,7 +296,6 @@ async function main() {
       categoryId: wallTilesCategory.id,
       collectionId: subwayCollection.id,
       sizeId: size300x600.id,
-      finishTypeId: glossyFinish.id,
       sqftPerBox: 4.5,
       pcsPerBox: 6,
       imageUrl: 'https://example.com/subway-white.jpg',
@@ -340,7 +312,6 @@ async function main() {
       categoryId: digitalGlazedCategory.id,
       collectionId: lucidoCollection.id,
       sizeId: size600x600.id,
-      finishTypeId: glossyFinish.id,
       sqftPerBox: 4.0,
       pcsPerBox: 2,
       imageUrl: 'https://example.com/lucido-marble.jpg',
@@ -357,7 +328,6 @@ async function main() {
       categoryId: porcelainTilesCategory.id,
       collectionId: identityCollection.id,
       sizeId: size600x1200.id,
-      finishTypeId: mattFinish.id,
       sqftPerBox: 8.0,
       pcsPerBox: 1,
       imageUrl: 'https://example.com/identity-wood.jpg',
@@ -374,7 +344,6 @@ async function main() {
       categoryId: porcelainTilesCategory.id,
       collectionId: eternoCollection.id,
       sizeId: size800x1600.id,
-      finishTypeId: mattGranulaFinish.id,
       sqftPerBox: 12.0,
       pcsPerBox: 1,
       imageUrl: 'https://example.com/eterno-stone.jpg',
@@ -391,7 +360,6 @@ async function main() {
       categoryId: parkingTilesCategory.id,
       collectionId: patioCollection.id,
       sizeId: size300x300.id,
-      finishTypeId: mattGranulaFinish.id,
       sqftPerBox: 3.0,
       pcsPerBox: 9,
       imageUrl: 'https://example.com/patio-grey.jpg',
@@ -408,7 +376,6 @@ async function main() {
       categoryId: digitalGlazedCategory.id,
       collectionId: digitaleCollection.id,
       sizeId: size1200x1800.id,
-      finishTypeId: glossyFinish.id,
       sqftPerBox: 24.0,
       pcsPerBox: 1,
       imageUrl: 'https://example.com/digitale-marble.jpg',
@@ -424,7 +391,6 @@ async function main() {
       brandId: kajariaBrand.id,
       categoryId: floorCategory.id,
       sizeId: size600x600.id,
-      finishTypeId: glossyFinish.id,
       sqftPerBox: 4.0,
       pcsPerBox: 2,
       imageUrl: 'https://example.com/kajaria-premium.jpg',
@@ -439,7 +405,6 @@ async function main() {
       brandId: somanyBrand.id,
       categoryId: bathroomCategory.id,
       sizeId: size800x800.id,
-      finishTypeId: mattFinish.id,
       sqftPerBox: 5.0,
       pcsPerBox: 1,
       imageUrl: 'https://example.com/somany-bathroom.jpg',

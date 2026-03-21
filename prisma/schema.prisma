@@ -18,6 +18,30 @@ model User {
   updatedAt DateTime @updatedAt
   notifications Notification[]
 
+  // Relations for User Tracking
+  createdBrands Brand[] @relation("BrandCreatedBy")
+  updatedBrands Brand[] @relation("BrandUpdatedBy")
+  createdCategories Category[] @relation("CategoryCreatedBy")
+  updatedCategories Category[] @relation("CategoryUpdatedBy")
+  createdCollections Collection[] @relation("CollectionCreatedBy")
+  updatedCollections Collection[] @relation("CollectionUpdatedBy")
+  createdSizes Size[] @relation("SizeCreatedBy")
+  updatedSizes Size[] @relation("SizeUpdatedBy")
+  createdProducts Product[] @relation("ProductCreatedBy")
+  updatedProducts Product[] @relation("ProductUpdatedBy")
+  createdLocations Location[] @relation("LocationCreatedBy")
+  updatedLocations Location[] @relation("LocationUpdatedBy")
+  createdBatches Batch[] @relation("BatchCreatedBy")
+  updatedBatches Batch[] @relation("BatchUpdatedBy")
+  createdPurchaseOrders PurchaseOrder[] @relation("PurchaseOrderCreatedBy")
+  updatedPurchaseOrders PurchaseOrder[] @relation("PurchaseOrderUpdatedBy")
+  createdPurchaseItems PurchaseItem[] @relation("PurchaseItemCreatedBy")
+  updatedPurchaseItems PurchaseItem[] @relation("PurchaseItemUpdatedBy")
+  createdSalesOrders SalesOrder[] @relation("SalesOrderCreatedBy")
+  updatedSalesOrders SalesOrder[] @relation("SalesOrderUpdatedBy")
+  createdSalesItems SalesItem[] @relation("SalesItemCreatedBy")
+  updatedSalesItems SalesItem[] @relation("SalesItemUpdatedBy")
+
   @@map("users")
 }
 
@@ -44,6 +68,12 @@ model Brand {
   isActive       Boolean         @default(true)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  
+  createdById    String?         @db.ObjectId
+  updatedById    String?         @db.ObjectId
+  createdBy      User?           @relation("BrandCreatedBy", fields: [createdById], references: [id])
+  updatedBy      User?           @relation("BrandUpdatedBy", fields: [updatedById], references: [id])
+  
   products       Product[]
   purchaseOrders PurchaseOrder[]
 
@@ -57,6 +87,12 @@ model Category {
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  
+  createdById String?   @db.ObjectId
+  updatedById String?   @db.ObjectId
+  createdBy   User?     @relation("CategoryCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User?     @relation("CategoryUpdatedBy", fields: [updatedById], references: [id])
+  
   products    Product[]
 
   @@map("categories")
@@ -69,6 +105,12 @@ model Collection {
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  
+  createdById String?   @db.ObjectId
+  updatedById String?   @db.ObjectId
+  createdBy   User?     @relation("CollectionCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User?     @relation("CollectionUpdatedBy", fields: [updatedById], references: [id])
+  
   products    Product[]
 
   @@map("collections")
@@ -83,22 +125,17 @@ model Size {
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  
+  createdById String?   @db.ObjectId
+  updatedById String?   @db.ObjectId
+  createdBy   User?     @relation("SizeCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User?     @relation("SizeUpdatedBy", fields: [updatedById], references: [id])
+  
   products    Product[]
 
   @@map("sizes")
 }
 
-model FinishType {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String    @unique
-  description String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  products    Product[]
-
-  @@map("finish_types")
-}
 
 model Product {
   id            String        @id @default(auto()) @map("_id") @db.ObjectId
@@ -109,7 +146,6 @@ model Product {
   categoryId    String        @db.ObjectId
   collectionId  String?       @db.ObjectId
   sizeId        String?       @db.ObjectId
-  finishTypeId  String        @db.ObjectId
   length        Float?
   width         Float?
   thickness     Float?
@@ -120,11 +156,15 @@ model Product {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   
+  createdById   String?       @db.ObjectId
+  updatedById   String?       @db.ObjectId
+  createdBy     User?         @relation("ProductCreatedBy", fields: [createdById], references: [id])
+  updatedBy     User?         @relation("ProductUpdatedBy", fields: [updatedById], references: [id])
+  
   brand         Brand         @relation(fields: [brandId], references: [id])
   category      Category      @relation(fields: [categoryId], references: [id])
   collection    Collection?   @relation(fields: [collectionId], references: [id])
   size          Size?         @relation(fields: [sizeId], references: [id])
-  finishType    FinishType    @relation(fields: [finishTypeId], references: [id])
   
   batches       Batch[]
   purchaseItems PurchaseItem[]
@@ -140,6 +180,11 @@ model Location {
   isActive      Boolean        @default(true)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  
+  createdById   String?        @db.ObjectId
+  updatedById   String?        @db.ObjectId
+  createdBy     User?          @relation("LocationCreatedBy", fields: [createdById], references: [id])
+  updatedBy     User?          @relation("LocationUpdatedBy", fields: [updatedById], references: [id])
   
   batches       Batch[]
   purchaseItems PurchaseItem[]
@@ -162,6 +207,11 @@ model Batch {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
+  createdById   String?  @db.ObjectId
+  updatedById   String?  @db.ObjectId
+  createdBy     User?    @relation("BatchCreatedBy", fields: [createdById], references: [id])
+  updatedBy     User?    @relation("BatchUpdatedBy", fields: [updatedById], references: [id])
+  
   product       Product  @relation(fields: [productId], references: [id])
   location      Location @relation(fields: [locationId], references: [id])
   
@@ -180,8 +230,13 @@ model PurchaseOrder {
   status        OrderStatus    @default(PENDING)
   totalAmount   Float          @default(0)
   notes         String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  
+  createdById    String?        @db.ObjectId
+  updatedById    String?        @db.ObjectId
+  createdBy      User?          @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id])
+  updatedBy      User?          @relation("PurchaseOrderUpdatedBy", fields: [updatedById], references: [id])
   
   brand         Brand          @relation(fields: [brandId], references: [id])
   items         PurchaseItem[]
@@ -202,6 +257,11 @@ model PurchaseItem {
   receivedQty     Int           @default(0)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  
+  createdById     String?       @db.ObjectId
+  updatedById     String?       @db.ObjectId
+  createdBy       User?         @relation("PurchaseItemCreatedBy", fields: [createdById], references: [id])
+  updatedBy       User?         @relation("PurchaseItemUpdatedBy", fields: [updatedById], references: [id])
   
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
   product         Product       @relation(fields: [productId], references: [id])
@@ -225,6 +285,11 @@ model SalesOrder {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   
+  createdById  String?     @db.ObjectId
+  updatedById  String?     @db.ObjectId
+  createdBy    User?       @relation("SalesOrderCreatedBy", fields: [createdById], references: [id])
+  updatedBy    User?       @relation("SalesOrderUpdatedBy", fields: [updatedById], references: [id])
+  
   items        SalesItem[]
 
   @@map("sales_orders")
@@ -240,6 +305,11 @@ model SalesItem {
   totalPrice   Float
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  
+  createdById  String?    @db.ObjectId
+  updatedById  String?    @db.ObjectId
+  createdBy    User?      @relation("SalesItemCreatedBy", fields: [createdById], references: [id])
+  updatedBy    User?      @relation("SalesItemUpdatedBy", fields: [updatedById], references: [id])
   
   salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id])
   product      Product    @relation(fields: [productId], references: [id])
