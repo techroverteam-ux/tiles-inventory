@@ -17,6 +17,8 @@ import { ToastProvider } from '@/contexts/ToastContext'
 import { SessionProvider } from '@/contexts/SessionContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import ThemeToggle from '@/components/ThemeToggle'
+import { pageVariants } from '@/lib/motion'
+import { AnimatePresence, motion } from 'framer-motion'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -304,7 +306,7 @@ export default function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
-            <div ref={searchBoxRef} className="hidden sm:flex items-center gap-4 flex-1 max-w-xl mx-3 sm:mx-6">
+            <div ref={searchBoxRef} className="hidden lg:flex items-center gap-4 flex-1 max-w-xl mx-6">
               <div className="relative flex-1 group">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 transition-colors group-focus-within:text-primary" />
                 <Input
@@ -336,11 +338,11 @@ export default function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
-                className="p-2 sm:hidden hover:bg-primary/10 hover:text-primary"
+                className="p-2 lg:hidden hover:bg-primary/10 hover:text-primary active:scale-95 transition-all"
                 onClick={() => {
                   setMobileSearchOpen(true)
                   setShowSearchResults(true)
@@ -349,7 +351,7 @@ export default function Layout({ children }: LayoutProps) {
               >
                 <Search className="h-5 w-5" />
               </Button>
-              <div className="flex items-center gap-1.5 px-1.5 py-1 bg-muted/20 rounded-2xl border border-border/30">
+              <div className="flex items-center gap-1 sm:gap-2 px-1 sm:px-1.5 py-1 bg-muted/10 sm:bg-muted/20 rounded-2xl border border-border/30">
                 <QuickAddPanel />
                 <ThemeToggle />
                 <NotificationDropdown />
@@ -440,15 +442,22 @@ export default function Layout({ children }: LayoutProps) {
             {/* Main Content */}
             <main className={`min-w-0 max-w-full flex-1 overflow-x-hidden transition-all duration-300 ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'} flex flex-col`}>
               <div className="min-w-0 max-w-full flex-1 overflow-x-hidden p-3 sm:p-4 md:p-6 pb-20 md:pb-6">
-                <div
-                  className="animate-in"
-                  onClick={() => {
-                    setShowSearchResults(false)
-                    setMobileSearchOpen(false)
-                  }}
-                >
-                  {children}
-                </div>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={pathname}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    variants={pageVariants}
+                    className="w-full h-full"
+                    onClick={() => {
+                      setShowSearchResults(false)
+                      setMobileSearchOpen(false)
+                    }}
+                  >
+                    {children}
+                  </motion.div>
+                </AnimatePresence>
               </div>
               
               {/* Footer - Sticky at bottom */}

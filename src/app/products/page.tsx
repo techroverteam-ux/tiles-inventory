@@ -366,36 +366,36 @@ export default function ProductsPage() {
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="grid grid-cols-2 gap-2 text-xs mb-4">
-          <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30">
-            <Layers className="h-3 w-3 text-primary" />
+        <div className="grid grid-cols-2 gap-2 text-[10px] sm:text-xs mb-4">
+          <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30 overflow-hidden">
+            <Layers className="h-3 w-3 text-primary shrink-0" />
             <span className="truncate">{product.brand.name}</span>
           </div>
-          <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30">
-            <Filter className="h-3 w-3 text-primary" />
+          <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30 overflow-hidden">
+            <Filter className="h-3 w-3 text-primary shrink-0" />
             <span className="truncate">{product.category.name}</span>
           </div>
-          <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30">
-            <Maximize className="h-3 w-3 text-primary" />
+          <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30 overflow-hidden">
+            <Maximize className="h-3 w-3 text-primary shrink-0" />
             <span className="truncate">{product.size?.name || '-'}</span>
           </div>
-          <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30">
-            <Box className="h-3 w-3 text-primary" />
+          <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30 overflow-hidden">
+            <Box className="h-3 w-3 text-primary shrink-0" />
             <span className="truncate">{product.pcsPerBox} pcs</span>
           </div>
         </div>
 
-        <div className="text-xs text-muted-foreground mb-4 space-y-1 bg-muted/20 p-2.5 rounded-xl border border-border/20">
+        <div className="text-[10px] sm:text-xs text-muted-foreground mb-4 space-y-1 bg-muted/20 p-2.5 rounded-xl border border-border/20">
           <div className="flex justify-between"><span>Created:</span> <span className="font-medium text-foreground">{formatDate(product.createdAt)}</span></div>
-          <div className="flex justify-between"><span>By:</span> <span className="font-medium text-foreground">{product.createdBy?.name || 'System'}</span></div>
+          <div className="flex justify-between"><span>By:</span> <span className="font-medium text-foreground truncate ml-2">{product.createdBy?.name || 'System'}</span></div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); handleEdit(product); }}
-            className="rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-2 font-bold"
+            className="flex-1 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-2 font-bold h-9"
           >
             <Edit className="h-3.5 w-3.5" />
             Edit
@@ -404,7 +404,7 @@ export default function ProductsPage() {
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); handleDelete(product); }}
-            className="rounded-xl text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10 hover:border-destructive/30 gap-2 font-bold"
+            className="flex-1 rounded-xl text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10 hover:border-destructive/30 gap-2 font-bold h-9"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Delete

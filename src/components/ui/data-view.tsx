@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingPage } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
+import { motion } from 'framer-motion'
+import { containerVariants, itemVariants } from '@/lib/motion'
 
 interface ViewToggleProps {
   currentView: 'grid' | 'list'
@@ -64,17 +67,23 @@ export function GridView({ items, renderItem, columns = 3, loading = false, onIt
   }
 
   return (
-    <div className={`grid gap-4 ${gridCols[columns as keyof typeof gridCols] || gridCols[3]}`}>
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className={`grid gap-4 ${gridCols[columns as keyof typeof gridCols] || gridCols[3]}`}
+    >
       {items.map((item, index) => (
-        <div 
+        <motion.div 
           key={item.id?.toString() || index} 
+          variants={itemVariants}
           className={`h-full ${onItemClick ? 'cursor-pointer transition-transform hover:scale-[1.02]' : ''}`}
           onClick={() => onItemClick && onItemClick(item)}
         >
           {renderItem(item)}
-        </div>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   )
 }
 
@@ -103,8 +112,8 @@ export function ListView({
 
   return (
     <div className="glass rounded-2xl border border-border/50 overflow-hidden shadow-sm">
-      <div className={`mobile-table-scroll overflow-auto overscroll-auto scroll-smooth no-scrollbar ${tableMaxHeightClass}`}>
-        <table className={`desktop-table-nowrap w-full ${tableMinWidthClass}`}>
+      <div className={cn("table-container", tableMaxHeightClass)}>
+        <table className={cn("w-full", tableMinWidthClass)}>
           <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur-xl border-b border-border/50">
             <tr>
               {headers.map((header, index) => (
@@ -117,17 +126,23 @@ export function ListView({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
+          <motion.tbody 
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+            className="divide-y divide-border"
+          >
             {items.map((item, index) => (
-              <tr
+              <motion.tr
                 key={item.id?.toString() || index}
+                variants={itemVariants}
                 className={`hover:bg-muted/30 transition-colors ${onItemClick ? 'cursor-pointer' : ''}`}
                 onClick={() => onItemClick && onItemClick(item)}
               >
                 {renderRow(item)}
-              </tr>
+              </motion.tr>
             ))}
-          </tbody>
+          </motion.tbody>
         </table>
       </div>
     </div>

@@ -332,7 +332,7 @@ export default function InventoryPage() {
       </div>
 
       {/* Mobile Stats Cards */}
-      <div className="grid grid-cols-2 md:hidden gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:hidden gap-3">
         <MobileStatsCard
           title="Batches"
           value={inventory.length}
@@ -423,7 +423,7 @@ export default function InventoryPage() {
             <CardTitle className="text-xl font-bold text-foreground">Filter Inventory</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-foreground/80 ml-1">Location</label>
                 <Select value={filters.locationId} onValueChange={(value) => handleFilterChange('locationId', value)}>
