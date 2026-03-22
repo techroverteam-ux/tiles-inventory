@@ -203,6 +203,7 @@ model Batch {
   sellingPrice  Float?
   receivedDate  DateTime?
   expiryDate    DateTime?
+  imageUrl      String?
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

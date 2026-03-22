@@ -11,6 +11,7 @@ import { ExportButton, ExportColumn } from '@/lib/excel-export'
 import { BarChart3, Calendar, Filter, Search, PieChart, TrendingUp } from 'lucide-react'
 import { useToast } from '@/contexts/ToastContext'
 import { cn } from '@/lib/utils'
+import { DatePicker } from '@/components/ui/date-picker'
 
 type ReportType = 'sales' | 'purchase' | 'inventory'
 
@@ -23,8 +24,6 @@ interface ReportColumn {
 
 export default function ReportsPage() {
   const { showToast } = useToast()
-  const fromDateInputRef = useRef<HTMLInputElement>(null)
-  const toDateInputRef = useRef<HTMLInputElement>(null)
 
   const [reportType, setReportType] = useState<ReportType>('sales')
   const [dateFrom, setDateFrom] = useState('')
@@ -61,18 +60,6 @@ export default function ReportsPage() {
     const year = date.getFullYear()
 
     return `${day}-${month}-${year}`
-  }
-
-  const openNativeDatePicker = (ref: React.RefObject<HTMLInputElement | null>) => {
-    const input = ref.current
-    if (!input) return
-
-    const pickerInput = input as HTMLInputElement & { showPicker?: () => void }
-    if (pickerInput.showPicker) {
-      pickerInput.showPicker()
-    } else {
-      input.focus()
-    }
   }
 
   const formatCellValue = (key: string, value: any) => {
@@ -277,54 +264,20 @@ export default function ReportsPage() {
 
               <div className="space-y-2">
                 <label className="text-sm font-bold text-foreground/80 ml-1">Period From</label>
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1 group">
-                    <Input
-                      type="text"
-                      value={dateFrom ? formatDateDisplay(dateFrom) : ''}
-                      placeholder="DD-MMM-YYYY"
-                      readOnly
-                      className="rounded-2xl bg-muted/20 border-border/40 h-12 pr-10 cursor-pointer hover:bg-muted/30 transition-all"
-                      onClick={() => openNativeDatePicker(fromDateInputRef)}
-                    />
-                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors pointer-events-none" />
-                  </div>
-                  <input
-                    ref={fromDateInputRef}
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="sr-only"
-                    aria-hidden="true"
-                    tabIndex={-1}
-                  />
-                </div>
+                <DatePicker
+                  date={dateFrom}
+                  onChange={(date) => setDateFrom(date ? date.toISOString().split('T')[0] : '')}
+                  placeholder="From Date"
+                />
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-bold text-foreground/80 ml-1">Period To</label>
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1 group">
-                    <Input
-                      type="text"
-                      value={dateTo ? formatDateDisplay(dateTo) : ''}
-                      placeholder="DD-MMM-YYYY"
-                      readOnly
-                      className="rounded-2xl bg-muted/20 border-border/40 h-12 pr-10 cursor-pointer hover:bg-muted/30 transition-all"
-                      onClick={() => openNativeDatePicker(toDateInputRef)}
-                    />
-                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors pointer-events-none" />
-                  </div>
-                  <input
-                    ref={toDateInputRef}
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="sr-only"
-                    aria-hidden="true"
-                    tabIndex={-1}
-                  />
-                </div>
+                <DatePicker
+                  date={dateTo}
+                  onChange={(date) => setDateTo(date ? date.toISOString().split('T')[0] : '')}
+                  placeholder="To Date"
+                />
               </div>
 
               <div className="space-y-2">

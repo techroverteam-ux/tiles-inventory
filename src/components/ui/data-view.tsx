@@ -111,15 +111,15 @@ export function ListView({
   }
 
   return (
-    <div className="glass rounded-2xl border border-border/50 overflow-hidden shadow-sm">
-      <div className={cn("table-container", tableMaxHeightClass)}>
-        <table className={cn("w-full", tableMinWidthClass)}>
-          <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur-xl border-b border-border/50">
+    <div className="glass rounded-2xl border border-border/50 overflow-hidden shadow-premium">
+      <div className={cn("table-container overflow-auto no-scrollbar", tableMaxHeightClass)}>
+        <table className={cn("w-full border-separate border-spacing-0", tableMinWidthClass)}>
+          <thead className="sticky top-0 z-20 bg-muted shadow-[0_1px_0_hsl(var(--border))] [&_th]:bg-muted">
             <tr>
               {headers.map((header, index) => (
                 <th
                   key={index}
-                  className="whitespace-nowrap px-4 py-3 text-left text-sm font-medium text-muted-foreground uppercase tracking-wider"
+                  className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider"
                 >
                   {header}
                 </th>
@@ -130,13 +130,13 @@ export function ListView({
             initial="hidden"
             animate="visible"
             variants={containerVariants}
-            className="divide-y divide-border"
+            className="divide-y divide-border/40"
           >
             {items.map((item, index) => (
               <motion.tr
                 key={item.id?.toString() || index}
                 variants={itemVariants}
-                className={`hover:bg-muted/30 transition-colors ${onItemClick ? 'cursor-pointer' : ''}`}
+                className={`hover:bg-primary/5 transition-colors border-b border-border/40 last:border-0 ${onItemClick ? 'cursor-pointer' : ''}`}
                 onClick={() => onItemClick && onItemClick(item)}
               >
                 {renderRow(item)}

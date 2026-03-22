@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
+import { DatePicker } from '@/components/ui/date-picker'
 
 interface SalesOrderFormProps {
   onSuccess: () => void
@@ -159,78 +161,57 @@ export default function SalesOrderForm({ onSuccess, order }: SalesOrderFormProps
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Brand</label>
-          <Select value={formData.brandId} onValueChange={(value) => {
-            setFormData({ ...formData, brandId: value, categoryId: '', sizeId: '' })
-          }} required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select brand" />
-            </SelectTrigger>
-            <SelectContent>
-              {brands.map((brand) => (
-                <SelectItem key={brand.id} value={brand.id}>
-                  {brand.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={formData.brandId}
+            onValueChange={(value) => setFormData({ ...formData, brandId: value, categoryId: '', sizeId: '' })}
+            options={brands.map(b => ({ value: b.id, label: b.name }))}
+            placeholder="Select brand"
+            required
+          />
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Sold Date</label>
-          <Input
-            type="date"
-            value={formData.soldDate}
-            onChange={(e) => setFormData({ ...formData, soldDate: e.target.value })}
+          <DatePicker
+            date={formData.soldDate}
+            onChange={(date) => setFormData({ ...formData, soldDate: date ? date.toISOString().split('T')[0] : '' })}
             required
           />
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Category</label>
-          <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value, sizeId: '' })} disabled={!formData.brandId} required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              {filteredCategories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={formData.categoryId}
+            onValueChange={(value) => setFormData({ ...formData, categoryId: value, sizeId: '' })}
+            options={filteredCategories.map(c => ({ value: c.id, label: c.name }))}
+            placeholder="Select category"
+            disabled={!formData.brandId}
+            required
+          />
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Size</label>
-          <Select value={formData.sizeId} onValueChange={(value) => setFormData({ ...formData, sizeId: value })} disabled={!formData.categoryId} required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select size" />
-            </SelectTrigger>
-            <SelectContent>
-              {filteredSizes.map((size) => (
-                <SelectItem key={size.id} value={size.id}>
-                  {size.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={formData.sizeId}
+            onValueChange={(value) => setFormData({ ...formData, sizeId: value })}
+            options={filteredSizes.map(s => ({ value: s.id, label: s.name }))}
+            placeholder="Select size"
+            disabled={!formData.categoryId}
+            required
+          />
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Location</label>
-          <Select value={formData.locationId} onValueChange={(value) => setFormData({ ...formData, locationId: value })} required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select location" />
-            </SelectTrigger>
-            <SelectContent>
-              {locations.map((location) => (
-                <SelectItem key={location.id} value={location.id}>
-                  {location.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={formData.locationId}
+            onValueChange={(value) => setFormData({ ...formData, locationId: value })}
+            options={locations.map(l => ({ value: l.id, label: l.name }))}
+            placeholder="Select location"
+            required
+          />
         </div>
 
         <div className="space-y-2">

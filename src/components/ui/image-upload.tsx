@@ -9,9 +9,10 @@ interface ImageUploadProps {
   onImageUploaded: (url: string) => void
   currentImage?: string
   className?: string
+  label?: string | null
 }
 
-export default function ImageUpload({ onImageUploaded, currentImage, className }: ImageUploadProps) {
+export default function ImageUpload({ onImageUploaded, currentImage, className, label }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(currentImage || null)
   const [isDragging, setIsDragging] = useState(false)
@@ -87,7 +88,9 @@ export default function ImageUpload({ onImageUploaded, currentImage, className }
 
   return (
     <div className={`space-y-2 ${className ?? ''}`}>
-      <label className="text-sm font-medium text-foreground">Product Image</label>
+      {label !== null && label !== undefined && (
+        <label className="text-sm font-medium text-foreground">{label}</label>
+      )}
 
       {preview ? (
         <div className="relative inline-block">

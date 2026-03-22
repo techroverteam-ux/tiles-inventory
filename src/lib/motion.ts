@@ -5,8 +5,8 @@ export const containerVariants: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.1,
+      staggerChildren: 0.03,
+      delayChildren: 0.05,
     },
   },
 }
@@ -18,9 +18,9 @@ export const itemVariants: Variants = {
     y: 0,
     scale: 1,
     transition: {
-      type: 'spring',
-      damping: 25,
-      stiffness: 200,
+      type: 'tween',
+      duration: 0.3,
+      ease: 'circOut',
     },
   },
 }
@@ -46,8 +46,8 @@ export const pageVariants: Variants = {
     opacity: 1, 
     x: 0,
     transition: {
-      duration: 0.4,
-      ease: [0.22, 1, 0.36, 1]
+      duration: 0.3,
+      ease: 'circOut'
     }
   },
   exit: { opacity: 0, x: 10 }

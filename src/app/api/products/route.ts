@@ -95,17 +95,22 @@ export async function GET(request: NextRequest) {
         size: { select: { id: true, name: true } },
         createdBy: { select: { name: true } },
         updatedBy: { select: { name: true } },
-        _count: { select: { batches: true } }
+        batches: { select: { quantity: true } }
       } as any,
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
     })
 
+    const productsWithStock = products.map((p: any) => ({
+      ...p,
+      totalStock: p.batches.reduce((sum: number, b: any) => sum + b.quantity, 0)
+    }))
+
     const totalPages = Math.ceil(totalCount / limit)
     
     return NextResponse.json({
-      products,
+      products: productsWithStock,
       totalCount,
       totalPages,
       currentPage: page,

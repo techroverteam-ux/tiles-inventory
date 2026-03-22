@@ -1,12 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { format, parseISO } from 'date-fns'
 import { Search, Filter, X, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export interface FilterOption {
   value: string
@@ -108,30 +112,24 @@ export function TableFilters({
     switch (filter.type) {
       case 'select':
         return (
-          <div key={filter.key} className="w-full sm:w-auto sm:min-w-40">
-            <Select
+          <div key={filter.key} className="w-full min-w-0 space-y-1.5 md:flex-1 md:min-w-[160px] md:max-w-xs">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">{filter.label}</label>
+            <SearchableSelect
               value={value as string || ''}
               onValueChange={(newValue) => handleFilterChange(filter.key, newValue)}
+              options={filter.options || []}
+              placeholder={filter.placeholder || `All ${filter.label}`}
               disabled={loading}
-            >
-              <SelectTrigger className="h-9 w-full">
-                <SelectValue placeholder={filter.placeholder || `Select ${filter.label}`} />
-              </SelectTrigger>
-              <SelectContent>
-                {filter.options?.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              className="h-10 rounded-xl"
+            />
           </div>
         )
 
       case 'multiselect':
         const selectedValues = (value as string[]) || []
         return (
-          <div key={filter.key} className="w-full sm:w-auto sm:min-w-40">
+          <div key={filter.key} className="w-full min-w-0 space-y-1.5 md:flex-1 md:min-w-[160px] md:max-w-xs">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">{filter.label}</label>
             <Select
               value=""
               onValueChange={(newValue) => {
@@ -143,7 +141,7 @@ export function TableFilters({
               }}
               disabled={loading}
             >
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-10 rounded-xl border-input bg-muted/10 transition-all duration-200 focus:ring-2 focus:ring-primary/20 hover:bg-muted/20">
                 <SelectValue 
                   placeholder={
                     selectedValues.length > 0 
@@ -175,31 +173,30 @@ export function TableFilters({
         const fromKey = `${filter.key}From`
         const toKey = `${filter.key}To`
         return (
-          <div key={filter.key} className="flex flex-col md:flex-row md:items-center gap-2 w-full lg:w-auto">
-            <span className="text-sm text-muted-foreground whitespace-nowrap">{filter.label}:</span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full md:w-auto">
-              <Input
-                type="date"
-                value={(values[fromKey] as string) || ''}
-                onChange={(e) => {
-                  const newFilters = { ...values, [fromKey]: e.target.value }
-                  if (!e.target.value) delete newFilters[fromKey]
+          <div key={filter.key} className="w-full min-w-0 space-y-1.5 col-span-2 md:flex-1 md:min-w-[340px]">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">{filter.label} Range</label>
+            <div className="flex items-center gap-2 w-full">
+              <DatePicker
+                date={(values[fromKey] as string) || ''}
+                onChange={(date) => {
+                  const newFilters = { ...values, [fromKey]: date ? date.toISOString().split('T')[0] : '' }
+                  if (!date) delete newFilters[fromKey]
                   onFiltersChange(newFilters)
                 }}
-                className="h-9 w-full md:w-44 text-sm"
                 placeholder="From"
+                className="h-10 rounded-xl"
                 disabled={loading}
               />
-              <Input
-                type="date"
-                value={(values[toKey] as string) || ''}
-                onChange={(e) => {
-                  const newFilters = { ...values, [toKey]: e.target.value }
-                  if (!e.target.value) delete newFilters[toKey]
+              <span className="text-muted-foreground/50 text-sm font-medium flex-shrink-0">to</span>
+              <DatePicker
+                date={(values[toKey] as string) || ''}
+                onChange={(date) => {
+                  const newFilters = { ...values, [toKey]: date ? date.toISOString().split('T')[0] : '' }
+                  if (!date) delete newFilters[toKey]
                   onFiltersChange(newFilters)
                 }}
-                className="h-9 w-full md:w-44 text-sm"
                 placeholder="To"
+                className="h-10 rounded-xl"
                 disabled={loading}
               />
             </div>
@@ -233,7 +230,7 @@ export function TableFilters({
                 placeholder={searchPlaceholder}
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
-                className="pl-10 h-10 bg-muted/20 border-border/40 focus:bg-background transition-all rounded-xl"
+                className="pl-10 h-10 bg-muted/20 border-border/40 focus:bg-background transition-colors duration-200 rounded-xl"
                 disabled={loading}
               />
               {localSearch && (
@@ -250,24 +247,32 @@ export function TableFilters({
           )}
 
           {showFilterToggle && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className={cn(
-                "h-10 px-4 gap-2 whitespace-nowrap rounded-xl transition-all",
-                showFilters ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : ""
-              )}
-              disabled={loading}
-            >
-              <Filter className="h-4 w-4" />
-              Filters
-              {getActiveFiltersCount() > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs bg-primary/20 text-primary border-none">
-                  {getActiveFiltersCount()}
-                </Badge>
-              )}
-            </Button>
+            <motion.div whileTap={{ scale: 0.93 }}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className={cn(
+                  "h-10 px-4 gap-2 whitespace-nowrap rounded-xl transition-colors duration-200",
+                  showFilters ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : ""
+                )}
+                disabled={loading}
+              >
+                <motion.span
+                  animate={{ rotate: showFilters ? 90 : 0 }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  className="flex items-center"
+                >
+                  <Filter className="h-4 w-4" />
+                </motion.span>
+                Filters
+                {getActiveFiltersCount() > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-xs bg-primary/20 text-primary border-none">
+                    {getActiveFiltersCount()}
+                  </Badge>
+                )}
+              </Button>
+            </motion.div>
           )}
 
           {getActiveFiltersCount() > 0 && (
@@ -286,16 +291,43 @@ export function TableFilters({
       </div>
 
       {/* Filter Controls */}
-      {showFilters && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-start lg:items-center gap-4 p-5 glass backdrop-blur-2xl rounded-2xl border border-border/50 animate-in slide-in-from-top-2 duration-300 shadow-premium">
-          {filters.map(renderFilter)}
-        </div>
-      )}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ height: 0, opacity: 0, marginTop: 0 }}
+            animate={{ height: 'auto', opacity: 1, marginTop: 24 }}
+            exit={{ height: 0, opacity: 0, marginTop: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <div className="relative p-4 sm:p-5 glass backdrop-blur-2xl rounded-[20px] sm:rounded-[24px] border border-border/60 shadow-premium bg-gradient-to-b from-card/30 to-background/50">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:flex md:flex-wrap md:items-end gap-3 sm:gap-4">
+                {filters.map(renderFilter)}
+
+                {getActiveFiltersCount() > 0 && (
+                  <div className="col-span-2 md:col-span-1 md:ml-auto flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearAllFilters}
+                      className="h-10 px-4 whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl font-bold transition-all"
+                      disabled={loading}
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Reset All
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Active Filters */}
       {getActiveFiltersCount() > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">Active filters:</span>
+        <div className="flex flex-wrap items-center gap-2 px-1">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mr-2">Active filters:</span>
 
           {showSearch && searchValue && (
             <Badge variant="secondary" className="gap-1">
@@ -327,6 +359,11 @@ export function TableFilters({
             let displayValue = value as string
             if (filter.type === 'dateRange') {
               displayLabel = key.endsWith('From') ? `${filter.label} From` : `${filter.label} To`
+              try {
+                displayValue = format(parseISO(value as string), 'dd-MMM-yyyy')
+              } catch (e) {
+                displayValue = value as string
+              }
             } else {
               displayValue = Array.isArray(value)
                 ? `${value.length} selected`

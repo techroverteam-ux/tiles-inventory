@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Plus, Package, ShoppingCart, TrendingUp, Users, Palette, Ruler, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const quickAddLinks = [
@@ -31,10 +32,24 @@ export function QuickAddPanel() {
         variant="outline"
         size="sm"
         onClick={() => setOpen((prev) => !prev)}
-        className="text-xs px-3 py-2 border-border text-foreground hover:bg-accent"
+        className={cn(
+          "text-xs border-border text-foreground hover:bg-accent transition-all duration-200",
+          // compact icon-only on desktop
+          "md:w-8 md:h-8 md:p-0 md:rounded-lg",
+          // small screens: show text
+          "px-3 py-2",
+          open && "bg-primary/10 border-primary/30 text-primary"
+        )}
+        title="Quick Add"
       >
-        <Plus className="h-4 w-4 mr-1" />
-        <span className="hidden md:inline">Quick Add</span>
+        <motion.span
+          animate={{ rotate: open ? 45 : 0 }}
+          transition={{ duration: 0.2, ease: 'easeInOut' }}
+          className="flex items-center justify-center"
+        >
+          <Plus className="h-4 w-4" />
+        </motion.span>
+        <span className="md:hidden ml-1">Quick Add</span>
       </Button>
 
       <AnimatePresence>
@@ -56,30 +71,28 @@ export function QuickAddPanel() {
               variants={{
                 hidden: { 
                   opacity: 0, 
-                  scale: 0.8, 
-                  y: -20, 
-                  x: 20,
+                  scale: 0.95, 
+                  y: -10, 
                   transition: {
-                    type: 'spring',
-                    damping: 25,
-                    stiffness: 400
+                    type: 'tween',
+                    duration: 0.2,
+                    ease: 'easeIn'
                   }
                 },
                 visible: { 
                   opacity: 1, 
                   scale: 1, 
                   y: 0, 
-                  x: 0,
                   transition: {
-                    type: 'spring',
-                    damping: 20,
-                    stiffness: 300,
-                    staggerChildren: 0.05,
-                    delayChildren: 0.1
+                    type: 'tween',
+                    duration: 0.3,
+                    ease: 'circOut',
+                    staggerChildren: 0.03,
+                    delayChildren: 0.05
                   }
                 }
               }}
-              className="absolute right-0 top-11 z-50 w-[560px] max-w-[90vw] rounded-xl border border-border bg-card shadow-xl p-3"
+              className="absolute right-0 top-11 z-50 w-[560px] max-w-[90vw] rounded-xl border border-border bg-card shadow-xl p-3 will-change-composite"
             >
               <p className="px-1 pb-2 text-xs uppercase tracking-wide text-muted-foreground">Quick Add</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

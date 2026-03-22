@@ -18,7 +18,8 @@ import ImageUpload from '@/components/ui/image-upload'
 import { Filter, Plus, Edit, Trash2, Hash, Layers, Box, Maximize, Package, ZoomIn } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 import { ImagePreview } from '@/components/ui/image-preview'
-import { cn } from '@/lib/utils'
+import { SearchableSelect } from '@/components/ui/searchable-select'
+import { cn, formatMmToFeetInches } from '@/lib/utils'
 
 interface Product {
   id: string
@@ -47,6 +48,7 @@ interface Product {
   _count?: {
     batches: number
   }
+  totalStock?: number
 }
 
 interface FormData {
@@ -262,6 +264,34 @@ export default function ProductsPage() {
     }
   }
 
+  const calculateSqFt = (sizeId: string, pcs: string) => {
+    if (!sizeId || !pcs) return ''
+    const selectedSize = sizes.find(s => s.id === sizeId)
+    if (selectedSize && selectedSize.length && selectedSize.width) {
+      const areaSqFt = (selectedSize.length / 304.8) * (selectedSize.width / 304.8)
+      return (areaSqFt * parseInt(pcs)).toFixed(2)
+    }
+    return ''
+  }
+
+  const handleSizeChange = (value: string) => {
+    const newSqFt = calculateSqFt(value, formData.pcsPerBox)
+    setFormData(prev => ({ 
+      ...prev, 
+      sizeId: value, 
+      ...(newSqFt ? { sqftPerBox: newSqFt } : {}) 
+    }))
+  }
+
+  const handlePcsChange = (value: string) => {
+    const newSqFt = calculateSqFt(formData.sizeId, value)
+    setFormData(prev => ({ 
+      ...prev, 
+      pcsPerBox: value, 
+      ...(newSqFt ? { sqftPerBox: newSqFt } : {}) 
+    }))
+  }
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -324,6 +354,12 @@ export default function ProductsPage() {
     const day = d.getDate().toString().padStart(2, '0')
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`
+  }
+
+  const getStockBadgeVariant = (quantity: number) => {
+    if (quantity === 0) return 'destructive'
+    if (quantity < 10) return 'secondary'
+    return 'default'
   }
 
   const renderGridItem = (product: Product) => (
@@ -390,6 +426,13 @@ export default function ProductsPage() {
           </div>
         </div>
 
+        <div className="flex items-center justify-between mb-4 p-2.5 rounded-xl bg-primary/5 border border-primary/10">
+          <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Stock</span>
+          <Badge variant={getStockBadgeVariant(product.totalStock || 0)} className="font-bold tabular-nums">
+            {product.totalStock || 0} units
+          </Badge>
+        </div>
+
         <div className="text-[10px] sm:text-xs text-muted-foreground mb-4 space-y-1 bg-muted/20 p-2.5 rounded-xl border border-border/20">
           <div className="flex justify-between"><span>Created:</span> <span className="font-medium text-foreground">{formatDate(product.createdAt)}</span></div>
           <div className="flex justify-between"><span>By:</span> <span className="font-medium text-foreground truncate ml-2">{product.createdBy?.name || 'System'}</span></div>
@@ -421,11 +464,11 @@ export default function ProductsPage() {
 
   const renderListRow = (product: Product) => (
     <>
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
         <div className="flex items-center space-x-4">
           <div 
             className={cn(
-              "h-12 w-12 rounded-xl overflow-hidden bg-muted/30 border border-border/50 flex-shrink-0 relative group/thumb",
+              "h-9 w-9 rounded-lg overflow-hidden bg-muted/30 border border-border/50 flex-shrink-0 relative group/thumb",
               product.imageUrl ? "cursor-zoom-in" : ""
             )}
             onClick={(e) => {
@@ -458,22 +501,25 @@ export default function ProductsPage() {
           </div>
         </div>
       </td>
-      <td className="px-6 py-4">
-        <div className="text-sm">
-          <div className="font-bold text-foreground">{product.brand.name}</div>
-          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-            <Layers className="h-3 w-3" />
-            {product.category.name}
-          </div>
-        </div>
+      <td className="px-4 py-2.5">
+        <Badge 
+          variant={getStockBadgeVariant(product.totalStock || 0)}
+          className="tabular-nums font-bold"
+        >
+          {product.totalStock || 0} units
+        </Badge>
       </td>
-      <td className="px-6 py-4 text-sm font-medium text-foreground">
+      <td className="px-4 py-2.5 text-sm font-medium text-foreground whitespace-nowrap">
         <div className="flex items-center gap-1.5">
           <Maximize className="h-4 w-4 text-muted-foreground" />
           {product.size?.name || '-'}
         </div>
       </td>
-      <td className="px-6 py-4 text-sm text-muted-foreground">
+      <td className="px-4 py-2.5 text-sm text-foreground">
+        <div className="font-bold">{product.category.name}</div>
+        <div className="text-[10px] text-muted-foreground mt-0.5">{product.brand.name}</div>
+      </td>
+      <td className="px-4 py-2.5 text-sm text-muted-foreground">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 font-bold text-foreground">
             <Box className="h-4 w-4 text-muted-foreground" />
@@ -482,7 +528,7 @@ export default function ProductsPage() {
           <div className="text-xs opacity-70 ml-6">{product.sqftPerBox} sqft</div>
         </div>
       </td>
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
         <Badge 
           variant={product.isActive ? 'default' : 'secondary'}
           className={cn(product.isActive ? "bg-primary/20 text-primary border-none" : "")}
@@ -490,11 +536,11 @@ export default function ProductsPage() {
           {product.isActive ? 'Active' : 'Inactive'}
         </Badge>
       </td>
-      <td className="px-6 py-4 text-sm text-muted-foreground">
+      <td className="px-4 py-2.5 text-sm text-muted-foreground">
         <div className="font-medium text-foreground">{formatDate(product.createdAt)}</div>
         <div className="text-xs">{product.createdBy?.name || 'System'}</div>
       </td>
-      <td className="px-6 py-4 text-sm text-muted-foreground">
+      <td className="px-4 py-2.5 text-sm text-muted-foreground">
         {product.updatedAt && product.updatedAt !== product.createdAt
           ? (
             <div>
@@ -505,7 +551,7 @@ export default function ProductsPage() {
           : <span className="text-xs opacity-30">No updates</span>
         }
       </td>
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
         <div className="flex gap-2">
           <Button
             variant="ghost"
@@ -575,7 +621,7 @@ export default function ProductsPage() {
                   Add Product
                 </Button>
               </DialogTrigger>
-            <DialogContent className="glass backdrop-blur-3xl border-border/50 max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 no-scrollbar">
+            <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 no-scrollbar">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
                   {editingProduct ? 'Edit Product' : 'Add New Product'}
@@ -608,35 +654,23 @@ export default function ProductsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-foreground/80 ml-1">Brand <span className="text-destructive">*</span></label>
-                    <select
+                    <SearchableSelect
                       value={formData.brandId}
-                      onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
+                      onValueChange={(value) => setFormData({ ...formData, brandId: value })}
+                      options={brands.map(b => ({ value: b.id, label: b.name }))}
+                      placeholder="Select a brand"
                       required
-                      className="w-full h-12 px-4 rounded-2xl bg-muted/20 border border-border/40 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none"
-                    >
-                      <option value="" className="bg-background">Select a brand</option>
-                      {brands.map((brand) => (
-                        <option key={brand.id} value={brand.id} className="bg-background">
-                          {brand.name}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-foreground/80 ml-1">Category <span className="text-destructive">*</span></label>
-                    <select
+                    <SearchableSelect
                       value={formData.categoryId}
-                      onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                      onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
+                      options={categories.map(c => ({ value: c.id, label: c.name }))}
+                      placeholder="Select a category"
                       required
-                      className="w-full h-12 px-4 rounded-2xl bg-muted/20 border border-border/40 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none"
-                    >
-                      <option value="" className="bg-background">Select a category</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id} className="bg-background">
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
                 </div>
 
@@ -646,18 +680,15 @@ export default function ProductsPage() {
                       <Maximize className="h-4 w-4" />
                       Size
                     </label>
-                    <select
+                    <SearchableSelect
                       value={formData.sizeId}
-                      onChange={(e) => setFormData({ ...formData, sizeId: e.target.value })}
-                      className="w-full h-12 px-4 rounded-2xl bg-muted/20 border border-border/40 focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none appearance-none"
-                    >
-                      <option value="" className="bg-background">Select a size</option>
-                      {sizes.map((size) => (
-                        <option key={size.id} value={size.id} className="bg-background">
-                          {size.name}
-                        </option>
-                      ))}
-                    </select>
+                      onValueChange={handleSizeChange}
+                      options={sizes.map(s => ({ 
+                        value: s.id, 
+                        label: s.length && s.width ? `${s.name} (${formatMmToFeetInches(s.length)} × ${formatMmToFeetInches(s.width)})` : s.name 
+                      }))}
+                      placeholder="Select a size"
+                    />
                   </div>
                 </div>
 
@@ -678,7 +709,7 @@ export default function ProductsPage() {
                     <Input
                       type="number"
                       value={formData.pcsPerBox}
-                      onChange={(e) => setFormData({ ...formData, pcsPerBox: e.target.value })}
+                      onChange={(e) => handlePcsChange(e.target.value)}
                       placeholder="Enter pieces"
                       className="rounded-xl border-primary/20 focus:border-primary transition-all h-11 bg-background"
                     />
@@ -690,6 +721,7 @@ export default function ProductsPage() {
                   <ImageUpload 
                     onImageUploaded={handleImageUploaded}
                     currentImage={formData.imageUrl}
+                    label={null}
                   />
                 </div>
 
@@ -738,7 +770,7 @@ export default function ProductsPage() {
             columns: 3
           }}
           listProps={{
-            headers: ['Product', 'Brand & Category', 'Size', 'Box Info', 'Status', 'Created', 'Updated', 'Actions'],
+            headers: ['Product', 'Stock', 'Size', 'Category', 'Box Info', 'Status', 'Created', 'Updated', 'Actions'],
             renderRow: renderListRow
           }}
         />
@@ -771,6 +803,20 @@ export default function ProductsPage() {
         onOpenChange={setShowDetails}
         title="Product Details"
         data={selectedDetailItem}
+        fields={[
+          { label: 'Product Name', value: selectedDetailItem?.name },
+          { label: 'Product Code', value: selectedDetailItem?.code },
+          { label: 'Brand', value: selectedDetailItem?.brand?.name },
+          { label: 'Category', value: selectedDetailItem?.category?.name },
+          { label: 'Size', value: selectedDetailItem?.size?.name },
+          { label: 'Sqft per Box', value: selectedDetailItem?.sqftPerBox, variant: 'number' as const },
+          { label: 'Pcs per Box', value: selectedDetailItem?.pcsPerBox, variant: 'number' as const },
+          { label: 'Status', value: selectedDetailItem?.isActive, variant: 'badge' as const },
+          { label: 'Created Date', value: selectedDetailItem?.createdAt },
+          { label: 'Created By', value: selectedDetailItem?.createdBy?.name },
+          { label: 'Updated Date', value: selectedDetailItem?.updatedAt !== selectedDetailItem?.createdAt ? selectedDetailItem?.updatedAt : undefined },
+          { label: 'Updated By', value: selectedDetailItem?.updatedAt !== selectedDetailItem?.createdAt ? selectedDetailItem?.updatedBy?.name : undefined },
+        ].filter(f => f.value !== undefined)}
         imageUrl={selectedDetailItem?.imageUrl}
         onImageClick={(src) => setPreviewImage({ src, alt: selectedDetailItem?.name || '' })}
       />

@@ -88,12 +88,12 @@ export default function MobileQuickActions() {
     <>
       {/* Floating Action Button */}
       <motion.div
-        className="fixed bottom-24 right-4 z-40 md:hidden"
+        className="fixed bottom-24 right-4 z-40 md:hidden will-change-transform"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        transition={{ type: 'spring', damping: 15, stiffness: 300 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        transition={{ type: 'tween', duration: 0.2, ease: 'circOut' }}
       >
         <Button
           onClick={() => setShowActions(true)}
@@ -112,15 +112,16 @@ export default function MobileQuickActions() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               onClick={() => setShowActions(false)}
-              className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[50] md:hidden"
+              className="fixed inset-0 bg-black/60 z-[50] md:hidden"
             />
             <motion.div
-              initial={{ y: '100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 right-0 glass rounded-t-[3rem] shadow-premium z-[51] md:hidden px-6 pt-3 pb-12 border-t border-border/40"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl shadow-lg z-[51] md:hidden px-6 pt-3 pb-12 border-t border-border will-change-transform"
             >
               <div className="flex justify-center mb-6">
                 <div className="w-16 h-1.5 bg-muted/60 rounded-full cursor-grab active:cursor-grabbing" onClick={() => setShowActions(false)} />
@@ -141,34 +142,18 @@ export default function MobileQuickActions() {
                 </Button>
               </div>
               
-              <motion.div 
+              <div 
                 className="grid grid-cols-2 sm:grid-cols-3 gap-4"
-                initial="hidden"
-                animate="visible"
-                variants={{
-                  visible: {
-                    transition: {
-                      staggerChildren: 0.05
-                    }
-                  }
-                }}
               >
                 {quickActions.map((action) => (
-                  <motion.div
-                    key={action.id}
-                    variants={{
-                      hidden: { opacity: 0, scale: 0.8, y: 20 },
-                      visible: { opacity: 1, scale: 1, y: 0 }
-                    }}
-                    whileTap={{ scale: 0.95 }}
-                  >
+                  <div key={action.id}>
                     {action.href ? (
                       <Link
                         href={action.href}
                         onClick={() => setShowActions(false)}
-                        className="flex flex-col items-center gap-3 p-5 rounded-[2rem] bg-muted/40 hover:bg-accent border border-transparent hover:border-border/50 transition-all group h-full shadow-sm hover:shadow-md"
+                        className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-muted/50 hover:bg-accent border border-transparent hover:border-border transition-all group h-full shadow-sm"
                       >
-                        <div className={`p-4 rounded-2xl ${action.color} text-primary-foreground shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-300`}>
+                        <div className={`p-3 rounded-xl ${action.color} text-primary-foreground shadow-sm transition-transform duration-200 group-active:scale-95`}>
                           {action.icon}
                         </div>
                         <div className="text-center">
@@ -183,9 +168,9 @@ export default function MobileQuickActions() {
                     ) : (
                       <button
                         onClick={() => { action.action?.(); setShowActions(false) }}
-                        className="flex flex-col items-center gap-3 p-5 rounded-3xl bg-muted/30 hover:bg-accent border border-transparent hover:border-border transition-all group h-full w-full"
+                        className="flex flex-col items-center gap-3 p-5 rounded-2xl bg-muted/50 hover:bg-accent border border-transparent hover:border-border transition-all group h-full w-full shadow-sm"
                       >
-                        <div className={`p-4 rounded-2xl ${action.color} text-primary-foreground shadow-lg group-hover:scale-110 transition-transform`}>
+                        <div className={`p-3 rounded-xl ${action.color} text-primary-foreground shadow-sm transition-transform duration-200 group-active:scale-95`}>
                           {action.icon}
                         </div>
                         <div className="text-center">
@@ -198,9 +183,9 @@ export default function MobileQuickActions() {
                         </div>
                       </button>
                     )}
-                  </motion.div>
+                  </div>
                 ))}
-              </motion.div>
+              </div>
             </motion.div>
           </>
         )}

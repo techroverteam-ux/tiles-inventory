@@ -306,15 +306,16 @@ export default function CategoriesPage() {
 
   const renderListRow = useCallback((category: Category) => (
     <>
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
         <div className="font-bold text-foreground group-hover:text-primary transition-colors">{category.name}</div>
       </td>
-      <td className="px-6 py-4">
-        <div className="text-sm text-muted-foreground max-w-xs truncate italic">
-          {category.description || 'No description'}
+      <td className="px-4 py-2.5">
+        <div className="flex items-center gap-2 font-bold text-foreground bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10 w-fit">
+          <Package className="h-4 w-4 text-primary" />
+          {category._count?.products || 0} products
         </div>
       </td>
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
         <Badge 
           variant={category.isActive ? 'default' : 'secondary'}
           className={cn(category.isActive ? "bg-primary/20 text-primary border-none" : "")}
@@ -322,17 +323,11 @@ export default function CategoriesPage() {
           {category.isActive ? 'Active' : 'Inactive'}
         </Badge>
       </td>
-      <td className="px-6 py-4 text-sm font-medium text-foreground">
-        <div className="flex items-center gap-2">
-          <Package className="h-4 w-4 text-muted-foreground" />
-          {category._count?.products || 0}
-        </div>
-      </td>
-      <td className="px-6 py-4 text-sm text-muted-foreground">
+      <td className="px-4 py-2.5 text-sm text-muted-foreground">
         <div className="font-medium text-foreground">{formatDate(category.createdAt)}</div>
         <div className="text-xs">{category.createdBy?.name || 'System'}</div>
       </td>
-      <td className="px-6 py-4 text-sm text-muted-foreground">
+      <td className="px-4 py-2.5 text-sm text-muted-foreground">
         {category.updatedAt && category.updatedAt !== category.createdAt ? (
           <div>
             <div className="font-medium text-foreground">{formatDate(category.updatedAt)}</div>
@@ -342,7 +337,7 @@ export default function CategoriesPage() {
           <span className="text-xs opacity-30 text-muted-foreground">No updates</span>
         )}
       </td>
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
         <div className="flex gap-2">
           <Button
             variant="ghost"
@@ -433,13 +428,13 @@ export default function CategoriesPage() {
           columns: 3
         }}
         listProps={{
-          headers: ['Name', 'Description', 'Status', 'Products', 'Created', 'Updated', 'Actions'],
+          headers: ['Category', 'Products', 'Status', 'Created', 'Updated', 'Actions'],
           renderRow: renderListRow
         }}
       />
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="glass backdrop-blur-3xl border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
               {editingCategory ? 'Edit Category' : 'Add New Category'}
@@ -526,6 +521,16 @@ export default function CategoriesPage() {
         onOpenChange={setShowDetails}
         title="Category Details"
         data={selectedDetailItem}
+        fields={[
+          { label: 'Name', value: selectedDetailItem?.name },
+          { label: 'Description', value: selectedDetailItem?.description },
+          { label: 'Status', value: selectedDetailItem?.isActive, variant: 'badge' as const },
+          { label: 'Products', value: selectedDetailItem?._count?.products || 0, variant: 'number' as const },
+          { label: 'Created Date', value: selectedDetailItem?.createdAt },
+          { label: 'Created By', value: selectedDetailItem?.createdBy?.name },
+          { label: 'Updated Date', value: selectedDetailItem?.updatedAt !== selectedDetailItem?.createdAt ? selectedDetailItem?.updatedAt : undefined },
+          { label: 'Updated By', value: selectedDetailItem?.updatedAt !== selectedDetailItem?.createdAt ? selectedDetailItem?.updatedBy?.name : undefined },
+        ].filter(f => f.value !== undefined)}
       />
     </div>
   )

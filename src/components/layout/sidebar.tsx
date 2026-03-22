@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
-  TrendingUp, 
-  Users, 
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  TrendingUp,
+  Users,
   Settings,
   FileText,
   MapPin,
@@ -50,18 +50,18 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[45] md:hidden animate-in fade-in duration-300" 
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-[45] md:hidden animate-fade-in duration-300"
           onClick={onClose}
         />
       )}
-      
+
       {/* Sidebar */}
       <aside className={cn(
-        "fixed left-0 top-16 sm:top-20 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] border-r border-border/50 transition-[width,transform] duration-300 ease-out z-50 flex flex-col glass backdrop-blur-3xl",
+        "fixed left-0 top-16 sm:top-20 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] border-r border-border bg-card transition-all duration-200 ease-out z-50 flex flex-col",
         isOpen ? "w-64 translate-x-0" : "w-16 -translate-x-full md:translate-x-0"
       )}>
-        <nav className="space-y-2 flex-1 p-3 no-scrollbar overflow-y-auto overflow-x-hidden pb-20">
+        <nav className="space-y-2 flex-1 px-0 py-3 no-scrollbar overflow-y-auto overflow-x-hidden pb-20">
           {navigation.map((item) => {
             const isActive = pathname === item.href
             return (
@@ -70,25 +70,25 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   href={item.href}
                   onClick={handleNavItemClick}
                   className={cn(
-                    "relative flex items-center transition-all duration-300",
-                    isOpen 
-                      ? "h-12 w-full justify-start gap-4 px-4 rounded-xl" 
-                      : "h-11 w-11 justify-center rounded-xl",
-                    isActive 
-                      ? "bg-primary/10 text-primary shadow-[0_0_15px_hsla(var(--primary)/0.1)]" 
-                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:scale-[1.05]"
+                    "relative flex items-center h-12 w-full rounded-xl transition-colors duration-300",
+                    isActive
+                      ? "bg-primary/10 text-primary shadow-[0_0_15px_hsla(var(--primary)/0.1)]"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   )}
                 >
-                  <item.icon className={cn(
-                    "flex-shrink-0 transition-all duration-300",
-                    isOpen ? "h-5 w-5" : "h-6 w-6",
-                    isActive ? "text-primary scale-110" : "text-muted-foreground/70 group-hover:text-primary group-hover:scale-110"
-                  )} />
-                  
+                  <div className={cn(
+                    "flex-shrink-0 flex items-center justify-center transition-all duration-300 w-12 ml-2"
+                  )}>
+                    <item.icon className={cn(
+                      "h-5 w-5 transition-colors duration-200",
+                      isActive ? "text-primary" : "text-muted-foreground/70 group-hover:text-primary"
+                    )} />
+                  </div>
+
                   <span
                     className={cn(
-                      "overflow-hidden whitespace-nowrap font-bold text-sm transition-all duration-300",
-                      isOpen ? "w-auto opacity-100 translate-x-0 ml-0" : "w-0 opacity-0 -translate-x-4 h-0"
+                      "overflow-hidden whitespace-nowrap font-medium text-sm transition-all duration-200",
+                      isOpen ? "max-w-xs opacity-100 translate-x-0 ml-1" : "max-w-0 opacity-0 -translate-x-4 ml-0"
                     )}
                   >
                     {item.name}
@@ -96,24 +96,23 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
                   {isActive && (
                     <span className={cn(
-                      "absolute left-0 rounded-r-full bg-primary shadow-[0_0_15px_hsla(var(--primary)/0.5)] transition-all duration-300",
-                      isOpen ? "top-3 bottom-3 w-1.5 opacity-100" : "top-4 bottom-4 w-1 animate-pulse"
+                      "absolute left-0 rounded-r-full bg-primary transition-all duration-200",
+                      isOpen ? "top-3 bottom-3 w-1.5 opacity-100" : "top-4 bottom-4 w-1"
                     )} />
                   )}
                 </Link>
-                
+
                 {/* Tooltip for collapsed sidebar */}
                 {!isOpen && (
-                  <div className="absolute left-[calc(100%+12px)] px-3 py-1.5 bg-zinc-900 text-white text-xs font-bold rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 whitespace-nowrap z-[100] top-1/2 transform -translate-y-1/2 shadow-xl border border-white/10 pointer-events-none">
+                  <div className="absolute left-[calc(100%+8px)] px-3 py-1.5 bg-foreground text-background text-xs font-semibold rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[100] top-1/2 transform -translate-y-1/2 shadow-sm pointer-events-none">
                     {item.name}
-                    <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-[5px] border-transparent border-r-zinc-900"></div>
                   </div>
                 )}
               </div>
             )
           })}
         </nav>
-        
+
         <div className={cn("p-4 border-t border-border md:hidden", isOpen ? "block" : "hidden")}>
           <button
             onClick={() => {

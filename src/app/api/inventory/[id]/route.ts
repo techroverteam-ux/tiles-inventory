@@ -15,6 +15,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         quantity: data.quantity,
         purchasePrice: data.purchasePrice,
         sellingPrice: data.sellingPrice,
+        receivedDate: data.receivedDate ? new Date(data.receivedDate) : null,
+        expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+        imageUrl: data.imageUrl,
         updatedById: user.userId,
       } as any,
       include: {
