@@ -24,7 +24,7 @@ export default function ThemeToggle() {
       size="sm" 
       onClick={toggleTheme}
       title={`Current theme: ${actualTheme}`}
-      className="transition-smooth"
+      className="transition-colors duration-200"
     >
       {getIcon()}
     </Button>

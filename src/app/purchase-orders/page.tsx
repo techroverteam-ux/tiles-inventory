@@ -22,6 +22,7 @@ import {
 import PurchaseOrderForm from '@/components/PurchaseOrderForm'
 import { useToast } from '@/contexts/ToastContext'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { cn } from '@/lib/utils'
 import { Truck } from 'lucide-react'
 
@@ -262,7 +263,7 @@ export default function PurchaseOrdersPage() {
                 New Order
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl glass backdrop-blur-3xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+            <DialogContent className="max-w-4xl glass backdrop-blur-xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Create Purchase Order</DialogTitle>
               </DialogHeader>
@@ -327,19 +328,16 @@ export default function PurchaseOrdersPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-foreground/80 ml-1">Brand</label>
-                <Select value={filters.brandId} onValueChange={(value) => setFilters({ ...filters, brandId: value })}>
-                  <SelectTrigger className="rounded-2xl bg-muted/20 border-border/40 transition-all h-12">
-                    <SelectValue placeholder="All brands" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl">
-                    <SelectItem value="none">All brands</SelectItem>
-                    {brands.map((brand) => (
-                      <SelectItem key={brand.id} value={brand.id}>
-                        {brand.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={filters.brandId}
+                  onValueChange={(value) => setFilters({ ...filters, brandId: value })}
+                  options={[
+                    { value: 'none', label: 'All brands' },
+                    ...brands.map(b => ({ value: b.id, label: b.name }))
+                  ]}
+                  placeholder="All brands"
+                  className="h-12"
+                />
               </div>
               
               <div className="space-y-2">
@@ -377,26 +375,25 @@ export default function PurchaseOrdersPage() {
         <CardHeader className="pb-4 border-b border-border/30 bg-muted/20">
           <CardTitle className="text-xl font-bold text-foreground">Purchase History ({orders.length})</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-hidden">
           {loading ? (
             <LoadingPage view="list" showHeader={false} items={8} />
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border">
-                    <TableHead className="text-foreground">Order #</TableHead>
-                    <TableHead className="text-foreground">Brand</TableHead>
-                    <TableHead className="text-foreground">Batch Name</TableHead>
-                    <TableHead className="text-foreground">Quantity</TableHead>
-                    <TableHead className="text-foreground">Category</TableHead>
-                    <TableHead className="text-foreground">Dimensions</TableHead>
-                    <TableHead className="text-foreground">Order Date</TableHead>
-                    <TableHead className="text-foreground">Status</TableHead>
-                    <TableHead className="text-foreground">Amount</TableHead>
-                    <TableHead className="text-foreground">Created</TableHead>
-                    <TableHead className="text-foreground">Updated</TableHead>
-                    <TableHead className="text-right text-foreground">Actions</TableHead>
+                  <TableRow>
+                    <TableHead className="w-32">Order #</TableHead>
+                    <TableHead>Brand</TableHead>
+                    <TableHead>Batch</TableHead>
+                    <TableHead className="text-right">Qty</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Dimensions</TableHead>
+                    <TableHead>Order Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Updated</TableHead>
+                    <TableHead className="text-right w-28">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -409,27 +406,19 @@ export default function PurchaseOrdersPage() {
                         setShowDetails(true)
                       }}
                     >
+                      <TableCell><div className="font-semibold">{order.orderNumber}</div></TableCell>
+                      <TableCell>{order.brand?.name || '—'}</TableCell>
                       <TableCell>
-                        <div className="font-medium text-foreground">{order.orderNumber}</div>
+                        <code className="bg-muted/60 px-2 py-0.5 rounded-md text-xs font-mono">
+                          {order.items?.[0]?.batchNumber || '—'}
+                        </code>
                       </TableCell>
-                      <TableCell className="text-foreground">{order.brand?.name || 'N/A'}</TableCell>
-                      <TableCell className="text-foreground">
-                        {order.items?.[0]?.batchNumber || 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-foreground">
+                      <TableCell className="text-right tabular-nums">
                         {order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0}
                       </TableCell>
-                      <TableCell className="text-foreground">
-                        {order.items?.[0]?.product?.category?.name || 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-foreground">
-                        {order.items?.[0]?.product?.size?.name || 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm text-foreground">
-                          {formatDate(order.orderDate)}
-                        </div>
-                      </TableCell>
+                      <TableCell>{order.items?.[0]?.product?.category?.name || '—'}</TableCell>
+                      <TableCell>{order.items?.[0]?.product?.size?.name || '—'}</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm">{formatDate(order.orderDate)}</TableCell>
                       <TableCell>
                         <div onClick={(e) => e.stopPropagation()}>
                           <Select 
@@ -437,7 +426,7 @@ export default function PurchaseOrdersPage() {
                             onValueChange={(value) => handleStatusChange(order.id, value)}
                             disabled={changingStatus === order.id}
                           >
-                            <SelectTrigger className="w-32">
+                            <SelectTrigger className="w-32 h-8 rounded-lg text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -449,66 +438,48 @@ export default function PurchaseOrdersPage() {
                           </Select>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="font-medium text-foreground">
-                          ₹{order.totalAmount.toLocaleString()}
-                        </div>
+                      <TableCell className="text-right font-semibold font-mono tabular-nums">
+                        ₹{order.totalAmount.toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        <div>{formatDate(order.createdAt)}</div>
-                        <div className="text-xs">{order.createdBy?.name || 'System'}</div>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
+                        <div className="text-sm">{formatDate(order.createdAt)}</div>
+                        <div className="text-xs opacity-70">{order.createdBy?.name || 'System'}</div>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
                         {order.updatedAt && order.updatedAt !== order.createdAt
                           ? (
                             <>
-                              <div>{formatDate(order.updatedAt)}</div>
-                              <div className="text-xs">{order.updatedBy?.name || 'System'}</div>
+                              <div className="text-sm">{formatDate(order.updatedAt)}</div>
+                              <div className="text-xs opacity-70">{order.updatedBy?.name || 'System'}</div>
                             </>
                           )
-                          : <span className="text-xs opacity-30 text-muted-foreground">No updates</span>
+                          : <span className="text-xs opacity-30">—</span>
                         }
                       </TableCell>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleView(order)}
-                            className="rounded-xl hover:bg-primary/10 hover:text-primary p-2 transition-all"
-                          >
-                            <Eye className="h-5 w-5" />
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => handleView(order)}>
+                            <Eye className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleEdit(order)}
-                            className="rounded-xl hover:bg-primary/10 hover:text-primary p-2 transition-all"
-                          >
-                            <Edit className="h-5 w-5" />
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => handleEdit(order)}>
+                            <Edit className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleDelete(order)}
-                            className="rounded-xl hover:bg-destructive/10 hover:text-destructive p-2 transition-all"
-                          >
-                            <Trash2 className="h-5 w-5" />
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDelete(order)}>
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                      </td>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Location Selection Dialog */}
       <Dialog open={showLocationDialog} onOpenChange={setShowLocationDialog}>
-        <DialogContent className="glass backdrop-blur-3xl border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Confirm Delivery</DialogTitle>
           </DialogHeader>
@@ -559,7 +530,7 @@ export default function PurchaseOrdersPage() {
 
       {/* View Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="glass backdrop-blur-3xl border-border/50 max-w-lg rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 p-8">
+        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-lg rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 p-8">
           <DialogHeader className="mb-6">
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Purchase Order Details</DialogTitle>
           </DialogHeader>
@@ -612,7 +583,7 @@ export default function PurchaseOrdersPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-4xl glass backdrop-blur-3xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+        <DialogContent className="max-w-4xl glass backdrop-blur-xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 tracking-tight">Edit Purchase Order</DialogTitle>
           </DialogHeader>
@@ -645,6 +616,21 @@ export default function PurchaseOrdersPage() {
         onOpenChange={setShowDetails}
         title="Purchase Order Details"
         data={selectedDetailItem}
+        fields={[
+          { label: 'Order Number', value: selectedDetailItem?.orderNumber },
+          { label: 'Brand', value: selectedDetailItem?.brand?.name },
+          { label: 'Total Amount', value: selectedDetailItem?.totalAmount ? `₹${selectedDetailItem.totalAmount.toLocaleString()}` : undefined },
+          { label: 'Status', value: selectedDetailItem?.status, variant: 'badge' as const },
+          { label: 'Order Date', value: selectedDetailItem?.orderDate },
+          { label: 'Total Quantity', value: selectedDetailItem?.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0), variant: 'number' as const },
+          { label: 'First Item Batch', value: selectedDetailItem?.items?.[0]?.batchNumber },
+          { label: 'Category', value: selectedDetailItem?.items?.[0]?.product?.category?.name },
+          { label: 'Size', value: selectedDetailItem?.items?.[0]?.product?.size?.name },
+          { label: 'Created At', value: selectedDetailItem?.createdAt },
+          { label: 'Created By', value: selectedDetailItem?.createdBy?.name },
+          { label: 'Updated At', value: selectedDetailItem?.updatedAt !== selectedDetailItem?.createdAt ? selectedDetailItem?.updatedAt : undefined },
+          { label: 'Updated By', value: selectedDetailItem?.updatedAt !== selectedDetailItem?.createdAt ? selectedDetailItem?.updatedBy?.name : undefined },
+        ].filter(f => f.value !== undefined)}
       />
     </div>
   )

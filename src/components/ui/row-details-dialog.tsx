@@ -7,18 +7,25 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { ZoomIn } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+interface DetailField {
+  label: string
+  value: any
+  variant?: 'text' | 'badge' | 'date' | 'number' | 'currency' | 'user'
+}
 
 interface RowDetailsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
   data: any
+  fields?: DetailField[]
   imageUrl?: string
   onImageClick?: (src: string) => void
 }
 
 function formatKeyName(key: string) {
-  // Convert camelCase or snake_case to Title Case
   const words = key
     .replace(/([A-Z])/g, ' $1')
     .replace(/_/g, ' ')
@@ -32,55 +39,64 @@ function formatKeyName(key: string) {
 
 function formatDateIfApplicable(value: any) {
   if (typeof value === 'string') {
-    // Check if it's an ISO date string
     const dateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/
     if (dateRegex.test(value)) {
       const date = new Date(value)
       if (!isNaN(date.getTime())) {
-        return date.toLocaleString()
+        const day = date.getDate().toString().padStart(2, '0')
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        return `${day}-${months[date.getMonth()]}-${date.getFullYear()}`
       }
     }
   }
   return value
 }
 
-function renderValue(value: any): React.ReactNode {
-  if (value === null || value === undefined) {
-    return <span className="text-muted-foreground">-</span>
+function renderValue(value: any, variant?: string): React.ReactNode {
+  if (value === null || value === undefined || value === '') {
+    return <span className="text-muted-foreground italic text-xs">Not specified</span>
   }
 
-  if (typeof value === 'boolean') {
+  if (variant === 'badge' || typeof value === 'boolean') {
+    const isBool = typeof value === 'boolean'
+    const label = isBool ? (value ? 'Yes' : 'No') : String(value)
     return (
-      <Badge variant={value ? 'default' : 'secondary'}>
-        {value ? 'Yes' : 'No'}
+      <Badge 
+        variant={isBool ? (value ? 'default' : 'secondary') : 'outline'}
+        className={cn(
+          "rounded-lg px-2.5 py-0.5 font-bold uppercase tracking-wider text-[10px]",
+          isBool && value && "bg-primary/20 text-primary border-none shadow-none",
+          isBool && !value && "bg-muted text-muted-foreground border-none shadow-none"
+        )}
+      >
+        {label}
       </Badge>
     )
   }
 
-  if (typeof value === 'object') {
+  if (typeof value === 'object' && !variant) {
     if (Array.isArray(value)) {
-      if (value.length === 0) return <span className="text-muted-foreground">Empty List</span>
+      if (value.length === 0) return <span className="text-muted-foreground italic text-xs">Empty list</span>
       return (
-        <div className="flex flex-col gap-2 mt-1">
+        <div className="flex flex-wrap gap-1.5 mt-1">
           {value.map((item, index) => (
-            <div key={index} className="p-2 border rounded-md bg-muted/20">
-              {renderValue(item)}
-            </div>
+            <Badge key={index} variant="secondary" className="rounded-md bg-muted/40 text-[10px] font-medium border-none px-2">
+              {String(item)}
+            </Badge>
           ))}
         </div>
       )
     }
 
-    // It's a regular object
-    const entries = Object.entries(value)
-    if (entries.length === 0) return <span className="text-muted-foreground">Empty</span>
+    const entries = Object.entries(value).filter(([k]) => !k.startsWith('_'))
+    if (entries.length === 0) return <span className="text-muted-foreground italic text-xs">No details</span>
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1 w-full bg-muted/10 p-2 rounded-md border">
+      <div className="space-y-1.5 mt-1 w-full bg-muted/10 p-2.5 rounded-xl border border-border/40">
         {entries.map(([k, v]) => (
-          <div key={k} className="flex flex-col text-sm break-words">
-            <span className="font-semibold text-muted-foreground text-xs">{formatKeyName(k)}</span>
-            <span>{renderValue(v)}</span>
+          <div key={k} className="flex justify-between items-center text-xs gap-3">
+            <span className="font-bold text-muted-foreground/60 uppercase tracking-tight text-[9px]">{formatKeyName(k)}</span>
+            <span className="font-medium text-foreground text-right break-words max-w-[150px]">{String(v)}</span>
           </div>
         ))}
       </div>
@@ -88,59 +104,77 @@ function renderValue(value: any): React.ReactNode {
   }
 
   const formattedValue = formatDateIfApplicable(value)
-  return <span className="break-words">{String(formattedValue)}</span>
+  return <span className="font-semibold text-foreground break-words">{String(formattedValue)}</span>
 }
 
-export function RowDetailsDialog({ open, onOpenChange, title, data, imageUrl, onImageClick }: RowDetailsDialogProps) {
-  if (!data) return null
+export function RowDetailsDialog({ open, onOpenChange, title, data, fields, imageUrl, onImageClick }: RowDetailsDialogProps) {
+  if (!data && !fields) return null
 
-  // Ensure data is an object before getting entries
-  const entries = typeof data === 'object' && data !== null && !Array.isArray(data)
-    ? Object.entries(data).filter(([key]) => !key.startsWith('_') && key !== 'imageUrl' && key !== 'product') // hide meta fields and handled fields
-    : [['Value', data]]
+  const displayFields = fields || (data ? Object.entries(data)
+    .filter(([key]) => !key.startsWith('_') && !['imageUrl', 'id', 'createdById', 'updatedById'].includes(key))
+    .map(([key, value]) => ({
+      label: formatKeyName(key),
+      value: value,
+      variant: typeof value === 'boolean' ? ('badge' as const) : undefined
+    })) : [])
 
-  // Fallback for imageUrl if not passed explicitly but exists in data
   const displayImageUrl = imageUrl || data?.imageUrl || data?.product?.imageUrl
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 bg-card overflow-hidden">
-        <DialogHeader className="p-6 pb-2 border-b">
-          <DialogTitle className="text-xl">{title}</DialogTitle>
+      <DialogContent className="max-w-2xl p-0 bg-popover/95 backdrop-blur-xl border-border/50 rounded-3xl overflow-hidden shadow-premium animate-in zoom-in-95 duration-200">
+        <DialogHeader className="px-6 py-5 border-b border-border/40 bg-muted/10">
+          <DialogTitle className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+            {title}
+          </DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto">
+        
+        <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
           {displayImageUrl && (
             <div 
-              className="w-full h-64 md:h-80 relative bg-muted flex items-center justify-center border-b cursor-zoom-in group"
+              className="w-full aspect-video md:aspect-[2/1] relative bg-muted/20 flex items-center justify-center border-b border-border/30 cursor-zoom-in group overflow-hidden"
               onClick={() => onImageClick && onImageClick(displayImageUrl)}
             >
               <img 
                 src={displayImageUrl} 
                 alt={title}
-                className="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
+                className="max-w-full max-h-full object-contain transition-all duration-700 group-hover:scale-105"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none'
                 }}
               />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-opacity h-10 w-10 drop-shadow-lg" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center duration-300">
+                <ZoomIn className="text-white opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all h-10 w-10 drop-shadow-2xl" />
               </div>
             </div>
           )}
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-              {entries.map(([key, value]) => (
-                <div key={key} className={`flex flex-col space-y-1 ${typeof value === 'object' && value !== null ? 'col-span-1 md:col-span-2' : ''}`}>
-                  <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                    {formatKeyName(key)}
+
+          <div className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {displayFields.map((field, idx) => (
+                <div 
+                  key={idx} 
+                  className={cn(
+                    "flex flex-col space-y-2 p-4 rounded-2xl border border-border/30 bg-muted/10 hover:bg-muted/20 transition-colors group",
+                    (typeof field.value === 'object' && field.value !== null) || String(field.value).length > 50 ? "sm:col-span-2" : ""
+                  )}
+                >
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-0.5 group-hover:text-primary transition-colors">
+                    {field.label}
                   </span>
-                  <div className="text-base text-card-foreground p-1.5 rounded-md bg-muted/5 border shadow-sm">
-                    {renderValue(value)}
+                  <div className="text-sm">
+                    {renderValue(field.value, field.variant)}
                   </div>
                 </div>
               ))}
             </div>
           </div>
+        </div>
+        
+        <div className="p-4 border-t border-border/40 bg-muted/5 flex justify-end px-6">
+          <Badge variant="outline" className="border-border/30 text-[9px] font-medium text-muted-foreground px-3 py-1 rounded-full bg-muted/20">
+            Internal Record View
+          </Badge>
         </div>
       </DialogContent>
     </Dialog>

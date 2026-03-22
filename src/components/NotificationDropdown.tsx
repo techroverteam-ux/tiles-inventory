@@ -113,7 +113,7 @@ export default function NotificationDropdown() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm cursor-default" 
+                className="fixed inset-0 z-[100] bg-black/60 cursor-default" 
                 onClick={() => setIsOpen(false)}
               />,
               document.body
@@ -122,7 +122,7 @@ export default function NotificationDropdown() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] cursor-default" 
+                className="fixed inset-0 z-50 bg-black/10 cursor-default" 
                 onClick={() => setIsOpen(false)}
               />
             )}
@@ -146,8 +146,8 @@ export default function NotificationDropdown() {
                 initial={{ y: '100%' }}
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed bottom-0 left-0 right-0 glass rounded-t-[2.5rem] shadow-premium z-[101] max-h-[90vh] flex flex-col border-t border-border/40 overflow-hidden"
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl shadow-lg z-[101] max-h-[90vh] flex flex-col border-t border-border overflow-hidden will-change-transform"
               >
                 <div className="flex justify-center pt-4 pb-2">
                   <div className="w-12 h-1.5 bg-muted/40 rounded-full cursor-grab active:cursor-grabbing" onClick={() => setIsOpen(false)} />
@@ -256,12 +256,12 @@ function NotificationListContent({
                 const Icon = styles.icon
                 return (
                   <motion.div 
-                    layout
                     key={notification.id}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    className={`p-4 border-b border-border/40 hover:bg-accent/40 cursor-pointer transition-colors relative group ${
+                    transition={{ duration: 0.2 }}
+                    className={`p-4 border-b border-border hover:bg-accent/40 cursor-pointer transition-colors relative group ${
                       !notification.read ? 'bg-primary/5' : ''
                     }`}
                     onClick={() => {
@@ -280,7 +280,7 @@ function NotificationListContent({
                             {notification.title}
                           </h4>
                           {!notification.read && (
-                            <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 animate-pulse shadow-[0_0_8px_hsla(var(--primary)/0.5)]" />
+                            <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
                           )}
                         </div>
                         <p className={`text-xs leading-relaxed line-clamp-2 ${!notification.read ? 'text-muted-foreground' : 'text-muted-foreground/60'}`}>

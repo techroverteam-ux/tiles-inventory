@@ -30,7 +30,9 @@ import {
 } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 import AddStockForm from '@/components/inventory/AddStockForm'
+import ImageUpload from '@/components/ui/image-upload'
 import { cn } from '@/lib/utils'
+import { motion } from 'framer-motion'
 
 const formatDate = (dateString: string) => {
   const d = new Date(dateString)
@@ -56,6 +58,7 @@ interface InventoryItem {
   purchasePrice: number
   sellingPrice: number
   expiryDate?: string
+  imageUrl?: string
   createdAt: string
   updatedAt?: string
   createdBy?: { name: string }
@@ -92,7 +95,8 @@ export default function InventoryPage() {
     batchNumber: '',
     quantity: '',
     purchasePrice: '',
-    sellingPrice: ''
+    sellingPrice: '',
+    imageUrl: ''
   })
   
   const [pagination, setPagination] = useState({
@@ -208,7 +212,8 @@ export default function InventoryPage() {
       batchNumber: item.batchNumber,
       quantity: item.quantity.toString(),
       purchasePrice: item.purchasePrice.toString(),
-      sellingPrice: item.sellingPrice.toString()
+      sellingPrice: item.sellingPrice.toString(),
+      imageUrl: item.imageUrl || ''
     })
     setShowEditDialog(true)
   }
@@ -224,7 +229,8 @@ export default function InventoryPage() {
           batchNumber: editFormData.batchNumber,
           quantity: parseInt(editFormData.quantity),
           purchasePrice: parseFloat(editFormData.purchasePrice),
-          sellingPrice: parseFloat(editFormData.sellingPrice)
+          sellingPrice: parseFloat(editFormData.sellingPrice),
+          imageUrl: editFormData.imageUrl
         })
       })
       
@@ -292,18 +298,26 @@ export default function InventoryPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 pt-2 md:pt-0">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowFilters(!showFilters)}
-            className={cn(
-              "rounded-xl border-border/50 font-bold gap-2 transition-all",
-              showFilters ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted/50"
-            )}
-          >
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
+          <motion.div whileTap={{ scale: 0.93 }}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn(
+                "rounded-xl border-border/50 font-bold gap-2 transition-all",
+                showFilters ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted/50"
+              )}
+            >
+              <motion.span
+                animate={{ rotate: showFilters ? 90 : 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                className="flex items-center"
+              >
+                <Filter className="h-4 w-4" />
+              </motion.span>
+              Filters
+            </Button>
+          </motion.div>
           <Button variant="outline" size="sm" className="hidden md:flex rounded-xl border-border/50 font-bold gap-2 hover:bg-muted/50">
             <Download className="h-4 w-4" />
             Export
@@ -315,16 +329,16 @@ export default function InventoryPage() {
                 Add Stock
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl glass backdrop-blur-3xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+            <DialogContent className="max-w-2xl glass backdrop-blur-xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto no-scrollbar">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Add Stock Batch</DialogTitle>
               </DialogHeader>
-              <AddStockForm 
+              <AddStockForm
                 onSuccess={() => {
                   setShowAddDialog(false)
                   fetchInventory()
-                }} 
-                onCancel={() => setShowAddDialog(false)} 
+                }}
+                onCancel={() => setShowAddDialog(false)}
               />
             </DialogContent>
           </Dialog>
@@ -557,13 +571,19 @@ export default function InventoryPage() {
                     </div>
                   }
                 />
-                <MobileCardField label="Category" value={item.product.category.name} />
+                <MobileCardField label="Quantity" value={
+                  <div className="flex items-center gap-2 font-bold">
+                    <Badge variant={getStockBadgeVariant(item.quantity)}>{item.quantity} units</Badge>
+                    {item.quantity < 10 && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                  </div>
+                } />
                 <MobileCardField label="Size" value={item.product.size?.name || 'N/A'} />
-                <MobileCardField label="Batch" value={<code className="bg-muted px-2 py-1 rounded text-xs">{item.batchNumber}</code>} />
+                <MobileCardField label="Category" value={item.product.category.name} />
+                <MobileCardField label="Batch" value={<code className="bg-muted px-2 py-1 rounded text-xs font-mono">{item.batchNumber}</code>} />
                 <MobileCardField label="Location" value={item.location.name} />
-                <MobileCardField label="Purchase Price" value={`₹${item.purchasePrice.toLocaleString()}`} />
-                <MobileCardField label="Selling Price" value={`₹${item.sellingPrice.toLocaleString()}`} />
-                <MobileCardField label="Total Value" value={`₹${(item.quantity * item.sellingPrice).toLocaleString()}`} />
+                <MobileCardField label="Purchase" value={`₹${item.purchasePrice.toLocaleString()}`} />
+                <MobileCardField label="Selling" value={`₹${item.sellingPrice.toLocaleString()}`} />
+                <MobileCardField label="Total Value" value={`₹${(item.quantity * item.sellingPrice).toLocaleString()}`} className="font-bold text-primary" />
               </MobileCard>
             ))}
             
@@ -620,26 +640,26 @@ export default function InventoryPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-hidden">
           {loading ? (
             <LoadingPage view="list" showHeader={false} items={8} />
           ) : (
             <>
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-border">
-                    <TableHead className="text-foreground">Product</TableHead>
-                    <TableHead className="text-foreground">Category</TableHead>
-                    <TableHead className="text-foreground">Size</TableHead>
-                    <TableHead className="text-foreground">Batch</TableHead>
-                    <TableHead className="text-foreground">Location</TableHead>
-                    <TableHead className="text-foreground">Stock</TableHead>
-                    <TableHead className="text-foreground">Purchase Price</TableHead>
-                    <TableHead className="text-foreground">Selling Price</TableHead>
-                    <TableHead className="text-foreground">Value</TableHead>
-                    <TableHead className="text-foreground">Created</TableHead>
-                    <TableHead className="text-foreground">Updated</TableHead>
-                    <TableHead className="text-right text-foreground">Actions</TableHead>
+                  <TableRow className="border-b border-border hover:bg-transparent">
+                    <TableHead className="w-48 pl-6">Product</TableHead>
+                    <TableHead className="text-right">Quantity</TableHead>
+                    <TableHead>Size</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Batch #</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead className="text-right">Purchase</TableHead>
+                    <TableHead className="text-right">Selling</TableHead>
+                    <TableHead className="text-right">Total Value</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Updated</TableHead>
+                    <TableHead className="text-right pr-6">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -652,58 +672,73 @@ export default function InventoryPage() {
                         setShowDetails(true)
                       }}
                     >
-                      <TableCell>
-                        <div>
-                          <div className="font-medium text-foreground">{item.product.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {item.product.brand.name} • {item.product.code}
+                      <TableCell className="pl-6">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-xl overflow-hidden bg-muted/20 border border-border/40 flex-shrink-0">
+                            {item.imageUrl || item.product.imageUrl ? (
+                              <img 
+                                src={item.imageUrl || item.product.imageUrl} 
+                                alt={item.product.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center text-muted-foreground/40">
+                                <Package className="h-5 w-5" />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-foreground">{item.product.name}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {item.product.brand.name} • {item.product.code}
+                            </div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-foreground">{item.product.category.name}</TableCell>
-                      <TableCell className="text-foreground">{item.product.size?.name || 'N/A'}</TableCell>
-                      <TableCell>
-                        <code className="bg-muted px-2 py-1 rounded text-sm text-foreground">
-                          {item.batchNumber}
-                        </code>
-                      </TableCell>
-                      <TableCell className="text-foreground">{item.location.name}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 flex-nowrap">
-                          <Badge variant={getStockBadgeVariant(item.quantity)} className="whitespace-nowrap">
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1.5 flex-nowrap">
+                          <Badge variant={getStockBadgeVariant(item.quantity)} className="whitespace-nowrap tabular-nums">
                             {item.quantity} units
                           </Badge>
                           {item.quantity < 10 && (
-                            <AlertTriangle className="h-4 w-4 text-destructive" />
+                            <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-foreground">₹{item.purchasePrice.toLocaleString()}</TableCell>
-                      <TableCell className="text-foreground">₹{item.sellingPrice.toLocaleString()}</TableCell>
-                      <TableCell className="font-medium text-foreground">
+                      <TableCell>{item.product.size?.name || '—'}</TableCell>
+                      <TableCell>{item.product.category.name}</TableCell>
+                      <TableCell>
+                        <code className="bg-muted/60 px-2 py-0.5 rounded-md text-xs font-mono">
+                          {item.batchNumber}
+                        </code>
+                      </TableCell>
+                      <TableCell>{item.location.name}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">₹{item.purchasePrice.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">₹{item.sellingPrice.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-semibold font-mono tabular-nums">
                         ₹{(item.quantity * item.sellingPrice).toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        <div>{formatDate(item.createdAt)}</div>
-                        <div className="text-xs">{item.createdBy?.name || 'System'}</div>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
+                        <div className="text-sm">{formatDate(item.createdAt)}</div>
+                        <div className="text-xs opacity-70">{item.createdBy?.name || 'System'}</div>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
                         {item.updatedAt && item.updatedAt !== item.createdAt
                           ? (
                             <>
-                              <div>{formatDate(item.updatedAt)}</div>
-                              <div className="text-xs">{item.updatedBy?.name || 'System'}</div>
+                              <div className="text-sm">{formatDate(item.updatedAt)}</div>
+                              <div className="text-xs opacity-70">{item.updatedBy?.name || 'System'}</div>
                             </>
                           )
-                          : <span className="text-xs opacity-30 text-muted-foreground">No updates</span>
+                          : <span className="text-xs opacity-30">—</span>
                         }
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
+                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => handleEdit(item)}>
                             <Edit className="h-4 w-4 text-muted-foreground" />
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(item)}>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => handleDelete(item)}>
                             <Trash2 className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         </div>
@@ -761,7 +796,7 @@ export default function InventoryPage() {
 
     {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="glass backdrop-blur-3xl border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Edit Inventory Batch</DialogTitle>
           </DialogHeader>
@@ -804,6 +839,17 @@ export default function InventoryPage() {
               </div>
             </div>
 
+            <div className="space-y-2 border-t border-border/30 pt-4">
+              <label className="text-sm font-bold text-foreground/80 ml-1 italic">Update Batch Photo (Optional)</label>
+              <ImageUpload
+                onImageUploaded={(url) => setEditFormData({ ...editFormData, imageUrl: url })}
+                currentImage={editFormData.imageUrl}
+                className="rounded-2xl border-dashed border-2 border-border/40 hover:border-primary/40 transition-all bg-muted/5 max-w-sm"
+                label={null}
+              />
+              <p className="text-[10px] text-muted-foreground ml-1">Update the specific photo for this batch.</p>
+            </div>
+
             <div className="flex gap-3 pt-4">
               <Button
                 onClick={handleSaveEdit}
@@ -840,6 +886,19 @@ export default function InventoryPage() {
         onOpenChange={setShowDetails}
         title="Inventory Batch Details"
         data={selectedDetailItem}
+        fields={[
+          { label: 'Product', value: selectedDetailItem?.product?.name },
+          { label: 'Code', value: selectedDetailItem?.product?.code },
+          { label: 'Batch Number', value: selectedDetailItem?.batchNumber },
+          { label: 'Location', value: selectedDetailItem?.location?.name },
+          { label: 'Quantity', value: selectedDetailItem?.quantity, variant: 'number' as const },
+          { label: 'Purchase Price', value: selectedDetailItem?.purchasePrice ? `₹${selectedDetailItem.purchasePrice.toLocaleString()}` : undefined },
+          { label: 'Selling Price', value: selectedDetailItem?.sellingPrice ? `₹${selectedDetailItem.sellingPrice.toLocaleString()}` : undefined },
+          { label: 'Brand', value: selectedDetailItem?.product?.brand?.name },
+          { label: 'Category', value: selectedDetailItem?.product?.category?.name },
+          { label: 'Size', value: selectedDetailItem?.product?.size?.name },
+          { label: 'Created At', value: selectedDetailItem?.createdAt },
+        ].filter(f => f.value !== undefined)}
         imageUrl={selectedDetailItem?.product?.imageUrl}
       />
     </div>

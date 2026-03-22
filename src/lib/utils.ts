@@ -26,3 +26,14 @@ export function generateOrderNumber(prefix: string): string {
   const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
   return `${prefix}${timestamp}${random}`
 }
+
+export function formatMmToFeetInches(mm: number): string {
+  if (!mm || isNaN(mm)) return '0"'
+  const totalInches = Math.round(mm / 25.4)
+  const feet = Math.floor(totalInches / 12)
+  const inches = totalInches % 12
+  
+  if (feet === 0) return `${inches}"`
+  if (inches === 0) return `${feet}'`
+  return `${feet}' ${inches}"`
+}

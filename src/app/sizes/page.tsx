@@ -16,7 +16,7 @@ import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
 import { Filter, Plus, Edit, Trash2, Package, Ruler } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
-import { cn } from '@/lib/utils'
+import { cn, formatMmToFeetInches } from '@/lib/utils'
 
 interface Size {
   id: string
@@ -294,9 +294,12 @@ export default function SizesPage() {
         )}
         <div className="flex flex-col gap-2 mb-4">
           {(size.length || size.width) && (
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground bg-primary/5 p-2 rounded-lg border border-primary/10">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground bg-primary/5 p-2 rounded-lg border border-primary/10 flex-wrap">
               <Ruler className="h-4 w-4 text-primary" />
-              <span>{size.length || '?'} × {size.width || '?'} mm</span>
+              <span>
+                {size.length || '?'} × {size.width || '?'} mm
+                {size.length && size.width ? ` (${formatMmToFeetInches(size.length)} × ${formatMmToFeetInches(size.width)})` : ''}
+              </span>
             </div>
           )}
           <div className="flex items-center gap-2 text-xs text-muted-foreground ml-1">
@@ -340,20 +343,21 @@ export default function SizesPage() {
 
   const renderListRow = useCallback((size: Size) => (
     <>
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
         <div className="font-bold text-foreground group-hover:text-primary transition-colors">{size.name}</div>
         <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
           <Ruler className="h-3 w-3" />
-          {size.length && size.width ? `${size.length} × ${size.width} mm` : 'No dimensions'}
+          {size.length && size.width ? `${size.length} × ${size.width} mm (${formatMmToFeetInches(size.length)} × ${formatMmToFeetInches(size.width)})` : 'No dimensions'}
         </div>
       </td>
 
-      <td className="px-6 py-4">
-        <div className="text-sm text-muted-foreground max-w-xs truncate italic">
-          {size.description || 'No description'}
+      <td className="px-4 py-2.5">
+        <div className="flex items-center gap-2 font-bold text-foreground bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10 w-fit">
+          <Package className="h-4 w-4 text-primary" />
+          {size._count?.products || 0} products
         </div>
       </td>
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
         <Badge 
           variant={size.isActive ? 'default' : 'secondary'}
           className={cn(size.isActive ? "bg-primary/20 text-primary border-none" : "")}
@@ -361,17 +365,11 @@ export default function SizesPage() {
           {size.isActive ? 'Active' : 'Inactive'}
         </Badge>
       </td>
-      <td className="px-6 py-4 text-sm font-medium text-foreground">
-        <div className="flex items-center gap-2">
-          <Package className="h-4 w-4 text-muted-foreground" />
-          {size._count?.products || 0}
-        </div>
-      </td>
-      <td className="px-6 py-4 text-sm text-muted-foreground">
+      <td className="px-4 py-2.5 text-sm text-muted-foreground">
         <div className="font-medium text-foreground">{formatDate(size.createdAt)}</div>
         <div className="text-xs">{size.createdBy?.name || 'System'}</div>
       </td>
-      <td className="px-6 py-4 text-sm text-muted-foreground">
+      <td className="px-4 py-2.5 text-sm text-muted-foreground">
         {size.updatedAt && size.updatedAt !== size.createdAt ? (
           <div>
             <div className="font-medium text-foreground">{formatDate(size.updatedAt)}</div>
@@ -381,7 +379,7 @@ export default function SizesPage() {
           <span className="text-xs opacity-30 text-muted-foreground">No updates</span>
         )}
       </td>
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
         <div className="flex gap-2">
           <Button
             variant="ghost"
@@ -477,13 +475,13 @@ export default function SizesPage() {
           columns: 3
         }}
         listProps={{
-          headers: ['Size', 'Description', 'Status', 'Products', 'Created', 'Updated', 'Actions'],
+          headers: ['Size', 'Products', 'Status', 'Created', 'Updated', 'Actions'],
           renderRow: renderListRow
         }}
       />
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="glass backdrop-blur-3xl border-border/50 max-w-2xl rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-2xl rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
               {editingSize ? 'Edit Size' : 'Add New Size'}
@@ -538,6 +536,15 @@ export default function SizesPage() {
                   className="rounded-xl bg-background border-primary/20 focus:border-primary transition-all h-11"
                 />
               </div>
+              {(formData.length || formData.width) && (
+                <div className="col-span-1 md:col-span-2 text-sm text-primary/80 bg-primary/10 p-2 rounded-xl border border-primary/20 flex items-center justify-center gap-2 font-medium">
+                  {formData.length && formData.width ? (
+                    <>Equivalent: {formatMmToFeetInches(Number(formData.length))} × {formatMmToFeetInches(Number(formData.width))}</>
+                  ) : (
+                    <>Equivalent: {formData.length ? formatMmToFeetInches(Number(formData.length)) : '?'} × {formData.width ? formatMmToFeetInches(Number(formData.width)) : '?'}</>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-3 p-4 bg-muted/20 rounded-2xl border border-border/30 group hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}>
@@ -603,6 +610,18 @@ export default function SizesPage() {
         onOpenChange={setShowDetails}
         title="Size Details"
         data={selectedDetailItem}
+        fields={[
+          { label: 'Name', value: selectedDetailItem?.name },
+          { label: 'Description', value: selectedDetailItem?.description },
+          { label: 'Dimensions (mm)', value: selectedDetailItem?.length && selectedDetailItem?.width ? `${selectedDetailItem.length} × ${selectedDetailItem.width} mm` : undefined },
+          { label: 'Dimensions (ft/in)', value: selectedDetailItem?.length && selectedDetailItem?.width ? `${formatMmToFeetInches(selectedDetailItem.length)} × ${formatMmToFeetInches(selectedDetailItem.width)}` : undefined },
+          { label: 'Status', value: selectedDetailItem?.isActive, variant: 'badge' as const },
+          { label: 'Products Using This Size', value: selectedDetailItem?._count?.products || 0, variant: 'number' as const },
+          { label: 'Created At', value: selectedDetailItem?.createdAt },
+          { label: 'Created By', value: selectedDetailItem?.createdBy?.name },
+          { label: 'Updated At', value: selectedDetailItem?.updatedAt !== selectedDetailItem?.createdAt ? selectedDetailItem?.updatedAt : undefined },
+          { label: 'Updated By', value: selectedDetailItem?.updatedAt !== selectedDetailItem?.createdAt ? selectedDetailItem?.updatedBy?.name : undefined },
+        ].filter(f => f.value !== undefined)}
       />
     </div>
   )

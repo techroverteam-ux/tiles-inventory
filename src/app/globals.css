@@ -29,60 +29,62 @@
   }
 
   :root {
-    --radius: 1rem;
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --radius: 0.5rem;
+    /* Light Mode: Marble white bg, deep steel-blue primary (House of Tiles logo color) */
+    --background: 210 20% 97%;
+    --foreground: 215 35% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 215 35% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 262.1 83.3% 57.8%; /* Premium Violet */
-    --primary-foreground: 210 20% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 262.1 83.3% 57.8%;
-    --success: 142.1 76.2% 36.3%;
-    --success-foreground: 355.7 100% 97.3%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 48 96% 89%;
-    --info: 217.2 91.2% 59.8%;
-    --info-foreground: 210 40% 98%;
+    --popover-foreground: 215 35% 14%;
+    --primary: 216 43% 35%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 213 27% 93%;
+    --secondary-foreground: 215 35% 20%;
+    --muted: 213 27% 93%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 213 27% 90%;
+    --accent-foreground: 215 35% 20%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 213 27% 88%;
+    --input: 213 27% 88%;
+    --ring: 216 43% 35%;
+    --success: 142 71% 35%;
+    --success-foreground: 0 0% 98%;
+    --warning: 35 88% 46%;
+    --warning-foreground: 0 0% 98%;
+    --info: 210 79% 46%;
+    --info-foreground: 0 0% 98%;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 263.4 70% 50.4%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    /* Dark Mode: Deep navy bg, lighter steel blue primary */
+    --background: 216 40% 8%;
+    --foreground: 210 30% 92%;
+    --card: 216 38% 11%;
+    --card-foreground: 210 30% 92%;
+    --popover: 216 38% 11%;
+    --popover-foreground: 210 30% 92%;
+    --primary: 216 60% 58%;
+    --primary-foreground: 216 40% 8%;
+    --secondary: 216 30% 17%;
+    --secondary-foreground: 210 30% 92%;
+    --muted: 216 30% 17%;
+    --muted-foreground: 213 20% 60%;
+    --accent: 216 30% 20%;
+    --accent-foreground: 210 30% 92%;
+    --destructive: 0 60% 45%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 263.4 70% 50.4%;
-    --success: 142.1 70.6% 45.3%;
-    --success-foreground: 144.9 80.4% 10%;
-    --warning: 38 92% 60%;
-    --warning-foreground: 48 96% 10%;
-    --info: 217.2 91.2% 69.8%;
-    --info-foreground: 222.2 47.4% 11.2%;
+    --border: 216 30% 20%;
+    --input: 216 30% 20%;
+    --ring: 216 60% 58%;
+    --success: 142 64% 42%;
+    --success-foreground: 0 0% 98%;
+    --warning: 35 88% 55%;
+    --warning-foreground: 0 0% 10%;
+    --info: 210 79% 55%;
+    --info-foreground: 0 0% 10%;
   }
 
   * {
@@ -328,6 +330,15 @@
     animation: shrink 3s linear forwards;
   }
   
+  @keyframes opacity-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .animate-fade-in {
+    animation: opacity-in 0.3s ease-out forwards;
+  }
+
   @keyframes slide-in-from-bottom {
     from {
       transform: translateY(100%);
@@ -343,55 +354,52 @@
     animation: slide-in-from-bottom 0.3s ease-out;
   }
   
-  /* Glassmorphism Utilities */
+  /* Glassmorphism Utilities (Flattened) */
   .glass {
-    @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl;
+    @apply bg-background border border-border/60 shadow-sm;
   }
 
   .dark .glass {
-    @apply bg-zinc-950/40 backdrop-blur-xl border border-white/10 shadow-2xl;
+    @apply bg-background border border-border/60 shadow-sm;
+  }
+
+  @media (max-width: 768px) {
+    .glass {
+      @apply bg-background;
+    }
+    .dark .glass {
+      @apply bg-background;
+    }
   }
 
   .glass-dark {
-    @apply bg-zinc-950/60 backdrop-blur-md border border-white/10 shadow-2xl;
+    @apply bg-background border border-border/60 shadow-sm;
   }
 
   .glass-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+    @apply bg-card border border-border shadow-sm;
   }
 
   .dark .glass-card {
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2));
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    @apply bg-card border border-border shadow-sm;
   }
 
-  /* Premium Shadows */
+  /* Premium Shadows (Flattened) */
   .shadow-premium {
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+    @apply shadow-sm;
   }
 
   .dark .shadow-premium {
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+    @apply shadow-sm;
   }
 
-  /* Modern Gradients */
+  /* Modern Gradients (Flattened) */
   .bg-mesh {
-    background-color: hsl(var(--background));
-    background-image: 
-      radial-gradient(at 0% 0%, hsla(262, 83%, 58%, 0.05) 0, transparent 50%),
-      radial-gradient(at 50% 0%, hsla(217, 91%, 60%, 0.05) 0, transparent 50%),
-      radial-gradient(at 100% 0%, hsla(142, 76%, 36%, 0.05) 0, transparent 50%);
+    @apply bg-background;
   }
 
   .dark .bg-mesh {
-    background-image: 
-      radial-gradient(at 0% 0%, hsla(262, 70%, 50%, 0.15) 0, transparent 50%),
-      radial-gradient(at 50% 0%, hsla(217, 91%, 60%, 0.1) 0, transparent 50%),
-      radial-gradient(at 100% 0%, hsla(142, 76%, 36%, 0.1) 0, transparent 50%);
+    @apply bg-background;
   }
 
   /* Custom Scrollbar for modern feel */
@@ -426,11 +434,30 @@
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
   }
+
+  /* Performance Utilities */
+  .optimize-gpu {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  .will-change-transform {
+    will-change: transform;
+  }
+
+  .will-change-opacity {
+    will-change: opacity;
+  }
+
+  .will-change-composite {
+    will-change: transform, opacity;
+  }
   
   /* Custom Scrollbar Utilities */
   .scrollbar-thin-violet {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--primary) / 0.3) transparent;
+    scrollbar-color: hsl(var(--border)) transparent;
   }
 
   .scrollbar-thin-violet::-webkit-scrollbar {
@@ -443,7 +470,7 @@
   }
 
   .scrollbar-thin-violet::-webkit-scrollbar-thumb {
-    background: hsl(var(--primary) / 0.2);
+    background: hsl(var(--border));
     border-radius: 20px;
     border: 2px solid transparent;
     background-clip: content-box;
@@ -451,7 +478,7 @@
   }
 
   .scrollbar-thin-violet::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary) / 0.4);
+    background: hsl(var(--muted-foreground) / 0.4);
   }
 
   /* Table Container Utility */
@@ -479,11 +506,11 @@
 
   /* Page Header and Title */
   .page-header {
-    @apply flex flex-col gap-4 p-6 glass rounded-[2.5rem] border border-border/50 shadow-premium bg-gradient-to-br from-primary/5 via-transparent to-transparent sm:flex-row sm:items-center sm:justify-between mb-8 transition-all duration-500 hover:shadow-2xl hover:border-primary/20;
+    @apply flex flex-col gap-4 p-6 bg-card rounded-xl border border-border sm:flex-row sm:items-center sm:justify-between mb-8;
   }
 
   .page-title {
-    @apply text-3xl md:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 tracking-tighter;
+    @apply text-2xl md:text-3xl font-semibold text-foreground tracking-tight;
   } 
 
   /* Content loading states */

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { useToast } from '@/contexts/ToastContext'
 import ImageUpload from '@/components/ui/image-upload'
 
@@ -185,36 +186,24 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Brand *</label>
-            <Select value={formData.brandId} onValueChange={(value) => {
-              setFormData({ ...formData, brandId: value })
-            }} required>
-              <SelectTrigger className="bg-background border-input text-foreground">
-                <SelectValue placeholder="Select brand" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border-border">
-                {brands.map((brand) => (
-                  <SelectItem key={brand.id} value={brand.id} className="text-popover-foreground">
-                    {brand.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={formData.brandId}
+              onValueChange={(value) => setFormData({ ...formData, brandId: value })}
+              options={brands.map(b => ({ value: b.id, label: b.name }))}
+              placeholder="Select brand"
+              required
+            />
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Category *</label>
-            <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value })} required>
-              <SelectTrigger className="bg-background border-input text-foreground">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border-border">
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id} className="text-popover-foreground">
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={formData.categoryId}
+              onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
+              options={categories.map(c => ({ value: c.id, label: c.name }))}
+              placeholder="Select category"
+              required
+            />
           </div>
 
           <div className="space-y-2">
@@ -231,18 +220,13 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Location {!product && '*'}</label>
-            <Select value={formData.locationId} onValueChange={(value) => setFormData({ ...formData, locationId: value })} required={!product}>
-              <SelectTrigger className="bg-background border-input text-foreground">
-                <SelectValue placeholder="Select location" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border-border">
-                {locations.map((location) => (
-                  <SelectItem key={location.id} value={location.id} className="text-popover-foreground">
-                    {location.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={formData.locationId}
+              onValueChange={(value) => setFormData({ ...formData, locationId: value })}
+              options={locations.map(l => ({ value: l.id, label: l.name }))}
+              placeholder="Select location"
+              required={!product}
+            />
           </div>
 
           <div className="space-y-2">

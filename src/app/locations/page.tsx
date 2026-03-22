@@ -289,16 +289,22 @@ export default function LocationsPage() {
 
   const renderListRow = useCallback((location: Location) => (
     <>
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
         <div className="font-bold text-foreground group-hover:text-primary transition-colors">{location.name}</div>
       </td>
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
         <div className="text-sm text-muted-foreground max-w-xs truncate italic flex items-center gap-2">
           <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
           {location.address || 'No address'}
         </div>
       </td>
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
+        <div className="flex items-center gap-2 font-bold text-foreground bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10 w-fit">
+          <Warehouse className="h-4 w-4 text-primary" />
+          {location._count?.batches || 0} batches
+        </div>
+      </td>
+      <td className="px-4 py-2.5">
         <Badge 
           variant={location.isActive ? 'default' : 'secondary'}
           className={cn(location.isActive ? "bg-primary/20 text-primary border-none" : "")}
@@ -306,17 +312,11 @@ export default function LocationsPage() {
           {location.isActive ? 'Active' : 'Inactive'}
         </Badge>
       </td>
-      <td className="px-6 py-4 text-sm font-bold text-foreground">
-        <div className="flex items-center gap-2">
-          <Warehouse className="h-4 w-4 text-muted-foreground" />
-          {location._count?.batches || 0}
-        </div>
-      </td>
-      <td className="px-6 py-4 text-sm text-muted-foreground">
+      <td className="px-4 py-2.5 text-sm text-muted-foreground">
         <div className="font-medium text-foreground">{formatDate(location.createdAt)}</div>
         <div className="text-xs">{location.createdBy?.name || 'System'}</div>
       </td>
-      <td className="px-6 py-4 text-sm text-muted-foreground">
+      <td className="px-4 py-2.5 text-sm text-muted-foreground">
         {location.updatedAt && location.updatedAt !== location.createdAt ? (
           <div>
             <div className="font-medium text-foreground">{formatDate(location.updatedAt)}</div>
@@ -326,7 +326,7 @@ export default function LocationsPage() {
           <span className="text-xs opacity-30 text-muted-foreground">No updates</span>
         )}
       </td>
-      <td className="px-6 py-4">
+      <td className="px-4 py-2.5">
         <div className="flex gap-2">
           <Button
             variant="ghost"
@@ -422,13 +422,13 @@ export default function LocationsPage() {
           columns: 3
         }}
         listProps={{
-          headers: ['Location', 'Address', 'Status', 'Batches', 'Created', 'Updated', 'Actions'],
+          headers: ['Location', 'Batches', 'Status', 'Created', 'Updated', 'Actions'],
           renderRow: renderListRow
         }}
       />
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="glass backdrop-blur-3xl border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
               {editingLocation ? 'Edit Location' : 'Add New Location'}
@@ -518,6 +518,16 @@ export default function LocationsPage() {
         onOpenChange={setShowDetails}
         title="Location Details"
         data={selectedDetailItem}
+        fields={[
+          { label: 'Name', value: selectedDetailItem?.name },
+          { label: 'Address', value: selectedDetailItem?.address },
+          { label: 'Inventory Batches', value: selectedDetailItem?._count?.batches || 0, variant: 'number' as const },
+          { label: 'Status', value: selectedDetailItem?.isActive, variant: 'badge' as const },
+          { label: 'Created At', value: selectedDetailItem?.createdAt },
+          { label: 'Created By', value: selectedDetailItem?.createdBy?.name },
+          { label: 'Updated At', value: selectedDetailItem?.updatedAt !== selectedDetailItem?.createdAt ? selectedDetailItem?.updatedAt : undefined },
+          { label: 'Updated By', value: selectedDetailItem?.updatedAt !== selectedDetailItem?.createdAt ? selectedDetailItem?.updatedBy?.name : undefined },
+        ].filter(f => f.value !== undefined)}
       />
     </div>
   )
