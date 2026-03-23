@@ -361,5 +361,46 @@ export const commonColumns = {
     { key: 'isActive', label: 'Status', width: 10, format: (value: boolean) => value ? 'Active' : 'Inactive' },
     { key: 'createdBy.name', label: 'Created By', width: 15 },
     { key: 'createdAt', label: 'Created Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) }
+  ] as ExportColumn[],
+
+  salesOrder: [
+    { key: 'orderNumber', label: 'Order #', width: 15 },
+    { key: 'brand.name', label: 'Brand', width: 20 },
+    { key: 'totalAmount', label: 'Amount', width: 15, format: (value: number) => `₹${value.toLocaleString()}` },
+    { key: 'orderDate', label: 'Order Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) },
+    { key: 'items.length', label: 'Unique Items', width: 15, format: (value: number) => value?.toString() || '0' },
+    { key: 'createdAt', label: 'Created At', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) }
+  ] as ExportColumn[],
+
+  purchaseOrder: [
+    { key: 'orderNumber', label: 'Order #', width: 15 },
+    { key: 'brand.name', label: 'Brand', width: 20 },
+    { key: 'status', label: 'Status', width: 12 },
+    { key: 'totalAmount', label: 'Amount', width: 15, format: (value: number) => `₹${value.toLocaleString()}` },
+    { key: 'orderDate', label: 'Order Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) },
+    { key: 'createdAt', label: 'Created At', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) }
+  ] as ExportColumn[],
+
+  inventory: [
+    { key: 'product.name', label: 'Product', width: 25 },
+    { key: 'batchNumber', label: 'Batch #', width: 15 },
+    { key: 'location.name', label: 'Location', width: 20 },
+    { key: 'quantity', label: 'Qty', width: 10, format: (value: number) => value?.toString() || '0' },
+    { key: 'unit', label: 'Unit', width: 10 },
+    { key: 'buyingPrice', label: 'Buying Price', width: 15, format: (value: number) => `₹${value.toLocaleString()}` },
+    { key: 'sellingPrice', label: 'Selling Price', width: 15, format: (value: number) => `₹${value.toLocaleString()}` },
+    { key: 'expiryDate', label: 'Expiry Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) },
+    { key: 'createdAt', label: 'Added Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) }
+  ] as ExportColumn[],
+
+  stockMovement: [
+    { key: 'product.name', label: 'Product', width: 25 },
+    { key: 'type', label: 'Type', width: 12 },
+    { key: 'quantity', label: 'Qty', width: 10 },
+    { key: 'fromLocation.name', label: 'From', width: 20 },
+    { key: 'toLocation.name', label: 'To', width: 20 },
+    { key: 'reason', label: 'Reason', width: 25 },
+    { key: 'createdAt', label: 'Date', width: 15, format: (value: string) => formatDateDDMMMYYYY(value) },
+    { key: 'createdBy.name', label: 'By', width: 15 }
   ] as ExportColumn[]
 }

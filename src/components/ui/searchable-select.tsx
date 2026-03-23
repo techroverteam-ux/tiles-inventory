@@ -50,14 +50,14 @@ export function SearchableSelect({
         }}
         disabled={disabled}
         onClose={() => setQuery("")}
+        immediate
       >
         <div className="relative w-full cursor-default overflow-hidden rounded-xl border border-input bg-muted/10 text-left transition-all duration-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 hover:bg-muted/20">
           <ComboboxInput
             className="w-full border-none py-2.5 pl-4 pr-10 text-sm leading-5 text-foreground bg-transparent focus:outline-none placeholder:text-muted-foreground/60 font-medium h-11"
-            displayValue={() => selectedOption?.label || ""}
+            displayValue={(item: string) => options.find((opt) => opt.value === item)?.label || ""}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={placeholder}
-            required={required}
           />
           <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-2">
             <ChevronDown
@@ -68,7 +68,8 @@ export function SearchableSelect({
         </div>
         <ComboboxOptions
           anchor={{ to: 'bottom start', gap: '4px' }}
-          className="z-[9999] min-w-[var(--input-width)] w-max max-h-60 overflow-auto rounded-2xl border border-border bg-popover/95 backdrop-blur-xl py-2 text-base shadow-[0_8px_30px_rgba(0,0,0,0.3)] ring-1 ring-black/5 focus:outline-none sm:text-sm no-scrollbar [--anchor-gap:4px] empty:hidden transition duration-100 ease-in data-[leave]:data-[closed]:opacity-0"
+          portal={false}
+          className="z-[9999] min-w-[var(--input-width)] w-max max-h-60 overflow-auto rounded-2xl border border-border bg-popover/95 backdrop-blur-xl py-2 text-base shadow-[0_8px_30px_rgba(0,0,0,0.3)] ring-1 ring-black/5 focus:outline-none sm:text-sm no-scrollbar [--anchor-gap:4px] empty:hidden transition duration-100 ease-in data-[leave]:data-[closed]:opacity-0 pointer-events-auto"
         >
           {filteredOptions.length === 0 && query !== "" ? (
             <div className="relative cursor-default select-none py-3 px-4 text-muted-foreground font-medium italic">

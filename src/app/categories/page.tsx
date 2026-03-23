@@ -56,7 +56,7 @@ interface ApiResponse {
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'grid' | 'list'>('list') // Default to list for desktop
+  const [view, setView] = useState<'grid' | 'list'>('grid')
   const [showForm, setShowForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [deleteCategory, setDeleteCategory] = useState<Category | null>(null)
@@ -70,7 +70,6 @@ export default function CategoriesPage() {
   const [submitting, setSubmitting] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
-  const [filtersOpen, setFiltersOpen] = useState(false)
   
   const { showToast } = useToast()
   const searchParams = useSearchParams()
@@ -368,15 +367,16 @@ export default function CategoriesPage() {
 
   return (
     <div className="w-full px-3 sm:px-4 md:px-6 space-y-6">
-      {/* Filters */}
       <TableFilters
         title="Categories"
+        filters={filterConfigs}
+        values={filters}
+        onFiltersChange={updateFilters}
+        searchValue={search}
+        onSearchChange={updateSearch}
+        loading={loading}
         actions={
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => setFiltersOpen((prev) => !prev)}>
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-            </Button>
             <ExportButton
               data={categories}
               columns={commonColumns.category}
@@ -394,22 +394,12 @@ export default function CategoriesPage() {
               setEditingCategory(null)
               resetForm()
               setShowForm(true)
-            }} className="gap-2">
+            }} className="h-10 rounded-xl gap-2 shadow-lg shadow-primary/20">
               <Plus className="h-4 w-4" />
               Add Category
             </Button>
           </div>
         }
-        filters={filterConfigs}
-        values={filters}
-        onFiltersChange={updateFilters}
-        searchValue={search}
-        onSearchChange={updateSearch}
-        showSearch={false}
-        showFilterToggle={false}
-        filtersOpen={filtersOpen}
-        onFiltersOpenChange={setFiltersOpen}
-        loading={loading}
       />
 
       {/* Data View */}

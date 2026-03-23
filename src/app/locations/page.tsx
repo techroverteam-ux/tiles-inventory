@@ -362,10 +362,6 @@ export default function LocationsPage() {
         title="Locations"
         actions={
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => setFiltersOpen((prev) => !prev)}>
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-            </Button>
             <ExportButton
               data={locations}
               columns={commonColumns.location}
@@ -399,8 +395,8 @@ export default function LocationsPage() {
         onFiltersChange={updateFilters}
         searchValue={search}
         onSearchChange={updateSearch}
-        showSearch={false}
-        showFilterToggle={false}
+        showSearch={true}
+        showFilterToggle={true}
         filtersOpen={filtersOpen}
         onFiltersOpenChange={setFiltersOpen}
         loading={loading}

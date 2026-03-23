@@ -12,7 +12,7 @@ const MobileCard = React.forwardRef<HTMLDivElement, MobileCardProps>(
     <div
       ref={ref}
       className={cn(
-        "bg-card rounded-lg border border-border p-4 mb-3 shadow-sm",
+        "bg-card rounded-xl border border-border p-3 mb-2 shadow-sm",
         className
       )}
       {...props}
