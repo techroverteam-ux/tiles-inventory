@@ -219,13 +219,13 @@ export default function Dashboard() {
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="flex flex-col gap-4 p-6 glass rounded-[2.5rem] border border-border/50 shadow-premium bg-gradient-to-br from-primary/10 via-transparent to-transparent sm:flex-row sm:items-center sm:justify-between transition-all duration-500 hover:border-primary/20"
+        className="flex items-center justify-between gap-4 p-4 sm:p-6 glass rounded-[1.5rem] sm:rounded-[2.5rem] border border-border/50 shadow-premium bg-gradient-to-br from-primary/10 via-transparent to-transparent transition-all duration-500 hover:border-primary/20"
       >
-        <motion.div variants={itemVariants} className="space-y-1">
-          <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 tracking-tight">House of Tiles Dashboard</h1>
-          <p className="text-muted-foreground font-medium flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-primary/60" />
-            Real-time insights and operational overview of your business
+        <motion.div variants={itemVariants} className="flex flex-col sm:gap-1">
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 tracking-tight leading-tight">Dashboard</h1>
+          <p className="hidden sm:flex text-xs text-muted-foreground font-medium items-center gap-1.5">
+            <TrendingUp className="h-3 w-3 text-primary/60" />
+            Real-time Insights
           </p>
         </motion.div>
         <motion.div variants={itemVariants} className="flex items-center gap-3">
@@ -257,7 +257,7 @@ export default function Dashboard() {
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6"
       >
         <motion.div variants={itemVariants}>
           <DashboardCard

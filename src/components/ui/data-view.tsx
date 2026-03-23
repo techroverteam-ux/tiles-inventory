@@ -7,6 +7,8 @@ import { LoadingPage } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { containerVariants, itemVariants } from '@/lib/motion'
+import { LayoutGrid, List as ListIcon } from 'lucide-react'
+import { useMediaQuery } from '@/hooks/use-media-query'
 
 interface ViewToggleProps {
   currentView: 'grid' | 'list'
@@ -19,27 +21,33 @@ export function ViewToggle({ currentView, onViewChange, forceView }: ViewToggleP
   if (forceView) return null
 
   return (
-    <div className="flex items-center space-x-2 bg-muted rounded-lg p-1">
+    <div className="flex items-center p-1 bg-muted/30 backdrop-blur-md rounded-xl border border-border/40 shadow-inner">
       <Button
-        variant={currentView === 'grid' ? 'default' : 'ghost'}
+        variant="ghost"
         size="sm"
         onClick={() => onViewChange('grid')}
-        className="h-8 px-3"
+        className={cn(
+          "h-8 px-4 gap-2 rounded-lg transition-all duration-300 font-bold text-xs uppercase tracking-tight",
+          currentView === 'grid'
+            ? "bg-background text-primary shadow-sm ring-1 ring-border/20"
+            : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+        )}
       >
-        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-        </svg>
+        <LayoutGrid className={cn("w-3.5 h-3.5 transition-transform", currentView === 'grid' && "scale-110")} />
         Grid
       </Button>
       <Button
-        variant={currentView === 'list' ? 'default' : 'ghost'}
+        variant="ghost"
         size="sm"
         onClick={() => onViewChange('list')}
-        className="h-8 px-3"
+        className={cn(
+          "h-8 px-4 gap-2 rounded-lg transition-all duration-300 font-bold text-xs uppercase tracking-tight",
+          currentView === 'list'
+            ? "bg-background text-primary shadow-sm ring-1 ring-border/20"
+            : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+        )}
       >
-        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-        </svg>
+        <ListIcon className={cn("w-3.5 h-3.5 transition-transform", currentView === 'list' && "scale-110")} />
         List
       </Button>
     </div>
@@ -67,15 +75,15 @@ export function GridView({ items, renderItem, columns = 3, loading = false, onIt
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial="hidden"
       animate="visible"
       variants={containerVariants}
       className={`grid gap-4 ${gridCols[columns as keyof typeof gridCols] || gridCols[3]}`}
     >
       {items.map((item, index) => (
-        <motion.div 
-          key={item.id?.toString() || index} 
+        <motion.div
+          key={item.id?.toString() || index}
           variants={itemVariants}
           className={`h-full ${onItemClick ? 'cursor-pointer transition-transform hover:scale-[1.02]' : ''}`}
           onClick={() => onItemClick && onItemClick(item)}
@@ -101,42 +109,47 @@ export function ListView({
   items,
   headers,
   renderRow,
-  tableMinWidthClass = 'min-w-[900px]',
-  tableMaxHeightClass = 'max-h-[65vh]',
+  tableMinWidthClass = 'min-w-[800px]',
+  tableMaxHeightClass = 'max-h-[70vh]',
   loading = false,
   onItemClick
 }: ListViewProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)")
+
   if (loading) {
     return <LoadingPage view="list" showHeader={false} items={8} />
   }
 
   return (
-    <div className="glass rounded-2xl border border-border/50 overflow-hidden shadow-premium">
+    <div className="glass-card rounded-[2rem] border border-border/50 overflow-hidden shadow-premium transition-all duration-500">
       <div className={cn("table-container overflow-auto no-scrollbar", tableMaxHeightClass)}>
-        <table className={cn("w-full border-separate border-spacing-0", tableMinWidthClass)}>
-          <thead className="sticky top-0 z-20 bg-muted shadow-[0_1px_0_hsl(var(--border))] [&_th]:bg-muted">
+        <table className={cn("w-full border-separate border-spacing-0", isMobile ? "min-w-full" : tableMinWidthClass)}>
+          <thead className="sticky top-0 z-20 bg-muted/80 backdrop-blur-md shadow-[0_1px_0_hsl(var(--border))] [&_th]:bg-transparent">
             <tr>
               {headers.map((header, index) => (
                 <th
                   key={index}
-                  className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider"
+                  className="whitespace-nowrap px-6 py-4 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]"
                 >
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <motion.tbody 
+          <motion.tbody
             initial="hidden"
             animate="visible"
             variants={containerVariants}
-            className="divide-y divide-border/40"
+            className="divide-y divide-border/30"
           >
             {items.map((item, index) => (
               <motion.tr
                 key={item.id?.toString() || index}
                 variants={itemVariants}
-                className={`hover:bg-primary/5 transition-colors border-b border-border/40 last:border-0 ${onItemClick ? 'cursor-pointer' : ''}`}
+                className={cn(
+                  "group hover:bg-primary/[0.03] transition-colors border-b border-border/30 last:border-0",
+                  onItemClick ? 'cursor-pointer' : ''
+                )}
                 onClick={() => onItemClick && onItemClick(item)}
               >
                 {renderRow(item)}
@@ -149,21 +162,8 @@ export function ListView({
   )
 }
 
-// Hook to detect screen size and determine default view
 function useResponsiveView() {
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 768) // md breakpoint
-    }
-
-    checkScreenSize()
-    window.addEventListener('resize', checkScreenSize)
-    return () => window.removeEventListener('resize', checkScreenSize)
-  }, [])
-
-  return isMobile
+  return useMediaQuery("(max-width: 768px)")
 }
 
 interface DataViewProps {
@@ -200,10 +200,12 @@ export function DataView({
   onItemClick
 }: DataViewProps) {
   const isMobile = useResponsiveView()
-  
-  // Determine the actual view to use
-  const actualView = autoResponsive ? (isMobile ? 'grid' : view) : view
-  const forceView = autoResponsive ? (isMobile ? 'grid' : null) : null
+
+  // No longer force grid on mobile if autoResponsive is true, 
+  // but we can use autoResponsive as a hint for the initial state in the parent.
+  // The user wants to be able to choose list layout on mobile.
+  const actualView = view
+  const forceView = null
 
   return (
     <div className="space-y-4">

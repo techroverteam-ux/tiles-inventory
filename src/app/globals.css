@@ -4,19 +4,19 @@
 
 @layer components {
   .page-container {
-    @apply w-full px-3 sm:px-4 md:px-6 space-y-6;
+    @apply w-full px-1 sm:px-3 md:px-4 space-y-3;
   }
 
   .page-header {
-    @apply flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between;
+    @apply flex flex-col gap-2 p-2.5 bg-card rounded-2xl border border-border sm:flex-row sm:items-center sm:justify-between mb-2.5;
   }
 
   .page-title {
-    @apply text-xl md:text-2xl font-semibold text-foreground tracking-tight;
+    @apply text-base md:text-lg font-bold text-foreground tracking-tight;
   }
 
   .page-subtitle {
-    @apply text-sm text-muted-foreground;
+    @apply text-xs md:text-sm text-muted-foreground;
   }
 }
 
@@ -427,7 +427,7 @@
   
   /* Smooth transitions for all interactive elements */
   .transition-smooth {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   /* Focus ring improvements */
@@ -504,14 +504,7 @@
     }
   }
 
-  /* Page Header and Title */
-  .page-header {
-    @apply flex flex-col gap-4 p-6 bg-card rounded-xl border border-border sm:flex-row sm:items-center sm:justify-between mb-8;
-  }
-
-  .page-title {
-    @apply text-2xl md:text-3xl font-semibold text-foreground tracking-tight;
-  } 
+  /* Page components are now consolidated in the components layer at the top */
 
   /* Content loading states */
   .content-loading {

@@ -55,7 +55,7 @@ interface ApiResponse {
 export default function BrandsPage() {
   const [brands, setBrands] = useState<Brand[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'grid' | 'list'>('list') // Default to list for desktop
+  const [view, setView] = useState<'grid' | 'list'>('grid')
   const [showForm, setShowForm] = useState(false)
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
   const [deleteBrand, setDeleteBrand] = useState<Brand | null>(null)
@@ -367,10 +367,6 @@ export default function BrandsPage() {
         title="Brands"
         actions={
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => setFiltersOpen((prev) => !prev)}>
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-            </Button>
             <ExportButton
               data={brands}
               columns={commonColumns.brand}
@@ -398,7 +394,7 @@ export default function BrandsPage() {
                   Add Brand
                 </Button>
               </DialogTrigger>
-              <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+              <DialogContent className="glass-card border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
                     {editingBrand ? 'Edit Brand' : 'Add New Brand'}
@@ -425,8 +421,6 @@ export default function BrandsPage() {
                       className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
                     />
                   </div>
-
-
 
                   <div className="flex items-center gap-3 p-4 bg-muted/20 rounded-2xl border border-border/30 group hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}>
                     <input
@@ -464,10 +458,6 @@ export default function BrandsPage() {
         onFiltersChange={updateFilters}
         searchValue={search}
         onSearchChange={updateSearch}
-        showSearch={false}
-        showFilterToggle={false}
-        filtersOpen={filtersOpen}
-        onFiltersOpenChange={setFiltersOpen}
         loading={loading}
       />
 

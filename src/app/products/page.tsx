@@ -75,7 +75,7 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<any[]>([])
   const [sizes, setSizes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'grid' | 'list'>('list') // Default to list for desktop
+  const [view, setView] = useState<'grid' | 'list'>('grid')
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null)
@@ -96,7 +96,7 @@ export default function ProductsPage() {
   const [totalPages, setTotalPages] = useState(0)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [previewImage, setPreviewImage] = useState<{ src: string, alt: string } | null>(null)
-  
+
   const { showToast } = useToast()
   const searchParams = useSearchParams()
   // Pagination
@@ -106,7 +106,7 @@ export default function ProductsPage() {
     handlePageChange,
     handleItemsPerPageChange
   } = usePagination(1, 25)
-  
+
   // Filters
   const {
     filters,
@@ -233,7 +233,7 @@ export default function ProductsPage() {
     try {
       const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products'
       const method = editingProduct ? 'PUT' : 'POST'
-      
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -276,19 +276,19 @@ export default function ProductsPage() {
 
   const handleSizeChange = (value: string) => {
     const newSqFt = calculateSqFt(value, formData.pcsPerBox)
-    setFormData(prev => ({ 
-      ...prev, 
-      sizeId: value, 
-      ...(newSqFt ? { sqftPerBox: newSqFt } : {}) 
+    setFormData(prev => ({
+      ...prev,
+      sizeId: value,
+      ...(newSqFt ? { sqftPerBox: newSqFt } : {})
     }))
   }
 
   const handlePcsChange = (value: string) => {
     const newSqFt = calculateSqFt(formData.sizeId, value)
-    setFormData(prev => ({ 
-      ...prev, 
-      pcsPerBox: value, 
-      ...(newSqFt ? { sqftPerBox: newSqFt } : {}) 
+    setFormData(prev => ({
+      ...prev,
+      pcsPerBox: value,
+      ...(newSqFt ? { sqftPerBox: newSqFt } : {})
     }))
   }
 
@@ -364,7 +364,7 @@ export default function ProductsPage() {
 
   const renderGridItem = (product: Product) => (
     <Card className="h-full hover:shadow-premium transition-all duration-300 border-border/50 group overflow-hidden">
-      <div 
+      <div
         className="relative aspect-video overflow-hidden bg-muted/30 cursor-zoom-in group/image"
         onClick={(e) => {
           if (product.imageUrl) {
@@ -390,7 +390,7 @@ export default function ProductsPage() {
           </div>
         )}
         <div className="absolute top-3 right-3">
-          <Badge 
+          <Badge
             variant={product.isActive ? 'default' : 'secondary'}
             className={cn(product.isActive ? "bg-primary text-primary-foreground shadow-lg" : "backdrop-blur-md bg-background/50")}
           >
@@ -466,7 +466,7 @@ export default function ProductsPage() {
     <>
       <td className="px-4 py-2.5">
         <div className="flex items-center space-x-4">
-          <div 
+          <div
             className={cn(
               "h-9 w-9 rounded-lg overflow-hidden bg-muted/30 border border-border/50 flex-shrink-0 relative group/thumb",
               product.imageUrl ? "cursor-zoom-in" : ""
@@ -502,7 +502,7 @@ export default function ProductsPage() {
         </div>
       </td>
       <td className="px-4 py-2.5">
-        <Badge 
+        <Badge
           variant={getStockBadgeVariant(product.totalStock || 0)}
           className="tabular-nums font-bold"
         >
@@ -529,7 +529,7 @@ export default function ProductsPage() {
         </div>
       </td>
       <td className="px-4 py-2.5">
-        <Badge 
+        <Badge
           variant={product.isActive ? 'default' : 'secondary'}
           className={cn(product.isActive ? "bg-primary/20 text-primary border-none" : "")}
         >
@@ -580,10 +580,10 @@ export default function ProductsPage() {
     return <LoadingPage view={view} title="Products" />
   }
 
-  const isFormValid = formData.name.trim() !== '' && 
-    formData.code.trim() !== '' && 
-    formData.brandId !== '' && 
-    formData.categoryId !== '' && 
+  const isFormValid = formData.name.trim() !== '' &&
+    formData.code.trim() !== '' &&
+    formData.brandId !== '' &&
+    formData.categoryId !== '' &&
     formData.imageUrl !== ''
 
   return (
@@ -593,10 +593,6 @@ export default function ProductsPage() {
         title="Products"
         actions={
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => setFiltersOpen((prev) => !prev)}>
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-            </Button>
             <ExportButton
               data={products}
               columns={commonColumns.product}
@@ -621,125 +617,125 @@ export default function ProductsPage() {
                   Add Product
                 </Button>
               </DialogTrigger>
-            <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 no-scrollbar">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-                  {editingProduct ? 'Edit Product' : 'Add New Product'}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80 ml-1">Name <span className="text-destructive">*</span></label>
-                    <Input
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Enter product name"
-                      required
-                      className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
-                    />
+              <DialogContent className="glass-card border-border/50 max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 no-scrollbar">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+                    {editingProduct ? 'Edit Product' : 'Add New Product'}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-foreground/80 ml-1">Name <span className="text-destructive">*</span></label>
+                      <Input
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Enter product name"
+                        required
+                        className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-foreground/80 ml-1">Code <span className="text-destructive">*</span></label>
+                      <Input
+                        value={formData.code}
+                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                        placeholder="Enter product code"
+                        required
+                        className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80 ml-1">Code <span className="text-destructive">*</span></label>
-                    <Input
-                      value={formData.code}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      placeholder="Enter product code"
-                      required
-                      className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80 ml-1">Brand <span className="text-destructive">*</span></label>
-                    <SearchableSelect
-                      value={formData.brandId}
-                      onValueChange={(value) => setFormData({ ...formData, brandId: value })}
-                      options={brands.map(b => ({ value: b.id, label: b.name }))}
-                      placeholder="Select a brand"
-                      required
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-foreground/80 ml-1">Brand <span className="text-destructive">*</span></label>
+                      <SearchableSelect
+                        value={formData.brandId}
+                        onValueChange={(value) => setFormData({ ...formData, brandId: value })}
+                        options={brands.map(b => ({ value: b.id, label: b.name }))}
+                        placeholder="Select a brand"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-foreground/80 ml-1">Category <span className="text-destructive">*</span></label>
+                      <SearchableSelect
+                        value={formData.categoryId}
+                        onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
+                        options={categories.map(c => ({ value: c.id, label: c.name }))}
+                        placeholder="Select a category"
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80 ml-1">Category <span className="text-destructive">*</span></label>
-                    <SearchableSelect
-                      value={formData.categoryId}
-                      onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
-                      options={categories.map(c => ({ value: c.id, label: c.name }))}
-                      placeholder="Select a category"
-                      required
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/80 ml-1 flex items-center gap-2">
-                      <Maximize className="h-4 w-4" />
-                      Size
-                    </label>
-                    <SearchableSelect
-                      value={formData.sizeId}
-                      onValueChange={handleSizeChange}
-                      options={sizes.map(s => ({ 
-                        value: s.id, 
-                        label: s.length && s.width ? `${s.name} (${formatMmToFeetInches(s.length)} × ${formatMmToFeetInches(s.width)})` : s.name 
-                      }))}
-                      placeholder="Select a size"
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-foreground/80 ml-1 flex items-center gap-2">
+                        <Maximize className="h-4 w-4" />
+                        Size
+                      </label>
+                      <SearchableSelect
+                        value={formData.sizeId}
+                        onValueChange={handleSizeChange}
+                        options={sizes.map(s => ({
+                          value: s.id,
+                          label: s.length && s.width ? `${s.name} (${formatMmToFeetInches(s.length)} × ${formatMmToFeetInches(s.width)})` : s.name
+                        }))}
+                        placeholder="Select a size"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 bg-primary/5 rounded-3xl border border-primary/10">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-primary/80 ml-1">Sq Ft per Box</label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={formData.sqftPerBox}
+                        onChange={(e) => setFormData({ ...formData, sqftPerBox: e.target.value })}
+                        placeholder="Enter sq ft"
+                        className="rounded-xl border-primary/20 focus:border-primary transition-all h-11 bg-background"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-primary/80 ml-1">Pieces per Box</label>
+                      <Input
+                        type="number"
+                        value={formData.pcsPerBox}
+                        onChange={(e) => handlePcsChange(e.target.value)}
+                        placeholder="Enter pieces"
+                        className="rounded-xl border-primary/20 focus:border-primary transition-all h-11 bg-background"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-muted/20 rounded-3xl border border-border/30">
+                    <label className="text-sm font-bold text-foreground/80 mb-3 block ml-1">Product Image <span className="text-destructive">*</span></label>
+                    <ImageUpload
+                      onImageUploaded={handleImageUploaded}
+                      currentImage={formData.imageUrl}
+                      label={null}
                     />
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 bg-primary/5 rounded-3xl border border-primary/10">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-primary/80 ml-1">Sq Ft per Box</label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={formData.sqftPerBox}
-                      onChange={(e) => setFormData({ ...formData, sqftPerBox: e.target.value })}
-                      placeholder="Enter sq ft"
-                      className="rounded-xl border-primary/20 focus:border-primary transition-all h-11 bg-background"
-                    />
+                  <div className="flex gap-4 pt-4">
+                    <Button type="submit" disabled={submitting || !isFormValid} className="flex-1 rounded-2xl h-12 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+                      {submitting ? 'Saving...' : editingProduct ? 'Update Product' : 'Create Product'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowForm(false)}
+                      className="rounded-2xl h-12 px-8 border-border/50 font-bold hover:bg-muted/50"
+                    >
+                      Cancel
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-primary/80 ml-1">Pieces per Box</label>
-                    <Input
-                      type="number"
-                      value={formData.pcsPerBox}
-                      onChange={(e) => handlePcsChange(e.target.value)}
-                      placeholder="Enter pieces"
-                      className="rounded-xl border-primary/20 focus:border-primary transition-all h-11 bg-background"
-                    />
-                  </div>
-                </div>
-
-                <div className="p-4 bg-muted/20 rounded-3xl border border-border/30">
-                  <label className="text-sm font-bold text-foreground/80 mb-3 block ml-1">Product Image <span className="text-destructive">*</span></label>
-                  <ImageUpload 
-                    onImageUploaded={handleImageUploaded}
-                    currentImage={formData.imageUrl}
-                    label={null}
-                  />
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <Button type="submit" disabled={submitting || !isFormValid} className="flex-1 rounded-2xl h-12 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
-                    {submitting ? 'Saving...' : editingProduct ? 'Update Product' : 'Create Product'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowForm(false)}
-                    className="rounded-2xl h-12 px-8 border-border/50 font-bold hover:bg-muted/50"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
+                </form>
+              </DialogContent>
             </Dialog>
           </div>
         }
@@ -748,10 +744,6 @@ export default function ProductsPage() {
         onFiltersChange={updateFilters}
         searchValue={search}
         onSearchChange={updateSearch}
-        showSearch={false}
-        showFilterToggle={false}
-        filtersOpen={filtersOpen}
-        onFiltersOpenChange={setFiltersOpen}
         loading={loading}
       />
 
@@ -765,15 +757,15 @@ export default function ProductsPage() {
           setSelectedDetailItem(item)
           setShowDetails(true)
         }}
-          gridProps={{
-            renderItem: renderGridItem,
-            columns: 3
-          }}
-          listProps={{
-            headers: ['Product', 'Stock', 'Size', 'Category', 'Box Info', 'Status', 'Created', 'Updated', 'Actions'],
-            renderRow: renderListRow
-          }}
-        />
+        gridProps={{
+          renderItem: renderGridItem,
+          columns: 3
+        }}
+        listProps={{
+          headers: ['Product', 'Stock', 'Size', 'Category', 'Box Info', 'Status', 'Created', 'Updated', 'Actions'],
+          renderRow: renderListRow
+        }}
+      />
 
       {/* Pagination */}
       <Pagination

@@ -10,12 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import { LoadingPage } from '@/components/ui/skeleton'
-import { 
-  Plus, 
-  Filter, 
-  Download, 
-  Edit, 
-  Trash2, 
+import {
+  Plus,
+  Filter,
+  Download,
+  Edit,
+  Trash2,
   Eye,
   ShoppingCart
 } from 'lucide-react'
@@ -24,6 +24,10 @@ import { useToast } from '@/contexts/ToastContext'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { cn } from '@/lib/utils'
+import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/table-filters'
+import { DataView as AppDataView } from '@/components/ui/data-view'
+import { useMemo, useCallback } from 'react'
+import { commonColumns, ExportButton } from '@/lib/excel-export'
 
 const formatDate = (dateString: string) => {
   const d = new Date(dateString)
@@ -52,7 +56,7 @@ export default function SalesOrdersPage() {
   const [orders, setOrders] = useState<SalesOrder[]>([])
   const [brands, setBrands] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [showFilters, setShowFilters] = useState(false)
+  const [view, setView] = useState<'grid' | 'list'>('grid')
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
@@ -60,19 +64,30 @@ export default function SalesOrdersPage() {
   const [deleteOrder, setDeleteOrder] = useState<SalesOrder | null>(null)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedDetailItem, setSelectedDetailItem] = useState<SalesOrder | null>(null)
-  
-  const [filters, setFilters] = useState({
-    brandId: '',
-    sortBy: 'createdAt',
-    sortOrder: 'desc'
-  })
+
+  const {
+    filters: tableFilters,
+    search,
+    updateFilters,
+    updateSearch
+  } = useTableFilters()
+
+  const filterConfigs: FilterConfig[] = useMemo(() => [
+    {
+      key: 'brandId',
+      label: 'Brand',
+      type: 'select',
+      options: brands.map(b => ({ value: b.id, label: b.name })),
+      placeholder: 'All Brands'
+    }
+  ], [brands])
 
   const fetchOrders = async () => {
     setLoading(true)
     try {
       const response = await fetch('/api/sales-orders')
       const data = await response.json()
-      
+
       if (response.ok) {
         setOrders(data.orders || [])
       }
@@ -134,230 +149,171 @@ export default function SalesOrdersPage() {
     setShowEditDialog(true)
   }
 
-  const clearFilters = () => {
-    setFilters({
-      brandId: '',
-      sortBy: 'createdAt',
-      sortOrder: 'desc'
-    })
-  }
+  const renderGridItem = useCallback((order: SalesOrder) => (
+    <Card className="h-full hover:shadow-premium transition-all duration-300 border-border/50 group overflow-hidden">
+      <CardHeader className="pb-3 border-b border-border/30 bg-muted/20">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Order #</div>
+            <CardTitle className="text-lg font-bold text-card-foreground group-hover:text-primary transition-colors">
+              {order.orderNumber}
+            </CardTitle>
+          </div>
+          <Badge variant="default" className="bg-primary text-primary-foreground border-none font-bold">
+            SOLD
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-4 space-y-4">
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">Brand</span>
+            <div className="font-bold text-foreground truncate">{order.brand?.name || '—'}</div>
+          </div>
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">Amount</span>
+            <div className="font-bold text-primary tabular-nums italic">₹{order.totalAmount.toLocaleString()}</div>
+          </div>
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">Date</span>
+            <div className="font-medium text-foreground">{formatDate(order.orderDate)}</div>
+          </div>
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">Items</span>
+            <div className="font-medium text-foreground">{order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0}</div>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-border/30 flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); handleView(order); }}
+            className="flex-1 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary gap-1.5 font-bold h-9"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            View
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); handleEdit(order); }}
+            className="flex-1 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary gap-1.5 font-bold h-9"
+          >
+            <Edit className="h-3.5 w-3.5" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); handleDelete(order); }}
+            className="h-9 w-9 rounded-xl p-0 text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  ), [])
+
+  const renderListRow = useCallback((order: SalesOrder) => (
+    <>
+      <td className="px-4 py-3"><div className="font-bold">{order.orderNumber}</div></td>
+      <td className="px-4 py-3"><div className="font-medium">{order.brand?.name || '—'}</div></td>
+      <td className="px-4 py-3 tabular-nums text-right">
+        {order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0}
+      </td>
+      <td className="px-4 py-3 font-bold text-primary tabular-nums text-right">
+        ₹{order.totalAmount.toLocaleString()}
+      </td>
+      <td className="px-4 py-3 text-sm text-foreground">{formatDate(order.orderDate)}</td>
+      <td className="px-4 py-3">
+        <Badge variant="default" className="bg-primary text-primary-foreground border-none font-bold text-[10px] h-5">
+          SOLD
+        </Badge>
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => handleView(order)}>
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => handleEdit(order)}>
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDelete(order)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </td>
+    </>
+  ), [])
 
   return (
     <div className="w-full px-3 sm:px-4 md:px-6 space-y-8 pb-10">
-      {/* Header */}
-      <div className="page-header">
-        <div className="space-y-1">
-          <h1 className="page-title">Sales Orders</h1>
-          <p className="text-muted-foreground font-medium flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4 text-primary/60" />
-            Manage and track your sales transactions and orders
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2 pt-2 sm:pt-0">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowFilters(!showFilters)}
-            className={cn(
-              "rounded-xl border-border/50 font-bold gap-2 transition-all",
-              showFilters ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted/50"
-            )}
-          >
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="rounded-xl font-bold gap-2 shadow-lg shadow-primary/20">
-                <Plus className="h-4 w-4" />
-                New Order
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl glass backdrop-blur-xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Create Sales Order</DialogTitle>
-              </DialogHeader>
-              <SalesOrderForm onSuccess={() => {
-                setShowAddDialog(false)
-                fetchOrders()
-              }} />
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+      <TableFilters
+        title="Sales Orders"
+        actions={
+          <div className="flex items-center gap-2">
+            <ExportButton
+              data={orders}
+              columns={commonColumns.salesOrder}
+              filename="sales-orders-export"
+              onExportComplete={(result) => {
+                if (result.success) {
+                  showToast(`Exported ${orders.length} orders successfully!`, 'success')
+                } else {
+                  showToast(result.error || 'Export failed', 'error')
+                }
+              }}
+              disabled={orders.length === 0}
+            />
+            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="rounded-xl font-bold gap-2 shadow-lg shadow-primary/20">
+                  <Plus className="h-4 w-4" />
+                  New Order
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl glass-card border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Create Sales Order</DialogTitle>
+                </DialogHeader>
+                <SalesOrderForm onSuccess={() => {
+                  setShowAddDialog(false)
+                  fetchOrders()
+                }} />
+              </DialogContent>
+            </Dialog>
+          </div>
+        }
+        filters={filterConfigs}
+        values={tableFilters}
+        onFiltersChange={updateFilters}
+        searchValue={search}
+        onSearchChange={updateSearch}
+        loading={loading}
+      />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="hover:shadow-premium transition-all duration-300 border-border/50 rounded-3xl overflow-hidden glass-card group">
-          <CardContent className="p-6">
-            <div className="flex flex-col gap-1">
-              <div className="text-3xl font-extrabold text-foreground tracking-tight">{orders.length}</div>
-              <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider opacity-70">Total Orders</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-premium transition-all duration-300 border-border/50 rounded-3xl overflow-hidden glass-card group text-primary">
-          <CardContent className="p-6">
-            <div className="flex flex-col gap-1">
-              <div className="text-3xl font-extrabold text-primary tracking-tight">
-                {orders.filter(o => o.status === 'DELIVERED').length}
-              </div>
-              <p className="text-sm font-bold opacity-70 uppercase tracking-wider">Sold Units</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-premium transition-all duration-300 border-border/50 rounded-3xl overflow-hidden glass-card group">
-          <CardContent className="p-6">
-            <div className="flex flex-col gap-1">
-              <div className="text-3xl font-extrabold text-foreground tracking-tight">
-                ₹{orders.reduce((sum, o) => sum + o.totalAmount, 0).toLocaleString()}
-              </div>
-              <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider opacity-70">Total Revenue</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-premium transition-all duration-300 border-border/50 rounded-3xl overflow-hidden glass-card group">
-          <CardContent className="p-6">
-            <div className="flex flex-col gap-1">
-              <div className="text-3xl font-extrabold text-foreground tracking-tight">
-                {orders.reduce((sum, o) => sum + o.items?.reduce((s, i) => s + (i.quantity || 0), 0), 0)}
-              </div>
-              <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider opacity-70">Total Items</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      {showFilters && (
-        <Card className="border-border/50 rounded-3xl overflow-hidden glass-card shadow-premium animate-in slide-in-from-top-4 duration-300">
-          <CardHeader className="pb-4 border-b border-border/30 bg-muted/20">
-            <CardTitle className="text-xl font-bold text-foreground">Filter Orders</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-foreground/80 ml-1">Brand</label>
-                <SearchableSelect
-                  value={filters.brandId}
-                  onValueChange={(value) => setFilters({ ...filters, brandId: value })}
-                  options={[
-                    { value: 'none', label: 'All brands' },
-                    ...brands.map(b => ({ value: b.id, label: b.name }))
-                  ]}
-                  placeholder="All brands"
-                  className="h-12"
-                />
-              </div>
-            </div>
-            
-            <div className="flex justify-end mt-8">
-              <Button 
-                variant="ghost" 
-                onClick={clearFilters}
-                className="rounded-xl font-bold text-muted-foreground hover:text-primary hover:bg-primary/10 px-6 h-12"
-              >
-                Clear All Filters
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Orders Table */}
-      <Card className="border-border/50 rounded-3xl overflow-hidden glass-card shadow-premium">
-        <CardHeader className="pb-4 border-b border-border/30 bg-muted/20">
-          <CardTitle className="text-xl font-bold text-foreground">Sales History ({orders.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 overflow-hidden">
-          {loading ? (
-            <LoadingPage view="list" showHeader={false} items={8} />
-          ) : (
-            <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-32">Order #</TableHead>
-                    <TableHead>Brand</TableHead>
-                    <TableHead>Batch</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Dimensions</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Sold Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Sale Price</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Updated</TableHead>
-                    <TableHead className="text-right w-28">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orders.map((order) => (
-                    <TableRow 
-                      key={order.id} 
-                      className="border-b border-border hover:bg-accent/50 cursor-pointer"
-                      onClick={() => {
-                        setSelectedDetailItem(order)
-                        setShowDetails(true)
-                      }}
-                    >
-                      <TableCell><div className="font-semibold">{order.orderNumber}</div></TableCell>
-                      <TableCell>{order.brand?.name || '—'}</TableCell>
-                      <TableCell>
-                        <code className="bg-muted/60 px-2 py-0.5 rounded-md text-xs font-mono">
-                          {order.items?.[0]?.batch?.batchNumber || '—'}
-                        </code>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0}
-                      </TableCell>
-                      <TableCell>{order.items?.[0]?.product?.category?.name || '—'}</TableCell>
-                      <TableCell>{order.items?.[0]?.product?.size?.name || '—'}</TableCell>
-                      <TableCell>{order.items?.[0]?.batch?.location?.name || '—'}</TableCell>
-                      <TableCell className="whitespace-nowrap text-sm">{formatDate(order.orderDate)}</TableCell>
-                      <TableCell>
-                        <Badge variant="default" className="bg-primary text-primary-foreground text-xs">
-                          SOLD
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold font-mono tabular-nums">
-                        ₹{order.totalAmount.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground whitespace-nowrap">
-                        <div className="text-sm">{formatDate(order.createdAt)}</div>
-                        <div className="text-xs opacity-70">{order.createdBy?.name || 'System'}</div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground whitespace-nowrap">
-                        {order.updatedAt && order.updatedAt !== order.createdAt
-                          ? (
-                            <>
-                              <div className="text-sm">{formatDate(order.updatedAt)}</div>
-                              <div className="text-xs opacity-70">{order.updatedBy?.name || 'System'}</div>
-                            </>
-                          )
-                          : <span className="text-xs opacity-30">—</span>
-                        }
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => handleView(order)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => handleEdit(order)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDelete(order)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-          )}
-        </CardContent>
-      </Card>
+      {/* Data View */}
+      <AppDataView
+        items={orders}
+        view={view}
+        onViewChange={setView}
+        loading={loading}
+        autoResponsive={true}
+        onItemClick={(item) => {
+          setSelectedDetailItem(item)
+          setShowDetails(true)
+        }}
+        gridProps={{
+          renderItem: renderGridItem,
+          columns: 3
+        }}
+        listProps={{
+          headers: ['Order #', 'Brand', 'Qty', 'Amount', 'Date', 'Status', 'Actions'],
+          renderRow: renderListRow
+        }}
+      />
 
       {/* View Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
@@ -408,12 +364,12 @@ export default function SalesOrdersPage() {
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Edit Sales Order</DialogTitle>
           </DialogHeader>
           {selectedOrder && (
-            <SalesOrderForm 
+            <SalesOrderForm
               order={selectedOrder}
               onSuccess={() => {
                 setShowEditDialog(false)
                 fetchOrders()
-              }} 
+              }}
             />
           )}
         </DialogContent>
