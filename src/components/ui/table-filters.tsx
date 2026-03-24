@@ -311,13 +311,13 @@ export function TableFilters({
             disabled={loading}
           >
             <SlidersHorizontal className="h-4 w-4" />
-            <span className="hidden sm:inline">Filters</span>
+            <span>Filters</span>
             {getActiveFiltersCount() > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-[10px] bg-white/20 text-white border-none flex items-center justify-center rounded-full p-0">
                 {getActiveFiltersCount()}
               </Badge>
             )}
-            {!isMobile && <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-300", showFilters && "rotate-180")} />}
+            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-300", showFilters && "rotate-180")} />
           </Button>
 
           <Transition show={showFilters} as={Fragment}>

@@ -209,7 +209,7 @@ export function DataView({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
           {title && (
             <h2 className="text-xl md:text-2xl font-semibold text-foreground tracking-tight">{title}</h2>
@@ -218,7 +218,7 @@ export function DataView({
             {loading ? 'Loading...' : `${items.length} ${items.length === 1 ? 'item' : 'items'}`}
           </div>
         </div>
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
+        <div className="flex items-center space-x-2 sm:w-auto">
           <div className="flex-1 sm:flex-none">
             {actions}
           </div>

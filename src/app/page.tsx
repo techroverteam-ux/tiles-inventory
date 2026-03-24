@@ -51,6 +51,10 @@ export default function Dashboard() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [downloadSuccess, setDownloadSuccess] = useState(false)
 
+  const hasSalesData = salesData && salesData.length > 0
+  const hasLowStockData = lowStockItems && lowStockItems.length > 0
+  const hasRecentOrders = recentOrders && recentOrders.length > 0
+
   useEffect(() => {
     fetchDashboardData()
   }, [])
@@ -341,110 +345,113 @@ export default function Dashboard() {
         </motion.div>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Sales Chart */}
-        <Card className="lg:col-span-8 border-border/50 rounded-[2rem] overflow-hidden glass-card shadow-premium group">
-          <CardHeader className="border-b border-border/30 bg-muted/20 px-8 py-6">
-            <CardTitle className="text-xl font-extrabold flex items-center gap-3">
-              <div className="p-2.5 rounded-2xl bg-primary/10 text-primary transition-all duration-500 group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-              Financial Performance Over Time
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={salesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis 
-                  dataKey="month" 
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis 
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip 
-                  cursor={{ fill: 'hsl(var(--muted)/0.4)' }}
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))', 
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                    fontSize: '12px' 
-                  }} 
-                />
-                <Bar dataKey="sales" name="Sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="purchases" name="Purchases" fill="hsl(var(--secondary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      {(hasSalesData || hasLowStockData) && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Sales Chart */}
+          {hasSalesData && (
+            <Card className={cn(
+              "border-border/50 rounded-[2rem] overflow-hidden glass-card shadow-premium group",
+              hasLowStockData ? "lg:col-span-8" : "lg:col-span-12"
+            )}>
+              <CardHeader className="border-b border-border/30 bg-muted/20 px-8 py-6">
+                <CardTitle className="text-xl font-extrabold flex items-center gap-3">
+                  <div className="p-2.5 rounded-2xl bg-primary/10 text-primary transition-all duration-500 group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground">
+                    <TrendingUp className="h-5 w-5" />
+                  </div>
+                  Financial Performance Over Time
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={salesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    <XAxis 
+                      dataKey="month" 
+                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip 
+                      cursor={{ fill: 'hsl(var(--muted)/0.4)' }}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))', 
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                        fontSize: '12px' 
+                      }} 
+                    />
+                    <Bar dataKey="sales" name="Sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="purchases" name="Purchases" fill="hsl(var(--secondary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Low Stock Alert */}
-        <Card className="lg:col-span-4 border-border/50 rounded-[2rem] overflow-hidden glass-card shadow-premium group flex flex-col h-full">
-          <CardHeader className="border-b border-border/30 bg-muted/20 px-8 py-6">
-            <CardTitle className="text-xl font-extrabold flex items-center gap-3 text-destructive">
-              <div className="p-2.5 rounded-2xl bg-destructive/10 text-destructive transition-all duration-500 group-hover:scale-110 group-hover:bg-destructive group-hover:text-white">
-                <AlertTriangle className="h-5 w-5" />
-              </div>
-              Inventory Warnings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6 overflow-y-auto no-scrollbar flex-1">
-            <div className="space-y-3">
-              {lowStockItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-                  <Package className="h-12 w-12 mb-3 opacity-20" />
-                  <p className="font-medium">All stock levels healthy</p>
+          {/* Low Stock Alert */}
+          {hasLowStockData && (
+            <Card className={cn(
+              "border-border/50 rounded-[2rem] overflow-hidden glass-card shadow-premium group flex flex-col h-full",
+              hasSalesData ? "lg:col-span-4" : "lg:col-span-12"
+            )}>
+              <CardHeader className="border-b border-border/30 bg-muted/20 px-8 py-6">
+                <CardTitle className="text-xl font-extrabold flex items-center gap-3 text-destructive">
+                  <div className="p-2.5 rounded-2xl bg-destructive/10 text-destructive transition-all duration-500 group-hover:scale-110 group-hover:bg-destructive group-hover:text-white">
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  Inventory Warnings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 overflow-y-auto no-scrollbar flex-1">
+                <div className="space-y-3">
+                  {lowStockItems.map((item, index) => (
+                    <Link href={`/inventory?id=${item.id}`} key={index}>
+                      <motion.div 
+                        whileHover={{ x: 4 }}
+                        className="flex items-center justify-between p-3.5 bg-destructive/5 hover:bg-destructive/10 border border-destructive/10 rounded-xl transition-colors mb-2"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-sm text-foreground truncate">{item.name}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mt-0.5">Min Stock: {item.minStock}</p>
+                        </div>
+                        <Badge variant="destructive" className="ml-2 font-black rounded-lg">
+                          {item.stock} left
+                        </Badge>
+                      </motion.div>
+                    </Link>
+                  ))}
                 </div>
-              ) : (
-                lowStockItems.map((item, index) => (
-                  <Link href={`/inventory?id=${item.id}`} key={index}>
-                    <motion.div 
-                      whileHover={{ x: 4 }}
-                      className="flex items-center justify-between p-3.5 bg-destructive/5 hover:bg-destructive/10 border border-destructive/10 rounded-xl transition-colors mb-2"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-bold text-sm text-foreground truncate">{item.name}</p>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mt-0.5">Min Stock: {item.minStock}</p>
-                      </div>
-                      <Badge variant="destructive" className="ml-2 font-black rounded-lg">
-                        {item.stock} left
-                      </Badge>
-                    </motion.div>
-                  </Link>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Recent Activity */}
-      <Card className="border-border/50 rounded-[2rem] overflow-hidden glass-card shadow-premium group">
-        <CardHeader className="border-b border-border/30 bg-muted/20 px-8 py-6 flex flex-row items-center justify-between">
-          <CardTitle className="text-xl font-extrabold flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-info/10 text-info transition-all duration-500 group-hover:scale-110 group-hover:bg-info group-hover:text-white">
-              <ShoppingCart className="h-5 w-5" />
-            </div>
-            Latest Transactions
-          </CardTitle>
-          <Link href="/sales-orders">
-            <Button variant="ghost" size="sm" className="rounded-xl font-bold text-xs uppercase tracking-widest text-muted-foreground hover:text-primary hover:bg-primary/10 px-4">
-              Explore History
-            </Button>
-          </Link>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="divide-y divide-border/40">
-            {recentOrders.length === 0 ? (
-              <p className="text-muted-foreground text-center py-12 font-medium">No recent activity recorded</p>
-            ) : (
-              recentOrders.map((order) => (
+      {hasRecentOrders && (
+        <Card className="border-border/50 rounded-[2rem] overflow-hidden glass-card shadow-premium group">
+          <CardHeader className="border-b border-border/30 bg-muted/20 px-8 py-6 flex flex-row items-center justify-between">
+            <CardTitle className="text-xl font-extrabold flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-info/10 text-info transition-all duration-500 group-hover:scale-110 group-hover:bg-info group-hover:text-white">
+                <ShoppingCart className="h-5 w-5" />
+              </div>
+              Latest Transactions
+            </CardTitle>
+            <Link href="/sales-orders">
+              <Button variant="ghost" size="sm" className="rounded-xl font-bold text-xs uppercase tracking-widest text-muted-foreground hover:text-primary hover:bg-primary/10 px-4">
+                Explore History
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-border/40">
+              {recentOrders.map((order) => (
                 <Link 
                   key={order.id} 
                   href={order.type === 'Purchase' ? `/purchase-orders?id=${order.id}` : `/sales-orders?id=${order.id}`}
@@ -485,11 +492,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </Link>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
