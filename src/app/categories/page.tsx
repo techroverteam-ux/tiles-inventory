@@ -17,6 +17,7 @@ import { LoadingPage } from '@/components/ui/skeleton'
 import { Filter, Plus, Edit, Trash2, Package } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 import { cn } from '@/lib/utils'
+import { useResponsiveDefaultView } from '@/hooks/use-responsive-default-view'
 
 interface Category {
   id: string
@@ -56,7 +57,7 @@ interface ApiResponse {
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const { view, setView } = useResponsiveDefaultView()
   const [showForm, setShowForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [deleteCategory, setDeleteCategory] = useState<Category | null>(null)
@@ -70,11 +71,11 @@ export default function CategoriesPage() {
   const [submitting, setSubmitting] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
-  
+
   const { showToast } = useToast()
   const searchParams = useSearchParams()
   const deleteConfirmation = useDeleteConfirmation()
-  
+
   // Pagination
   const {
     currentPage,
@@ -82,7 +83,7 @@ export default function CategoriesPage() {
     handlePageChange,
     handleItemsPerPageChange
   } = usePagination(1, 25)
-  
+
   // Filters
   const {
     filters,
@@ -168,7 +169,7 @@ export default function CategoriesPage() {
     try {
       const url = editingCategory ? `/api/categories/${editingCategory.id}` : '/api/categories'
       const method = editingCategory ? 'PUT' : 'POST'
-      
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -250,7 +251,7 @@ export default function CategoriesPage() {
               {category.name}
             </CardTitle>
           </div>
-          <Badge 
+          <Badge
             variant={category.isActive ? 'default' : 'secondary'}
             className={cn(category.isActive ? "bg-primary/20 text-primary border-none" : "")}
           >
@@ -259,11 +260,9 @@ export default function CategoriesPage() {
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        {category.description && (
-          <p className="text-sm text-muted-foreground mb-4 line-clamp-2 italic">
-            {category.description}
-          </p>
-        )}
+        <p className="text-sm text-muted-foreground mb-4 line-clamp-2 italic min-h-10">
+          {category.description?.trim() || 'N/A'}
+        </p>
         <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
           <span className="flex items-center gap-1.5 font-medium">
             <Package className="h-3 w-3" />
@@ -272,12 +271,11 @@ export default function CategoriesPage() {
         </div>
         <div className="text-xs text-muted-foreground mb-6 space-y-1 bg-muted/30 p-2.5 rounded-xl border border-border/30">
           <div className="flex justify-between"><span>Created:</span> <span className="font-medium text-foreground">{formatDate(category.createdAt)}</span></div>
-          {category.updatedAt && category.updatedAt !== category.createdAt && (
-            <div className="flex justify-between"><span>Updated:</span> <span className="font-medium text-foreground">{formatDate(category.updatedAt)}</span></div>
-          )}
-          {category.createdBy && (
-            <div className="flex justify-between"><span>By:</span> <span className="font-medium text-foreground">{category.createdBy.name}</span></div>
-          )}
+          <div className="flex justify-between">
+            <span>Updated:</span>
+            <span className="font-medium text-foreground">{category.updatedAt && category.updatedAt !== category.createdAt ? formatDate(category.updatedAt) : 'N/A'}</span>
+          </div>
+          <div className="flex justify-between"><span>By:</span> <span className="font-medium text-foreground">{category.createdBy?.name || 'N/A'}</span></div>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
           <Button
@@ -309,13 +307,10 @@ export default function CategoriesPage() {
         <div className="font-bold text-foreground group-hover:text-primary transition-colors">{category.name}</div>
       </td>
       <td className="px-4 py-2.5">
-        <div className="flex items-center gap-2 font-bold text-foreground bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10 w-fit">
-          <Package className="h-4 w-4 text-primary" />
-          {category._count?.products || 0} products
-        </div>
+        <div className="font-bold text-foreground">{category._count?.products || 0}</div>
       </td>
       <td className="px-4 py-2.5">
-        <Badge 
+        <Badge
           variant={category.isActive ? 'default' : 'secondary'}
           className={cn(category.isActive ? "bg-primary/20 text-primary border-none" : "")}
         >
@@ -324,17 +319,13 @@ export default function CategoriesPage() {
       </td>
       <td className="px-4 py-2.5 text-sm text-muted-foreground">
         <div className="font-medium text-foreground">{formatDate(category.createdAt)}</div>
-        <div className="text-xs">{category.createdBy?.name || 'System'}</div>
+        <div className="text-xs">{category.createdBy?.name || 'N/A'}</div>
       </td>
       <td className="px-4 py-2.5 text-sm text-muted-foreground">
-        {category.updatedAt && category.updatedAt !== category.createdAt ? (
-          <div>
-            <div className="font-medium text-foreground">{formatDate(category.updatedAt)}</div>
-            <div className="text-xs">{category.updatedBy?.name || 'System'}</div>
-          </div>
-        ) : (
-          <span className="text-xs opacity-30 text-muted-foreground">No updates</span>
-        )}
+        <div>
+          <div className="font-medium text-foreground">{category.updatedAt && category.updatedAt !== category.createdAt ? formatDate(category.updatedAt) : 'N/A'}</div>
+          <div className="text-xs">{category.updatedAt && category.updatedAt !== category.createdAt ? (category.updatedBy?.name || 'N/A') : 'N/A'}</div>
+        </div>
       </td>
       <td className="px-4 py-2.5">
         <div className="flex gap-2">
@@ -451,7 +442,7 @@ export default function CategoriesPage() {
                 className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
               />
             </div>
-            
+
             <div className="flex items-center gap-3 p-4 bg-muted/20 rounded-2xl border border-border/30 group hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}>
               <input
                 type="checkbox"

@@ -16,6 +16,7 @@ import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { LoadingPage } from '@/components/ui/skeleton'
 import ImageUpload from '@/components/ui/image-upload'
 import { Plus, Edit, Trash2 } from 'lucide-react'
+import { useResponsiveDefaultView } from '@/hooks/use-responsive-default-view'
 
 interface Product {
   id: string
@@ -63,7 +64,7 @@ export default function ProductsPage() {
   const [filteredCategories, setFilteredCategories] = useState<any[]>([])
   const [filteredSizes, setFilteredSizes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'grid' | 'list'>('list') // Default to list for desktop
+  const { view, setView } = useResponsiveDefaultView()
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null)

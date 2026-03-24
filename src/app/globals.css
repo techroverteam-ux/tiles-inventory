@@ -483,8 +483,14 @@
 
   /* Table Container Utility */
   .table-container {
-    @apply w-full overflow-x-auto overflow-y-auto scrollbar-thin-violet;
+    @apply w-full overflow-x-auto overflow-y-auto;
     -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .table-container::-webkit-scrollbar {
+    display: none;
   }
 
   /* Responsive Typography */
@@ -527,4 +533,4 @@
   .skeleton-delay-4 {
     animation-delay: 0.4s;
   }
-}
+}

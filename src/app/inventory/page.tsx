@@ -36,6 +36,7 @@ import AddStockForm from '@/components/inventory/AddStockForm'
 import ImageUpload from '@/components/ui/image-upload'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
+import { useResponsiveDefaultView } from '@/hooks/use-responsive-default-view'
 
 const formatDate = (dateString: string) => {
   const d = new Date(dateString)
@@ -101,7 +102,7 @@ export default function InventoryPage() {
     imageUrl: ''
   })
   
-  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const { view, setView } = useResponsiveDefaultView()
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 25,

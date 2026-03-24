@@ -20,6 +20,7 @@ import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/tab
 import { DataView as AppDataView } from '@/components/ui/data-view'
 import { useMemo, useCallback } from 'react'
 import { commonColumns, ExportButton } from '@/lib/excel-export'
+import { useResponsiveDefaultView } from '@/hooks/use-responsive-default-view'
 
 const formatDate = (dateString: string) => {
   const d = new Date(dateString)
@@ -52,7 +53,7 @@ export default function PurchaseOrdersPage() {
   const [brands, setBrands] = useState<any[]>([])
   const [locations, setLocations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const { view, setView } = useResponsiveDefaultView()
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)

@@ -20,6 +20,7 @@ import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 import { ImagePreview } from '@/components/ui/image-preview'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { cn, formatMmToFeetInches } from '@/lib/utils'
+import { useResponsiveDefaultView } from '@/hooks/use-responsive-default-view'
 
 interface Product {
   id: string
@@ -75,7 +76,7 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<any[]>([])
   const [sizes, setSizes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const { view, setView } = useResponsiveDefaultView()
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null)

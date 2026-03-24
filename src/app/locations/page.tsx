@@ -17,6 +17,7 @@ import { LoadingPage } from '@/components/ui/skeleton'
 import { Filter, Plus, Edit, Trash2, MapPin, Warehouse } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 import { cn } from '@/lib/utils'
+import { useResponsiveDefaultView } from '@/hooks/use-responsive-default-view'
 
 interface Location {
   id: string
@@ -54,7 +55,7 @@ interface ApiResponse {
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'grid' | 'list'>('list') // Default to list for desktop
+  const { view, setView } = useResponsiveDefaultView()
   const [showForm, setShowForm] = useState(false)
   const [editingLocation, setEditingLocation] = useState<Location | null>(null)
   const [deleteLocation, setDeleteLocation] = useState<Location | null>(null)
@@ -69,11 +70,11 @@ export default function LocationsPage() {
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  
+
   const { showToast } = useToast()
   const searchParams = useSearchParams()
   const deleteConfirmation = useDeleteConfirmation()
-  
+
   // Pagination
   const {
     currentPage,
@@ -81,7 +82,7 @@ export default function LocationsPage() {
     handlePageChange,
     handleItemsPerPageChange
   } = usePagination(1, 25)
-  
+
   // Filters
   const {
     filters,
@@ -154,7 +155,7 @@ export default function LocationsPage() {
     try {
       const url = editingLocation ? `/api/locations/${editingLocation.id}` : '/api/locations'
       const method = editingLocation ? 'PUT' : 'POST'
-      
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -235,12 +236,12 @@ export default function LocationsPage() {
             <CardTitle className="text-lg font-bold text-card-foreground group-hover:text-primary transition-colors">
               {location.name}
             </CardTitle>
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-2 italic">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-2 italic min-h-5">
               <MapPin className="h-3.5 w-3.5 text-primary/60" />
-              <span className="truncate">{location.address || 'No address provided'}</span>
+              <span className="truncate">{location.address || 'N/A'}</span>
             </div>
           </div>
-          <Badge 
+          <Badge
             variant={location.isActive ? 'default' : 'secondary'}
             className={cn(location.isActive ? "bg-primary/20 text-primary border-none" : "")}
           >
@@ -253,15 +254,14 @@ export default function LocationsPage() {
           <Warehouse className="h-4 w-4 text-primary" />
           <span>Inventory Batches: {location._count?.batches || 0}</span>
         </div>
-        
+
         <div className="text-xs text-muted-foreground mb-6 space-y-1 bg-muted/30 p-2.5 rounded-xl border border-border/30">
           <div className="flex justify-between"><span>Created:</span> <span className="font-medium text-foreground">{formatDate(location.createdAt)}</span></div>
-          {location.updatedAt && location.updatedAt !== location.createdAt && (
-            <div className="flex justify-between"><span>Updated:</span> <span className="font-medium text-foreground">{formatDate(location.updatedAt)}</span></div>
-          )}
-          {location.createdBy && (
-            <div className="flex justify-between"><span>By:</span> <span className="font-medium text-foreground">{location.createdBy.name}</span></div>
-          )}
+          <div className="flex justify-between">
+            <span>Updated:</span>
+            <span className="font-medium text-foreground">{location.updatedAt && location.updatedAt !== location.createdAt ? formatDate(location.updatedAt) : 'N/A'}</span>
+          </div>
+          <div className="flex justify-between"><span>By:</span> <span className="font-medium text-foreground">{location.createdBy?.name || 'N/A'}</span></div>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-3">
           <Button
@@ -293,19 +293,15 @@ export default function LocationsPage() {
         <div className="font-bold text-foreground group-hover:text-primary transition-colors">{location.name}</div>
       </td>
       <td className="px-4 py-2.5">
-        <div className="text-sm text-muted-foreground max-w-xs truncate italic flex items-center gap-2">
-          <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-          {location.address || 'No address'}
+        <div className="text-sm text-muted-foreground max-w-xs truncate italic">
+          {location.address || 'N/A'}
         </div>
       </td>
       <td className="px-4 py-2.5">
-        <div className="flex items-center gap-2 font-bold text-foreground bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10 w-fit">
-          <Warehouse className="h-4 w-4 text-primary" />
-          {location._count?.batches || 0} batches
-        </div>
+        <div className="font-bold text-foreground">{location._count?.batches || 0}</div>
       </td>
       <td className="px-4 py-2.5">
-        <Badge 
+        <Badge
           variant={location.isActive ? 'default' : 'secondary'}
           className={cn(location.isActive ? "bg-primary/20 text-primary border-none" : "")}
         >
@@ -314,17 +310,13 @@ export default function LocationsPage() {
       </td>
       <td className="px-4 py-2.5 text-sm text-muted-foreground">
         <div className="font-medium text-foreground">{formatDate(location.createdAt)}</div>
-        <div className="text-xs">{location.createdBy?.name || 'System'}</div>
+        <div className="text-xs">{location.createdBy?.name || 'N/A'}</div>
       </td>
       <td className="px-4 py-2.5 text-sm text-muted-foreground">
-        {location.updatedAt && location.updatedAt !== location.createdAt ? (
-          <div>
-            <div className="font-medium text-foreground">{formatDate(location.updatedAt)}</div>
-            <div className="text-xs">{location.updatedBy?.name || 'System'}</div>
-          </div>
-        ) : (
-          <span className="text-xs opacity-30 text-muted-foreground">No updates</span>
-        )}
+        <div>
+          <div className="font-medium text-foreground">{location.updatedAt && location.updatedAt !== location.createdAt ? formatDate(location.updatedAt) : 'N/A'}</div>
+          <div className="text-xs">{location.updatedAt && location.updatedAt !== location.createdAt ? (location.updatedBy?.name || 'N/A') : 'N/A'}</div>
+        </div>
       </td>
       <td className="px-4 py-2.5">
         <div className="flex gap-2">
@@ -450,7 +442,7 @@ export default function LocationsPage() {
                 className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
               />
             </div>
-            
+
             <div className="flex items-center gap-3 p-4 bg-muted/20 rounded-2xl border border-border/30 group hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}>
               <input
                 type="checkbox"
