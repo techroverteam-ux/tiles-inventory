@@ -383,7 +383,7 @@ export default function PurchaseOrdersPage() {
                   New Order
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl glass-card border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+              <DialogContent className="max-w-4xl glass-card border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto no-scrollbar">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Create Purchase Order</DialogTitle>
                 </DialogHeader>
@@ -426,7 +426,7 @@ export default function PurchaseOrdersPage() {
 
       {/* Location Selection Dialog */}
       <Dialog open={showLocationDialog} onOpenChange={setShowLocationDialog}>
-        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-md max-h-[90vh] overflow-y-auto no-scrollbar rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Confirm Delivery</DialogTitle>
           </DialogHeader>
@@ -477,7 +477,7 @@ export default function PurchaseOrdersPage() {
 
       {/* View Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-lg rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 p-8">
+        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-lg max-h-[90vh] overflow-y-auto no-scrollbar rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 p-8">
           <DialogHeader className="mb-6">
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Purchase Order Details</DialogTitle>
           </DialogHeader>
@@ -530,7 +530,7 @@ export default function PurchaseOrdersPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-4xl glass backdrop-blur-xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+        <DialogContent className="max-w-4xl glass backdrop-blur-xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto no-scrollbar">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 tracking-tight">Edit Purchase Order</DialogTitle>
           </DialogHeader>

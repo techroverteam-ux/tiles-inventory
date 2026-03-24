@@ -229,7 +229,7 @@ export function TableFilters({
 
   const FilterContent = () => (
     <div className="flex flex-col h-full max-h-[80vh]">
-      <div className="flex-1 overflow-y-auto py-2 pr-1 no-scrollbar space-y-6">
+      <div className="flex-1 py-2 pr-1 no-scrollbar space-y-6">
         {showSearch && (
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Keyword Search</label>
@@ -345,7 +345,7 @@ export function TableFilters({
                     leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                     leaveTo="opacity-0 translate-y-full sm:translate-y-4 sm:scale-95"
                   >
-                    <DialogPanel className="w-full max-w-lg transform overflow-hidden rounded-t-[2.5rem] sm:rounded-[2rem] bg-background p-6 sm:p-8 text-left align-middle shadow-2xl transition-all border-x border-t sm:border border-border/40">
+                    <DialogPanel className="w-full max-w-lg transform rounded-t-[2.5rem] sm:rounded-[2rem] bg-background p-6 sm:p-8 text-left align-middle shadow-2xl transition-all border-x border-t sm:border border-border/40">
                       <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-6 sm:hidden" />
                       <div className="flex items-center justify-between mb-8">
                         <div>

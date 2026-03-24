@@ -45,6 +45,12 @@ interface FormData {
   isActive: boolean
 }
 
+interface LocationEntry {
+  name: string
+  address: string
+  isActive: boolean
+}
+
 interface ApiResponse {
   locations: Location[]
   totalCount: number
@@ -66,6 +72,7 @@ export default function LocationsPage() {
     address: '',
     isActive: true
   })
+  const [entries, setEntries] = useState<LocationEntry[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -153,27 +160,38 @@ export default function LocationsPage() {
 
     setSubmitting(true)
     try {
-      const url = editingLocation ? `/api/locations/${editingLocation.id}` : '/api/locations'
-      const method = editingLocation ? 'PUT' : 'POST'
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
-
-      if (response.ok) {
-        showToast(
-          editingLocation ? 'Location updated successfully!' : 'Location created successfully!',
-          'success'
-        )
+      if (editingLocation) {
+        const response = await fetch(`/api/locations/${editingLocation.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        })
+        if (response.ok) {
+          showToast('Location updated successfully!', 'success')
+          setShowForm(false)
+          setEditingLocation(null)
+          resetForm()
+          fetchLocations()
+        } else {
+          const errorData = await response.json()
+          showToast(errorData.error || 'Failed to save location', 'error')
+        }
+      } else {
+        const allEntries = [...entries, formData].filter(e => e.name.trim())
+        let successCount = 0
+        for (const entry of allEntries) {
+          const response = await fetch('/api/locations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entry)
+          })
+          if (response.ok) successCount++
+        }
+        showToast(`${successCount} location(s) created successfully!`, 'success')
         setShowForm(false)
-        setEditingLocation(null)
+        setEntries([])
         resetForm()
         fetchLocations()
-      } else {
-        const errorData = await response.json()
-        showToast(errorData.error || 'Failed to save location', 'error')
       }
     } catch (error) {
       showToast('Error saving location', 'error')
@@ -183,11 +201,8 @@ export default function LocationsPage() {
   }
 
   const resetForm = () => {
-    setFormData({
-      name: '',
-      address: '',
-      isActive: true
-    })
+    setFormData({ name: '', address: '', isActive: true })
+    setEntries([])
   }
 
   const handleEdit = (location: Location) => {
@@ -416,20 +431,34 @@ export default function LocationsPage() {
       />
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-2xl max-h-[90vh] overflow-y-auto no-scrollbar rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
               {editingLocation ? 'Edit Location' : 'Add New Location'}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+            {/* Queued entries */}
+            {!editingLocation && entries.length > 0 && (
+              <div className="space-y-2">
+                {entries.map((entry, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-3 bg-primary/5 rounded-2xl border border-primary/10">
+                    <div className="flex-1 text-sm font-bold text-foreground">{entry.name}</div>
+                    <div className="text-xs text-muted-foreground">{entry.address || '—'}</div>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => setEntries(entries.filter((_, i) => i !== idx))}>
+                      ✕
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="text-sm font-bold text-foreground/80 ml-1">Location Name <span className="text-destructive">*</span></label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Enter location name"
-                required
                 className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
               />
             </div>
@@ -457,18 +486,32 @@ export default function LocationsPage() {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3 pt-2">
+              {!editingLocation && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (!formData.name.trim()) { showToast('Enter a location name first', 'error'); return }
+                    setEntries([...entries, { ...formData }])
+                    setFormData({ name: '', address: '', isActive: true })
+                  }}
+                  className="rounded-2xl h-12 px-5 border-primary/30 text-primary hover:bg-primary/10 font-bold gap-2"
+                >
+                  <Plus className="h-4 w-4" /> Add More
+                </Button>
+              )}
               <Button
                 type="submit"
                 disabled={submitting}
                 className="flex-1 rounded-2xl h-12 font-bold shadow-lg shadow-primary/20"
               >
-                {submitting ? 'Saving...' : editingLocation ? 'Update Location' : 'Create Location'}
+                {submitting ? 'Saving...' : editingLocation ? 'Update Location' : entries.length > 0 ? `Create ${entries.length + 1} Locations` : 'Create Location'}
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowForm(false)}
+                onClick={() => { setShowForm(false); setEntries([]) }}
                 className="rounded-2xl h-12 px-6 border-border/50 font-bold hover:bg-muted/50"
               >
                 Cancel

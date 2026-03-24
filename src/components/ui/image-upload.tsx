@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { uploadImage } from '@/lib/uploadUtils'
 import { ImageIcon, X } from 'lucide-react'
 import { useToast } from '@/contexts/ToastContext'
@@ -18,6 +18,16 @@ export default function ImageUpload({ onImageUploaded, currentImage, className, 
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { showToast } = useToast()
+
+  // Sync preview when currentImage is cleared externally (e.g. form reset)
+  useEffect(() => {
+    if (!currentImage) {
+      setPreview(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    } else {
+      setPreview(currentImage)
+    }
+  }, [currentImage])
 
   const processFile = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {

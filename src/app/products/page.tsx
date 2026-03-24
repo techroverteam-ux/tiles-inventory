@@ -63,6 +63,17 @@ interface FormData {
   imageUrl: string
 }
 
+interface ProductEntry {
+  name: string
+  code: string
+  brandId: string
+  categoryId: string
+  sizeId: string
+  sqftPerBox: string
+  pcsPerBox: string
+  imageUrl: string
+}
+
 interface ApiResponse {
   products: Product[]
   totalCount: number
@@ -97,6 +108,8 @@ export default function ProductsPage() {
   const [totalPages, setTotalPages] = useState(0)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [previewImage, setPreviewImage] = useState<{ src: string, alt: string } | null>(null)
+  const [productEntries, setProductEntries] = useState<ProductEntry[]>([])
+  const [imageResetKey, setImageResetKey] = useState(0)
 
   const { showToast } = useToast()
   const searchParams = useSearchParams()
@@ -232,31 +245,46 @@ export default function ProductsPage() {
 
     setSubmitting(true)
     try {
-      const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products'
-      const method = editingProduct ? 'PUT' : 'POST'
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          sqftPerBox: parseFloat(formData.sqftPerBox) || 1,
-          pcsPerBox: parseInt(formData.pcsPerBox) || 1
+      if (editingProduct) {
+        const response = await fetch(`/api/products/${editingProduct.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            sqftPerBox: parseFloat(formData.sqftPerBox) || 1,
+            pcsPerBox: parseInt(formData.pcsPerBox) || 1
+          })
         })
-      })
-
-      if (response.ok) {
-        showToast(
-          editingProduct ? 'Product updated successfully!' : 'Product created successfully!',
-          'success'
-        )
+        if (response.ok) {
+          showToast('Product updated successfully!', 'success')
+          setShowForm(false)
+          setEditingProduct(null)
+          resetForm()
+          fetchProducts()
+        } else {
+          const errorData = await response.json()
+          showToast(errorData.error || 'Failed to save product', 'error')
+        }
+      } else {
+        const allEntries = [...productEntries, formData].filter(e => e.name.trim() && e.code.trim() && e.brandId && e.categoryId && e.imageUrl)
+        let successCount = 0
+        for (const entry of allEntries) {
+          const response = await fetch('/api/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...entry,
+              sqftPerBox: parseFloat(entry.sqftPerBox) || 1,
+              pcsPerBox: parseInt(entry.pcsPerBox) || 1
+            })
+          })
+          if (response.ok) successCount++
+        }
+        showToast(`${successCount} product(s) created successfully!`, 'success')
         setShowForm(false)
-        setEditingProduct(null)
+        setProductEntries([])
         resetForm()
         fetchProducts()
-      } else {
-        const errorData = await response.json()
-        showToast(errorData.error || 'Failed to save product', 'error')
       }
     } catch (error) {
       showToast('Error saving product', 'error')
@@ -304,6 +332,8 @@ export default function ProductsPage() {
       pcsPerBox: '',
       imageUrl: ''
     })
+    setProductEntries([])
+    setImageResetKey(k => k + 1)
   }
 
   const handleEdit = async (product: Product) => {
@@ -625,6 +655,26 @@ export default function ProductsPage() {
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+                  {/* Queued product entries */}
+                  {!editingProduct && productEntries.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">Queued ({productEntries.length})</div>
+                      {productEntries.map((entry, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-3 bg-primary/5 rounded-2xl border border-primary/10">
+                          <div className="h-8 w-8 rounded-lg overflow-hidden bg-muted/30 flex-shrink-0">
+                            {entry.imageUrl ? <img src={entry.imageUrl} alt={entry.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><Package className="h-4 w-4 text-muted-foreground/40" /></div>}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-bold text-foreground truncate">{entry.name}</div>
+                            <div className="text-xs text-muted-foreground">{entry.code}</div>
+                          </div>
+                          <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive flex-shrink-0" onClick={() => setProductEntries(productEntries.filter((_, i) => i !== idx))}>
+                            ✕
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-foreground/80 ml-1">Name <span className="text-destructive">*</span></label>
@@ -716,6 +766,7 @@ export default function ProductsPage() {
                   <div className="p-4 bg-muted/20 rounded-3xl border border-border/30">
                     <label className="text-sm font-bold text-foreground/80 mb-3 block ml-1">Product Image <span className="text-destructive">*</span></label>
                     <ImageUpload
+                      key={imageResetKey}
                       onImageUploaded={handleImageUploaded}
                       currentImage={formData.imageUrl}
                       label={null}
@@ -723,8 +774,23 @@ export default function ProductsPage() {
                   </div>
 
                   <div className="flex gap-4 pt-4">
+                    {!editingProduct && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          if (!isFormValid) { showToast('Please fill all required fields including image', 'error'); return }
+                          setProductEntries([...productEntries, { ...formData }])
+                          setFormData({ name: '', code: '', brandId: '', categoryId: '', sizeId: '', sqftPerBox: '', pcsPerBox: '', imageUrl: '' })
+                          setImageResetKey(k => k + 1)
+                        }}
+                        className="rounded-2xl h-12 px-5 border-primary/30 text-primary hover:bg-primary/10 font-bold gap-2"
+                      >
+                        <Plus className="h-4 w-4" /> Add More
+                      </Button>
+                    )}
                     <Button type="submit" disabled={submitting || !isFormValid} className="flex-1 rounded-2xl h-12 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
-                      {submitting ? 'Saving...' : editingProduct ? 'Update Product' : 'Create Product'}
+                      {submitting ? 'Saving...' : editingProduct ? 'Update Product' : productEntries.length > 0 ? `Create ${productEntries.length + 1} Products` : 'Create Product'}
                     </Button>
                     <Button
                       type="button"

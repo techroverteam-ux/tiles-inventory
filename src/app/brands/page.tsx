@@ -46,6 +46,12 @@ interface FormData {
   isActive: boolean
 }
 
+interface BrandEntry {
+  name: string
+  description: string
+  isActive: boolean
+}
+
 interface ApiResponse {
   brands: Brand[]
   totalCount: number
@@ -67,6 +73,7 @@ export default function BrandsPage() {
     description: '',
     isActive: true
   })
+  const [entries, setEntries] = useState<BrandEntry[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -155,34 +162,46 @@ export default function BrandsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name.trim()) {
+    if (!formData.name.trim() && entries.length === 0) {
       showToast('Please enter a brand name', 'error')
       return
     }
 
     setSubmitting(true)
     try {
-      const url = editingBrand ? `/api/brands/${editingBrand.id}` : '/api/brands'
-      const method = editingBrand ? 'PUT' : 'POST'
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
-
-      if (response.ok) {
-        showToast(
-          editingBrand ? 'Brand updated successfully!' : 'Brand created successfully!',
-          'success'
-        )
+      if (editingBrand) {
+        const response = await fetch(`/api/brands/${editingBrand.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        })
+        if (response.ok) {
+          showToast('Brand updated successfully!', 'success')
+          setShowForm(false)
+          setEditingBrand(null)
+          resetForm()
+          fetchBrands()
+        } else {
+          const errorData = await response.json()
+          showToast(errorData.error || 'Failed to save brand', 'error')
+        }
+      } else {
+        // Submit all entries + current form
+        const allEntries = [...entries, formData].filter(e => e.name.trim())
+        let successCount = 0
+        for (const entry of allEntries) {
+          const response = await fetch('/api/brands', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entry)
+          })
+          if (response.ok) successCount++
+        }
+        showToast(`${successCount} brand(s) created successfully!`, 'success')
         setShowForm(false)
-        setEditingBrand(null)
+        setEntries([])
         resetForm()
         fetchBrands()
-      } else {
-        const errorData = await response.json()
-        showToast(errorData.error || 'Failed to save brand', 'error')
       }
     } catch (error) {
       showToast('Error saving brand', 'error')
@@ -192,11 +211,8 @@ export default function BrandsPage() {
   }
 
   const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      isActive: true
-    })
+    setFormData({ name: '', description: '', isActive: true })
+    setEntries([])
   }
 
   const handleEdit = (brand: Brand) => {
@@ -385,20 +401,34 @@ export default function BrandsPage() {
                   Add Brand
                 </Button>
               </DialogTrigger>
-              <DialogContent className="glass-card border-border/50 max-w-md rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+              <DialogContent className="glass-card border-border/50 max-w-2xl max-h-[90vh] overflow-y-auto no-scrollbar rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
                     {editingBrand ? 'Edit Brand' : 'Add New Brand'}
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-5 pt-4">
+                  {/* Queued entries */}
+                  {!editingBrand && entries.length > 0 && (
+                    <div className="space-y-2">
+                      {entries.map((entry, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-3 bg-primary/5 rounded-2xl border border-primary/10">
+                          <div className="flex-1 text-sm font-bold text-foreground">{entry.name}</div>
+                          <div className="text-xs text-muted-foreground">{entry.description || '—'}</div>
+                          <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => setEntries(entries.filter((_, i) => i !== idx))}>
+                            ✕
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-foreground/80 ml-1">Name <span className="text-destructive">*</span></label>
                     <Input
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Enter brand name"
-                      required
                       className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
                     />
                   </div>
@@ -426,14 +456,28 @@ export default function BrandsPage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 pt-6">
+                  <div className="flex gap-3 pt-2">
+                    {!editingBrand && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          if (!formData.name.trim()) { showToast('Enter a brand name first', 'error'); return }
+                          setEntries([...entries, { ...formData }])
+                          setFormData({ name: '', description: '', isActive: true })
+                        }}
+                        className="rounded-2xl h-12 px-5 border-primary/30 text-primary hover:bg-primary/10 font-bold gap-2"
+                      >
+                        <Plus className="h-4 w-4" /> Add More
+                      </Button>
+                    )}
                     <Button type="submit" disabled={submitting} className="flex-1 rounded-2xl h-12 font-bold shadow-lg shadow-primary/20">
-                      {submitting ? 'Saving...' : editingBrand ? 'Update Brand' : 'Create Brand'}
+                      {submitting ? 'Saving...' : editingBrand ? 'Update Brand' : entries.length > 0 ? `Create ${entries.length + 1} Brands` : 'Create Brand'}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setShowForm(false)}
+                      onClick={() => { setShowForm(false); setEntries([]) }}
                       className="rounded-2xl h-12 px-6 border-border/50 font-bold hover:bg-muted/50"
                     >
                       Cancel

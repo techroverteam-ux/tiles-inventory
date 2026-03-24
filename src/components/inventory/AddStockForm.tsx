@@ -13,11 +13,25 @@ interface AddStockFormProps {
   onCancel: () => void
 }
 
+interface StockEntry {
+  productId: string
+  locationId: string
+  batchNumber: string
+  shade: string
+  quantity: string
+  purchasePrice: string
+  sellingPrice: string
+  expiryDate: string
+  imageUrl: string
+}
+
 export default function AddStockForm({ onSuccess, onCancel }: AddStockFormProps) {
   const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [products, setProducts] = useState<any[]>([])
   const [locations, setLocations] = useState<any[]>([])
+  const [entries, setEntries] = useState<StockEntry[]>([])
+  const [imageResetKey, setImageResetKey] = useState(0)
 
   const [formData, setFormData] = useState({
     productId: '',
@@ -60,22 +74,26 @@ export default function AddStockForm({ onSuccess, onCancel }: AddStockFormProps)
     }
     setLoading(true)
     try {
-      const response = await fetch('/api/inventory', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          quantity: parseInt(formData.quantity),
-          purchasePrice: parseFloat(formData.purchasePrice) || 0,
-          sellingPrice: parseFloat(formData.sellingPrice) || 0,
+      const allEntries = [...entries, formData].filter(e => e.productId && e.locationId && e.batchNumber && e.quantity)
+      let successCount = 0
+      for (const entry of allEntries) {
+        const response = await fetch('/api/inventory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...entry,
+            quantity: parseInt(entry.quantity),
+            purchasePrice: parseFloat(entry.purchasePrice) || 0,
+            sellingPrice: parseFloat(entry.sellingPrice) || 0,
+          })
         })
-      })
-      if (response.ok) {
-        showToast('Stock batch added successfully', 'success')
+        if (response.ok) successCount++
+      }
+      if (successCount > 0) {
+        showToast(`${successCount} stock batch(es) added successfully`, 'success')
         onSuccess()
       } else {
-        const err = await response.json()
-        showToast(err.error || 'Failed to add stock batch', 'error')
+        showToast('Failed to add stock batches', 'error')
       }
     } catch {
       showToast('Error adding stock batch', 'error')
@@ -88,6 +106,28 @@ export default function AddStockForm({ onSuccess, onCancel }: AddStockFormProps)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 pt-2">
+
+      {/* Queued entries */}
+      {entries.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Queued Batches ({entries.length})</div>
+          {entries.map((entry, idx) => {
+            const product = products.find(p => p.id === entry.productId)
+            const location = locations.find(l => l.id === entry.locationId)
+            return (
+              <div key={idx} className="flex items-center gap-3 p-3 bg-primary/5 rounded-2xl border border-primary/10">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold text-foreground truncate">{product?.name || entry.productId}</div>
+                  <div className="text-xs text-muted-foreground">{entry.batchNumber} • {location?.name} • {entry.quantity} units</div>
+                </div>
+                <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive flex-shrink-0" onClick={() => setEntries(entries.filter((_, i) => i !== idx))}>
+                  ✕
+                </Button>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Product & Location */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -190,6 +230,7 @@ export default function AddStockForm({ onSuccess, onCancel }: AddStockFormProps)
       <div className="p-4 bg-muted/20 rounded-2xl border border-border/30">
         <label className="text-sm font-bold text-foreground/80 mb-2.5 block">Batch Photo <span className="text-muted-foreground font-normal">(Optional)</span></label>
         <ImageUpload
+          key={imageResetKey}
           onImageUploaded={(url) => setFormData({ ...formData, imageUrl: url })}
           currentImage={formData.imageUrl}
           label={null}
@@ -200,11 +241,24 @@ export default function AddStockForm({ onSuccess, onCancel }: AddStockFormProps)
       {/* Actions */}
       <div className="flex gap-3 pt-2">
         <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            if (!isValid) { showToast('Fill all required fields first', 'error'); return }
+            setEntries([...entries, { ...formData }])
+            setFormData({ productId: '', locationId: '', batchNumber: '', shade: '', quantity: '', purchasePrice: '', sellingPrice: '', expiryDate: '', imageUrl: '' })
+            setImageResetKey(k => k + 1)
+          }}
+          className="rounded-2xl h-11 px-5 border-primary/30 text-primary hover:bg-primary/10 font-bold gap-2"
+        >
+          + Add More
+        </Button>
+        <Button
           type="submit"
           disabled={loading || !isValid}
           className="flex-1 rounded-2xl h-11 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
         >
-          {loading ? 'Adding Stock...' : 'Add Stock Batch'}
+          {loading ? 'Adding...' : entries.length > 0 ? `Add ${entries.length + 1} Batches` : 'Add Stock Batch'}
         </Button>
         <Button
           type="button"

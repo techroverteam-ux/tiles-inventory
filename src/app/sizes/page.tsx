@@ -61,6 +61,14 @@ interface FormData {
   isActive: boolean
 }
 
+interface SizeEntry {
+  name: string
+  description: string
+  length: string
+  width: string
+  isActive: boolean
+}
+
 interface ApiResponse {
   sizes: Size[]
   totalCount: number
@@ -84,6 +92,7 @@ export default function SizesPage() {
     width: '',
     isActive: true
   })
+  const [entries, setEntries] = useState<SizeEntry[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [totalCount, setTotalCount] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -186,32 +195,49 @@ export default function SizesPage() {
 
     setSubmitting(true)
     try {
-      const url = editingSize ? `/api/sizes/${editingSize.id}` : '/api/sizes'
-      const method = editingSize ? 'PUT' : 'POST'
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          name: finalName,
-          length: formData.length ? parseFloat(formData.length) : undefined,
-          width: formData.width ? parseFloat(formData.width) : undefined
+      if (editingSize) {
+        const response = await fetch(`/api/sizes/${editingSize.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            name: finalName,
+            length: formData.length ? parseFloat(formData.length) : undefined,
+            width: formData.width ? parseFloat(formData.width) : undefined
+          })
         })
-      })
-
-      if (response.ok) {
-        showToast(
-          editingSize ? 'Size updated successfully!' : 'Size created successfully!',
-          'success'
-        )
+        if (response.ok) {
+          showToast('Size updated successfully!', 'success')
+          setShowForm(false)
+          setEditingSize(null)
+          resetForm()
+          fetchSizes()
+        } else {
+          const errorData = await response.json()
+          showToast(errorData.error || 'Failed to save size', 'error')
+        }
+      } else {
+        const allEntries = [...entries, { ...formData, name: finalName }].filter(e => e.name.trim())
+        let successCount = 0
+        for (const entry of allEntries) {
+          const entryName = entry.name.trim() || (entry.length && entry.width ? `${entry.length}x${entry.width}mm` : entry.name)
+          const response = await fetch('/api/sizes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...entry,
+              name: entryName,
+              length: entry.length ? parseFloat(entry.length) : undefined,
+              width: entry.width ? parseFloat(entry.width) : undefined
+            })
+          })
+          if (response.ok) successCount++
+        }
+        showToast(`${successCount} size(s) created successfully!`, 'success')
         setShowForm(false)
-        setEditingSize(null)
+        setEntries([])
         resetForm()
         fetchSizes()
-      } else {
-        const errorData = await response.json()
-        showToast(errorData.error || 'Failed to save size', 'error')
       }
     } catch (error) {
       showToast('Error saving size', 'error')
@@ -221,13 +247,8 @@ export default function SizesPage() {
   }
 
   const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      length: '',
-      width: '',
-      isActive: true
-    })
+    setFormData({ name: '', description: '', length: '', width: '', isActive: true })
+    setEntries([])
   }
 
   const handleEdit = async (size: Size) => {
@@ -466,13 +487,28 @@ export default function SizesPage() {
       />
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-2xl rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-2xl max-h-[90vh] overflow-y-auto no-scrollbar rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
               {editingSize ? 'Edit Size' : 'Add New Size'}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+            {/* Queued entries */}
+            {!editingSize && entries.length > 0 && (
+              <div className="space-y-2">
+                {entries.map((entry, idx) => (
+                  <div key={idx} className="flex items-center gap-3 p-3 bg-primary/5 rounded-2xl border border-primary/10">
+                    <div className="flex-1 text-sm font-bold text-foreground">{entry.name || `${entry.length}x${entry.width}mm`}</div>
+                    <div className="text-xs text-muted-foreground">{entry.length && entry.width ? `${entry.length} × ${entry.width} mm` : '—'}</div>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => setEntries(entries.filter((_, i) => i !== idx))}>
+                      ✕
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-foreground/80 ml-1">Name</label>
@@ -546,18 +582,33 @@ export default function SizesPage() {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3 pt-2">
+              {!editingSize && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const name = formData.name.trim() || (formData.length && formData.width ? `${formData.length}x${formData.width}mm` : '')
+                    if (!name) { showToast('Enter a name or dimensions first', 'error'); return }
+                    setEntries([...entries, { ...formData, name }])
+                    setFormData({ name: '', description: '', length: '', width: '', isActive: true })
+                  }}
+                  className="rounded-2xl h-12 px-5 border-primary/30 text-primary hover:bg-primary/10 font-bold gap-2"
+                >
+                  <Plus className="h-4 w-4" /> Add More
+                </Button>
+              )}
               <Button
                 type="submit"
                 disabled={submitting}
                 className="flex-1 rounded-2xl h-12 font-bold shadow-lg shadow-primary/20"
               >
-                {submitting ? 'Saving...' : editingSize ? 'Update Size' : 'Create Size'}
+                {submitting ? 'Saving...' : editingSize ? 'Update Size' : entries.length > 0 ? `Create ${entries.length + 1} Sizes` : 'Create Size'}
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowForm(false)}
+                onClick={() => { setShowForm(false); setEntries([]) }}
                 className="rounded-2xl h-12 px-6 border-border/50 font-bold hover:bg-muted/50"
               >
                 Cancel
