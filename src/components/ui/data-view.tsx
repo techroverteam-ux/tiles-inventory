@@ -121,8 +121,8 @@ export function ListView({
   return (
     <div className="glass-card rounded-[2rem] border border-border/50 overflow-hidden shadow-premium transition-all duration-500">
       <div className="overflow-auto no-scrollbar max-h-[70vh]">
-        <table className={cn("w-full border-separate border-spacing-0", isMobile ? "min-w-full" : tableMinWidthClass)}>
-          <thead className="sticky top-0 z-20 bg-muted/80 backdrop-blur-md shadow-[0_1px_0_hsl(var(--border))] [&_th]:bg-transparent">
+        <table className={cn("w-full", isMobile ? "min-w-full" : tableMinWidthClass)}>
+          <thead className="sticky top-0 z-20 bg-muted/80 backdrop-blur-md border-b border-border [&_th]:bg-transparent">
             <tr>
               {headers.map((header, index) => (
                 <th
@@ -138,14 +138,13 @@ export function ListView({
             initial="hidden"
             animate="visible"
             variants={containerVariants}
-            className="divide-y divide-border/30"
           >
             {items.map((item, index) => (
               <motion.tr
                 key={item.id?.toString() || index}
                 variants={itemVariants}
                 className={cn(
-                  "group hover:bg-primary/[0.03] transition-colors border-b border-border/30 last:border-0 [&_td]:align-top",
+                  "group hover:bg-primary/[0.03] transition-colors border-b border-border/30 last:border-0 [&_td]:align-middle",
                   onItemClick ? 'cursor-pointer' : ''
                 )}
                 onClick={() => onItemClick && onItemClick(item)}
