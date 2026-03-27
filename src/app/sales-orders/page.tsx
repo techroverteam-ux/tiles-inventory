@@ -221,10 +221,10 @@ export default function SalesOrdersPage() {
     <>
       <td className="px-4 py-3"><div className="font-bold">{order.orderNumber}</div></td>
       <td className="px-4 py-3"><div className="font-medium">{order.brand?.name || '—'}</div></td>
-      <td className="px-4 py-3 tabular-nums text-right">
+      <td className="px-4 py-3 tabular-nums">
         {order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0}
       </td>
-      <td className="px-4 py-3 font-bold text-primary tabular-nums text-right">
+      <td className="px-4 py-3 font-bold text-primary tabular-nums">
         ₹{order.totalAmount.toLocaleString()}
       </td>
       <td className="px-4 py-3 text-sm text-foreground">{formatDate(order.orderDate)}</td>

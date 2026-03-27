@@ -369,7 +369,7 @@ export default function InventoryPage() {
 
   const renderListRow = (item: InventoryItem) => (
     <>
-      <td className="px-6 py-4">
+      <td className="px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl overflow-hidden bg-muted/20 border border-border/40 flex-shrink-0">
             {item.imageUrl || item.product.imageUrl ? (
@@ -392,8 +392,8 @@ export default function InventoryPage() {
           </div>
         </div>
       </td>
-      <td className="px-6 py-4 text-right">
-        <div className="flex items-center justify-end gap-1.5 flex-nowrap">
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-1.5 flex-nowrap">
           <Badge variant={getStockBadgeVariant(item.quantity)} className="whitespace-nowrap tabular-nums font-bold">
             {item.quantity} units
           </Badge>
@@ -402,24 +402,24 @@ export default function InventoryPage() {
           )}
         </div>
       </td>
-      <td className="px-6 py-4 text-sm font-medium">{item.product.size?.name || '—'}</td>
-      <td className="px-6 py-4 text-sm">{item.product.category.name}</td>
-      <td className="px-6 py-4">
+      <td className="px-4 py-3 text-sm font-medium">{item.product.size?.name || '—'}</td>
+      <td className="px-4 py-3 text-sm">{item.product.category.name}</td>
+      <td className="px-4 py-3">
         <code className="bg-muted px-2 py-0.5 rounded-md text-[11px] font-mono border border-border/30">
           {item.batchNumber}
         </code>
       </td>
-      <td className="px-6 py-4 text-sm">{item.location.name}</td>
-      <td className="px-6 py-4 text-right font-mono tabular-nums text-xs">₹{item.purchasePrice.toLocaleString()}</td>
-      <td className="px-6 py-4 text-right font-mono tabular-nums text-xs font-bold">₹{item.sellingPrice.toLocaleString()}</td>
-      <td className="px-6 py-4 text-right font-bold font-mono tabular-nums text-primary text-sm">
+      <td className="px-4 py-3 text-sm">{item.location.name}</td>
+      <td className="px-4 py-3 font-mono tabular-nums text-xs">₹{item.purchasePrice.toLocaleString()}</td>
+      <td className="px-4 py-3 font-mono tabular-nums text-xs font-bold">₹{item.sellingPrice.toLocaleString()}</td>
+      <td className="px-4 py-3 font-bold font-mono tabular-nums text-primary text-sm">
         ₹{(item.quantity * item.sellingPrice).toLocaleString()}
       </td>
-      <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">
+      <td className="px-4 py-3 text-muted-foreground">
         <div className="text-xs font-bold text-foreground">{formatDate(item.createdAt)}</div>
         <div className="text-[10px] opacity-70">{item.createdBy?.name || 'System'}</div>
       </td>
-      <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">
+      <td className="px-4 py-3 text-muted-foreground">
         {item.updatedAt && item.updatedAt !== item.createdAt
           ? (
             <>
@@ -430,7 +430,7 @@ export default function InventoryPage() {
           : <span className="text-xs opacity-30">—</span>
         }
       </td>
-      <td className="px-6 py-4 text-right">
+      <td className="px-4 py-3">
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="sm" className="rounded-xl hover:bg-primary/10 hover:text-primary gap-2 font-bold px-3 transition-all" onClick={() => handleEdit(item)}>
             <Edit className="h-4 w-4" />
