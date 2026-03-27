@@ -146,6 +146,7 @@
   table th,
   table td {
     white-space: nowrap !important;
+    vertical-align: middle;
   }
 }
 

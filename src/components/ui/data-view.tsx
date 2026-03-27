@@ -127,7 +127,7 @@ export function ListView({
               {headers.map((header, index) => (
                 <th
                   key={index}
-                  className="whitespace-nowrap px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]"
+                  className="px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] whitespace-nowrap"
                 >
                   {header}
                 </th>
@@ -144,7 +144,7 @@ export function ListView({
                 key={item.id?.toString() || index}
                 variants={itemVariants}
                 className={cn(
-                  "group hover:bg-primary/[0.03] transition-colors border-b border-border/30 last:border-0 [&_td]:align-middle",
+                  "group hover:bg-primary/[0.03] transition-colors border-b border-border/30 last:border-0",
                   onItemClick ? 'cursor-pointer' : ''
                 )}
                 onClick={() => onItemClick && onItemClick(item)}
