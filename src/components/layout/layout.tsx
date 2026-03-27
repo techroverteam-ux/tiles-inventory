@@ -461,8 +461,11 @@ export default function Layout({ children }: LayoutProps) {
               </div>
               
               {/* Footer - Sticky at bottom */}
-              <footer className="bg-card border-t border-border px-4 md:px-6 py-4 text-center text-sm text-muted-foreground hidden md:block mt-auto">
-                © 2026 Tiles Inventory Management System. All rights reserved.
+              <footer className="bg-card border-t border-border px-4 md:px-6 py-3 flex items-center justify-between text-xs text-muted-foreground mt-auto">
+                <span>© 2026 Tiles Inventory Management System. All rights reserved.</span>
+                <span className="flex items-center gap-1">
+                  Developed with <span className="text-destructive">♥</span> by <span className="font-bold text-primary">Tech Rover</span>
+                </span>
               </footer>
             </main>
           </div>

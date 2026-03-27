@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
 import { MobileCard, MobileCardHeader, MobileCardField, MobileStatsCard } from '@/components/ui/mobile-card'
 import { LoadingPage } from '@/components/ui/skeleton'
+import { Pagination } from '@/components/ui/pagination'
 import { useToast } from '@/contexts/ToastContext'
 import {
   Plus,
@@ -105,7 +106,7 @@ export default function InventoryPage() {
   const { view, setView } = useResponsiveDefaultView()
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 25,
+    limit: 5,
     total: 0,
     pages: 0
   })
@@ -513,52 +514,15 @@ export default function InventoryPage() {
           }}
         />
 
-        <div className="flex items-center justify-between mt-6 bg-muted/20 p-4 rounded-2xl border border-border/40">
-          <div className="text-sm text-muted-foreground font-medium">
-            Showing <span className="text-foreground font-bold">{((pagination.page - 1) * pagination.limit) + 1}</span> to <span className="text-foreground font-bold">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="text-foreground font-bold">{pagination.total}</span> entries
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-              disabled={pagination.page === 1}
-              className="rounded-xl h-9 px-4 font-bold border-border/50 hover:bg-muted"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
-            <div className="hidden sm:flex items-center gap-1.5">
-              {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                const page = i + 1
-                return (
-                  <Button
-                    key={page}
-                    variant={pagination.page === page ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setPagination(prev => ({ ...prev, page }))}
-                    className={cn(
-                      "h-9 w-9 p-0 rounded-xl font-bold transition-all",
-                      pagination.page === page ? "shadow-lg shadow-primary/20" : "border-border/50"
-                    )}
-                  >
-                    {page}
-                  </Button>
-                )
-              })}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-              disabled={pagination.page === pagination.pages}
-              className="rounded-xl h-9 px-4 font-bold border-border/50 hover:bg-muted"
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={pagination.page}
+          totalPages={pagination.pages}
+          totalItems={pagination.total}
+          itemsPerPage={pagination.limit}
+          onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
+          onItemsPerPageChange={(limit) => setPagination(prev => ({ ...prev, limit, page: 1 }))}
+          loading={loading}
+        />
       </div>
 
     {/* Edit Dialog */}
