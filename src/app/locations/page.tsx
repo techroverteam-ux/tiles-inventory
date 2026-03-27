@@ -306,11 +306,7 @@ export default function LocationsPage() {
     <>
       <td className="px-4 py-2.5">
         <div className="font-bold text-foreground group-hover:text-primary transition-colors">{location.name}</div>
-      </td>
-      <td className="px-4 py-2.5">
-        <div className="text-sm text-muted-foreground max-w-xs truncate italic">
-          {location.address || 'N/A'}
-        </div>
+        <div className="text-xs text-muted-foreground italic">{location.address || 'N/A'}</div>
       </td>
       <td className="px-4 py-2.5">
         <div className="font-bold text-foreground">{location._count?.batches || 0}</div>

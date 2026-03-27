@@ -189,7 +189,7 @@ export default function Layout({ children }: LayoutProps) {
 
     const containerClass =
       mode === 'dropdown'
-        ? 'absolute top-11 left-0 right-0 z-[60] rounded-lg border border-border bg-card shadow-lg overflow-hidden animate-in'
+        ? 'absolute top-11 left-0 right-0 z-[60] rounded-lg border border-border bg-card shadow-lg overflow-hidden animate-slide-up'
         : 'rounded-lg border border-border bg-card shadow-sm overflow-hidden'
 
     return (

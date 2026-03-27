@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { LoadingPage } from '@/components/ui/skeleton'
+import { TableSkeleton } from '@/components/ui/skeleton'
 import { ExportButton, ExportColumn } from '@/lib/excel-export'
-import { BarChart3, Calendar, Filter, Search, PieChart, TrendingUp } from 'lucide-react'
+import { BarChart3, Calendar, Filter, Search, PieChart, TrendingUp, Clock, CalendarRange } from 'lucide-react'
 import { useToast } from '@/contexts/ToastContext'
 import { cn } from '@/lib/utils'
 import { DatePicker } from '@/components/ui/date-picker'
@@ -43,6 +43,7 @@ export default function ReportsPage() {
   const [showFilters, setShowFilters] = useState(true)
   const [columns, setColumns] = useState<ReportColumn[]>([])
   const [rows, setRows] = useState<any[]>([])
+  const [dateMode, setDateMode] = useState<'alltime' | 'custom'>('custom')
 
   const reportTitle = useMemo(() => {
     if (reportType === 'sales') return 'Sales Report'
@@ -61,6 +62,13 @@ export default function ReportsPage() {
 
     return `${day}-${month}-${year}`
   }
+
+  const exportReportTitle = useMemo(() => {
+    const base = reportTitle
+    if (dateMode === 'alltime') return `${base} (All Time)`
+    if (dateFrom && dateTo) return `${base} (${formatDateDisplay(dateFrom)} to ${formatDateDisplay(dateTo)})`
+    return base
+  }, [reportTitle, dateMode, dateFrom, dateTo])
 
   const formatCellValue = (key: string, value: any) => {
     if (value === null || value === undefined) return '-'
@@ -159,22 +167,23 @@ export default function ReportsPage() {
   }, [sizes, brandId, categoryId])
 
   const searchReport = async () => {
-    if (!dateFrom || !dateTo) {
-      showToast('Please select date range using calendar', 'warning')
-      return
-    }
-
-    if (new Date(dateFrom).getTime() > new Date(dateTo).getTime()) {
-      showToast('From date cannot be after To date', 'warning')
-      return
+    if (dateMode === 'custom') {
+      if (!dateFrom || !dateTo) {
+        showToast('Please select a date range', 'warning')
+        return
+      }
+      if (new Date(dateFrom).getTime() > new Date(dateTo).getTime()) {
+        showToast('From date cannot be after To date', 'warning')
+        return
+      }
     }
 
     setLoading(true)
     try {
       const params = new URLSearchParams({
         reportType,
-        dateFrom,
-        dateTo,
+        ...(dateMode === 'custom' && dateFrom ? { dateFrom } : {}),
+        ...(dateMode === 'custom' && dateTo ? { dateTo } : {}),
         ...(brandId ? { brandId } : {}),
         ...(categoryId ? { categoryId } : {}),
         ...(sizeId ? { sizeId } : {}),
@@ -228,7 +237,7 @@ export default function ReportsPage() {
             columns={excelColumns}
             filename={reportType === 'sales' ? 'sales-report' : reportType === 'purchase' ? 'purchase-report' : 'inventory-report'}
             sheetName={reportTitle}
-            reportTitle={`${reportTitle} (${formatDateDisplay(dateFrom)} to ${formatDateDisplay(dateTo)})`}
+            reportTitle={exportReportTitle}
             headerColor={COMPANY_LOGO_HEADER_COLOR}
             disabled={rows.length === 0}
             className="w-full sm:w-auto rounded-xl font-bold shadow-lg shadow-primary/10"
@@ -263,20 +272,50 @@ export default function ReportsPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-foreground/80 ml-1">Period From</label>
+                <label className="text-sm font-bold text-foreground/80 ml-1">Date Range</label>
+                <div className="flex rounded-2xl border border-border/40 overflow-hidden h-12 bg-muted/20">
+                  <button
+                    type="button"
+                    onClick={() => setDateMode('alltime')}
+                    className={cn(
+                      'flex-1 flex items-center justify-center gap-1.5 text-xs font-bold transition-all',
+                      dateMode === 'alltime' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    )}
+                  >
+                    <Clock className="h-3.5 w-3.5" />
+                    All Time
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDateMode('custom')}
+                    className={cn(
+                      'flex-1 flex items-center justify-center gap-1.5 text-xs font-bold transition-all',
+                      dateMode === 'custom' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    )}
+                  >
+                    <CalendarRange className="h-3.5 w-3.5" />
+                    Custom
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className={cn('text-sm font-bold ml-1', dateMode === 'alltime' ? 'text-muted-foreground/40' : 'text-foreground/80')}>Period From</label>
                 <DatePicker
                   date={dateFrom}
                   onChange={(date) => setDateFrom(date ? date.toISOString().split('T')[0] : '')}
                   placeholder="From Date"
+                  disabled={dateMode === 'alltime'}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-foreground/80 ml-1">Period To</label>
+                <label className={cn('text-sm font-bold ml-1', dateMode === 'alltime' ? 'text-muted-foreground/40' : 'text-foreground/80')}>Period To</label>
                 <DatePicker
                   date={dateTo}
                   onChange={(date) => setDateTo(date ? date.toISOString().split('T')[0] : '')}
                   placeholder="To Date"
+                  disabled={dateMode === 'alltime'}
                 />
               </div>
 
@@ -368,7 +407,7 @@ export default function ReportsPage() {
             columns={excelColumns}
             filename={reportType === 'sales' ? 'sales-report' : reportType === 'purchase' ? 'purchase-report' : 'inventory-report'}
             sheetName={reportTitle}
-            reportTitle={`${reportTitle} (${formatDateDisplay(dateFrom)} to ${formatDateDisplay(dateTo)})`}
+            reportTitle={exportReportTitle}
             headerColor={COMPANY_LOGO_HEADER_COLOR}
             disabled={rows.length === 0}
             className="rounded-xl font-bold border-border/50"
@@ -376,9 +415,7 @@ export default function ReportsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-10">
-              <LoadingPage view="list" showHeader={false} items={8} />
-            </div>
+            <TableSkeleton rows={8} columns={columns.length || 6} className="border-0 rounded-none" />
           ) : rows.length === 0 ? (
             <div className="text-center py-20 flex flex-col items-center justify-center gap-4">
               <div className="p-6 rounded-full bg-muted/20 text-muted-foreground">

@@ -350,7 +350,7 @@
     }
   }
   
-  .animate-in {
+  .animate-slide-up {
     animation: slide-in-from-bottom 0.3s ease-out;
   }
   
