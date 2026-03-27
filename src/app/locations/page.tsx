@@ -88,7 +88,7 @@ export default function LocationsPage() {
     itemsPerPage,
     handlePageChange,
     handleItemsPerPageChange
-  } = usePagination(1, 25)
+  } = usePagination(1, 5)
 
   // Filters
   const {
