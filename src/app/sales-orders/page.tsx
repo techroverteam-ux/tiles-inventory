@@ -234,15 +234,18 @@ export default function SalesOrdersPage() {
         </Badge>
       </td>
       <td className="px-4 py-3">
-        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => handleView(order)}>
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="sm" className="rounded-xl hover:bg-primary/10 hover:text-primary gap-2 font-bold px-3 transition-all" onClick={() => handleView(order)}>
             <Eye className="h-4 w-4" />
+            View
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => handleEdit(order)}>
+          <Button variant="ghost" size="sm" className="rounded-xl hover:bg-primary/10 hover:text-primary gap-2 font-bold px-3 transition-all" onClick={() => handleEdit(order)}>
             <Edit className="h-4 w-4" />
+            Edit
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDelete(order)}>
+          <Button variant="ghost" size="sm" className="rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 font-bold px-3 transition-all" onClick={() => handleDelete(order)}>
             <Trash2 className="h-4 w-4" />
+            Delete
           </Button>
         </div>
       </td>
