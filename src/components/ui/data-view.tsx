@@ -100,7 +100,6 @@ interface ListViewProps {
   headers: string[]
   renderRow: (item: any) => React.ReactNode
   tableMinWidthClass?: string
-  tableMaxHeightClass?: string
   loading?: boolean
   onItemClick?: (item: any) => void
 }
@@ -110,7 +109,6 @@ export function ListView({
   headers,
   renderRow,
   tableMinWidthClass = 'min-w-[800px]',
-  tableMaxHeightClass = 'max-h-[70vh]',
   loading = false,
   onItemClick
 }: ListViewProps) {
@@ -122,9 +120,9 @@ export function ListView({
 
   return (
     <div className="glass-card rounded-[2rem] border border-border/50 overflow-hidden shadow-premium transition-all duration-500">
-      <div className={cn("table-container overflow-auto no-scrollbar", tableMaxHeightClass)}>
+      <div className="overflow-x-auto no-scrollbar">
         <table className={cn("w-full border-separate border-spacing-0", isMobile ? "min-w-full" : tableMinWidthClass)}>
-          <thead className="sticky top-0 z-20 bg-muted/80 backdrop-blur-md shadow-[0_1px_0_hsl(var(--border))] [&_th]:bg-transparent">
+          <thead className="bg-muted/80 shadow-[0_1px_0_hsl(var(--border))] [&_th]:bg-transparent">
             <tr>
               {headers.map((header, index) => (
                 <th
@@ -178,7 +176,6 @@ interface DataViewProps {
     headers: string[]
     renderRow: (item: any) => React.ReactNode
     tableMinWidthClass?: string
-    tableMaxHeightClass?: string
   }
   title?: string
   actions?: React.ReactNode
@@ -254,7 +251,6 @@ export function DataView({
           headers={listProps.headers}
           renderRow={listProps.renderRow}
           tableMinWidthClass={listProps.tableMinWidthClass}
-          tableMaxHeightClass={listProps.tableMaxHeightClass}
           loading={loading}
           onItemClick={onItemClick}
         />
