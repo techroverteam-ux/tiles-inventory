@@ -120,9 +120,9 @@ export function ListView({
 
   return (
     <div className="glass-card rounded-[2rem] border border-border/50 overflow-hidden shadow-premium transition-all duration-500">
-      <div className="overflow-x-auto no-scrollbar">
+      <div className="overflow-auto no-scrollbar max-h-[70vh]">
         <table className={cn("w-full border-separate border-spacing-0", isMobile ? "min-w-full" : tableMinWidthClass)}>
-          <thead className="bg-muted/80 shadow-[0_1px_0_hsl(var(--border))] [&_th]:bg-transparent">
+          <thead className="sticky top-0 z-20 bg-muted/80 backdrop-blur-md shadow-[0_1px_0_hsl(var(--border))] [&_th]:bg-transparent">
             <tr>
               {headers.map((header, index) => (
                 <th
