@@ -12,6 +12,7 @@ async function normalizeLegacyUserRoles() {
         { q: { role: 'user' }, u: { $set: { role: 'USER' } }, multi: true }
       ]
     })
+    
   } catch (error) {
     console.error('Role normalization error:', error)
   }
