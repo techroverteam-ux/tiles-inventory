@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(request: NextRequest, { params }: { params: { productId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ productId: string }> }) {
   try {
+    const { productId } = await params
     const batches = await prisma.batch.findMany({
       where: {
-        productId: params.productId,
+        productId,
         quantity: { gt: 0 },
       },
       include: { location: true },
