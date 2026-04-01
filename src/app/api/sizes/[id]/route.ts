@@ -84,14 +84,10 @@ export async function PUT(
           { status: 400 }
         )
       } else {
-        // Rename the inactive duplicate to free up the name
-        await prisma.size.update({
-          where: { id: duplicateSize.id },
-          data: { 
-            name: `${duplicateSize.name}_deleted_${Date.now()}`,
-            updatedAt: new Date()
-          }
-        })
+        return NextResponse.json(
+          { error: 'Size name already exists as an inactive size. Please reactivate it instead.' },
+          { status: 400 }
+        )
       }
     }
 
@@ -160,14 +156,7 @@ export async function DELETE(
       )
     }
 
-    await prisma.size.update({
-      where: { id },
-      data: {
-        name: `${existingSize.name}_del_${Date.now()}`,
-        isActive: false,
-        updatedAt: new Date(),
-      },
-    })
+    await prisma.size.delete({ where: { id } })
 
     return NextResponse.json({ message: 'Size deleted successfully' })
   } catch (error) {

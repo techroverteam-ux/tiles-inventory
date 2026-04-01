@@ -177,7 +177,7 @@ export default function AddStockForm({ onSuccess, onCancel }: AddStockFormProps)
       </div>
 
       {/* Quantity & Expiry */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-visible">
         <div className="space-y-1.5">
           <label className="text-sm font-bold text-foreground/80 ml-0.5">Quantity <span className="text-destructive">*</span></label>
           <Input
@@ -189,7 +189,7 @@ export default function AddStockForm({ onSuccess, onCancel }: AddStockFormProps)
             className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-11"
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 overflow-visible">
           <label className="text-sm font-bold text-foreground/80 ml-0.5">Expiry Date</label>
           <DatePicker
             date={formData.expiryDate}

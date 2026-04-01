@@ -84,14 +84,10 @@ export async function PUT(
           { status: 400 }
         )
       } else {
-        // Rename the inactive duplicate to free up the name
-        await prisma.brand.update({
-          where: { id: duplicateBrand.id },
-          data: { 
-            name: `${duplicateBrand.name}_deleted_${Date.now()}`,
-            updatedAt: new Date()
-          }
-        })
+        return NextResponse.json(
+          { error: 'Brand name already exists as an inactive brand. Please reactivate it instead.' },
+          { status: 400 }
+        )
       }
     }
 
@@ -158,14 +154,7 @@ export async function DELETE(
       )
     }
 
-    await prisma.brand.update({
-      where: { id },
-      data: {
-        name: `${existingBrand.name}_del_${Date.now()}`,
-        isActive: false,
-        updatedAt: new Date(),
-      },
-    })
+    await prisma.brand.delete({ where: { id } })
 
     return NextResponse.json({ message: 'Brand deleted successfully' })
   } catch (error) {

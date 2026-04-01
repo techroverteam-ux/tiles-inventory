@@ -78,9 +78,7 @@ export async function GET(request: NextRequest) {
     if (brandId) where.brandId = brandId
     if (categoryId) where.categoryId = categoryId
     if (sizeId) where.sizeId = sizeId
-    if (isActive === null || isActive === undefined || isActive === '') {
-      where.isActive = true
-    } else {
+    if (isActive === 'true' || isActive === 'false') {
       where.isActive = isActive === 'true'
     }
 

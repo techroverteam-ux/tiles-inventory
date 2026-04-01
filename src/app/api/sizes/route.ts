@@ -27,10 +27,7 @@ export async function GET(request: NextRequest) {
     
 
     
-    // Default list behavior: show active items unless status is explicitly requested
-    if (isActive === null || isActive === undefined || isActive === '') {
-      where.isActive = true
-    } else {
+    if (isActive === 'true' || isActive === 'false') {
       where.isActive = isActive === 'true'
     }
 
@@ -114,19 +111,12 @@ export async function POST(request: NextRequest) {
     
     if (duplicateSize) {
       if (duplicateSize.isActive) {
+        return NextResponse.json({ error: 'Size name already exists' }, { status: 400 })
+      } else {
         return NextResponse.json(
-          { error: 'Size name already exists' },
+          { error: 'Size name already exists as an inactive size. Please reactivate it instead.' },
           { status: 400 }
         )
-      } else {
-        // Rename the inactive duplicate to free up the name
-        await prisma.size.update({
-          where: { id: duplicateSize.id },
-          data: { 
-            name: `${duplicateSize.name}_deleted_${Date.now()}`,
-            updatedAt: new Date()
-          }
-        })
       }
     }
 
