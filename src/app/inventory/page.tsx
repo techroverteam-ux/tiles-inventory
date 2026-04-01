@@ -30,6 +30,7 @@ import {
   SlidersHorizontal
 } from 'lucide-react'
 import { commonColumns, ExportButton } from '@/lib/excel-export'
+import { PageExportButton } from '@/components/reports/PageExport'
 import { TableFilters } from '@/components/ui/table-filters'
 import { DataView as AppDataView } from '@/components/ui/data-view'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
@@ -454,13 +455,52 @@ export default function InventoryPage() {
     </>
   )
 
+  const makeExportRows = (data: InventoryItem[]) => data.map((item: InventoryItem) => ({
+    imageUrl: item.imageUrl || item.product?.imageUrl,
+    col1: item.product?.category?.name || '',
+    col2: item.product?.size?.name || 'N/A',
+    col3: `${item.product?.name} — ${item.batchNumber}`,
+    qty: item.quantity,
+    badge: item.location?.name,
+  }))
+
+  const exportConfig = useMemo(() => ({
+    title: 'Inventory Report',
+    rows: makeExportRows(inventory),
+    grandTotal: pagination.total,
+    grandTotalLabel: 'Total Batches',
+    excelColumns: commonColumns.inventory,
+    excelData: inventory,
+    filename: 'inventory-export',
+    sheetName: 'Inventory',
+  }), [inventory, pagination.total])
+
+  const customExportFilters = useMemo(() => ({
+    brands,
+    categories,
+    statuses: [
+      { value: 'low', label: 'Low Stock (< 10)' },
+      { value: 'out', label: 'Out of Stock' },
+    ],
+    filterData: ({ brandId, categoryId, status, dateFrom, dateTo }: any) => {
+      let filtered = inventory
+      if (brandId) filtered = filtered.filter(i => i.product?.brand?.name === brands.find(b => b.id === brandId)?.name)
+      if (categoryId) filtered = filtered.filter(i => i.product?.category?.name === categories.find(c => c.id === categoryId)?.name)
+      if (status === 'low') filtered = filtered.filter(i => i.quantity > 0 && i.quantity < 10)
+      if (status === 'out') filtered = filtered.filter(i => i.quantity === 0)
+      if (dateFrom) filtered = filtered.filter(i => new Date(i.createdAt) >= new Date(dateFrom))
+      if (dateTo) filtered = filtered.filter(i => new Date(i.createdAt) <= new Date(dateTo))
+      return { rows: makeExportRows(filtered), excelData: filtered }
+    }
+  }), [inventory, brands, categories])
+
   return (
     <div className="w-full px-3 sm:px-4 md:px-6 space-y-8 pb-10">
       {/* Header */}
       <TableFilters
         title="Inventory"
         filters={filterConfigs}
-        values={Object.fromEntries(Object.entries(filters).filter(([k]) => k !== 'sortBy' && k !== 'sortOrder'))}
+        values={Object.fromEntries(Object.entries(filters).filter(([k]) => k !== 'sortBy' && k !== 'sortOrder')) as Record<string, string>}
         onFiltersChange={(newFilters) => {
           // Strip 'none' sentinel values before storing, preserve sort fields
           const cleaned = Object.fromEntries(
@@ -474,20 +514,7 @@ export default function InventoryPage() {
         loading={loading}
         actions={
           <div className="flex items-center gap-2">
-            <ExportButton
-              data={inventory}
-              columns={commonColumns.inventory}
-              filename="inventory-export"
-              reportTitle="Inventory Report"
-              onExportComplete={(result) => {
-                if (result.success) {
-                  showToast(`Exported ${inventory.length} items successfully!`, 'success')
-                } else {
-                  showToast(result.error || 'Export failed', 'error')
-                }
-              }}
-              disabled={inventory.length === 0}
-            />
+            <PageExportButton config={exportConfig} customFilters={customExportFilters} disabled={inventory.length === 0} />
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
               <DialogTrigger asChild>
                 <Button size="sm" className="h-10 rounded-xl font-bold gap-2 shadow-lg shadow-primary/20">

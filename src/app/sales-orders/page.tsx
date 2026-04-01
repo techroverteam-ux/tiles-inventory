@@ -28,6 +28,7 @@ import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/tab
 import { DataView as AppDataView } from '@/components/ui/data-view'
 import { useMemo, useCallback } from 'react'
 import { commonColumns, ExportButton } from '@/lib/excel-export'
+import { PageExportButton } from '@/components/reports/PageExport'
 import { useResponsiveDefaultView } from '@/hooks/use-responsive-default-view'
 
 const formatDate = (dateString: string) => {
@@ -253,25 +254,47 @@ export default function SalesOrdersPage() {
     )
   }, [])
 
+  const makeExportRows = (data: SalesOrder[]) => data.map(order => {
+    const fi = order.items?.[0]
+    return {
+      imageUrl: fi?.product?.imageUrl || fi?.batch?.imageUrl,
+      col1: order.brand?.name || '',
+      col2: formatDate(order.orderDate),
+      col3: order.orderNumber,
+      qty: order.items?.reduce((s: number, i: any) => s + (i.quantity || 0), 0) || 0,
+      badge: 'SOLD',
+    }
+  })
+
+  const exportConfig = useMemo(() => ({
+    title: 'Sales Orders Report',
+    rows: makeExportRows(orders),
+    grandTotal: orders.length,
+    grandTotalLabel: 'Total Orders',
+    excelColumns: commonColumns.salesOrder,
+    excelData: orders,
+    filename: 'sales-orders-export',
+    sheetName: 'Sales Orders',
+  }), [orders])
+
+  const customExportFilters = useMemo(() => ({
+    brands: brands,
+    filterData: ({ brandId, dateFrom, dateTo }: any) => {
+      let filtered = orders
+      if (brandId) filtered = filtered.filter(o => o.brand?.name === brands.find(b => b.id === brandId)?.name)
+      if (dateFrom) filtered = filtered.filter(o => new Date(o.orderDate) >= new Date(dateFrom))
+      if (dateTo) filtered = filtered.filter(o => new Date(o.orderDate) <= new Date(dateTo))
+      return { rows: makeExportRows(filtered), excelData: filtered }
+    }
+  }), [orders, brands])
+
   return (
     <div className="w-full px-3 sm:px-4 md:px-6 space-y-8 pb-10">
       <TableFilters
         title="Sales Orders"
         actions={
           <div className="flex items-center gap-2">
-            <ExportButton
-              data={orders}
-              columns={commonColumns.salesOrder}
-              filename="sales-orders-export"
-              onExportComplete={(result) => {
-                if (result.success) {
-                  showToast(`Exported ${orders.length} orders successfully!`, 'success')
-                } else {
-                  showToast(result.error || 'Export failed', 'error')
-                }
-              }}
-              disabled={orders.length === 0}
-            />
+            <PageExportButton config={exportConfig} customFilters={customExportFilters} disabled={orders.length === 0} />
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
               <DialogTrigger asChild>
                 <Button size="sm" className="rounded-xl font-bold gap-2 shadow-lg shadow-primary/20">
