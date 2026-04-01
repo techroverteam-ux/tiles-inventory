@@ -51,6 +51,13 @@ interface SalesOrder {
   updatedBy?: { name: string }
 }
 
+const formatSizeInches = (sizeName?: string) => {
+  if (!sizeName) return 'N/A'
+  const match = sizeName.match(/([\d.]+)\s*[xX×]\s*([\d.]+)/)
+  if (match) return `${match[1]}" × ${match[2]}"`
+  return sizeName
+}
+
 export default function SalesOrdersPage() {
   const { showToast } = useToast()
   const searchParams = useSearchParams()
@@ -150,107 +157,101 @@ export default function SalesOrdersPage() {
     setShowEditDialog(true)
   }
 
-  const renderGridItem = useCallback((order: SalesOrder) => (
-    <Card className="h-full hover:shadow-premium transition-all duration-300 border-border/50 group overflow-hidden">
-      <CardHeader className="pb-3 border-b border-border/30 bg-muted/20">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Order #</div>
-            <CardTitle className="text-lg font-bold text-card-foreground group-hover:text-primary transition-colors">
-              {order.orderNumber}
-            </CardTitle>
+  const renderGridItem = useCallback((order: SalesOrder) => {
+    const firstItem = order.items?.[0]
+    const photo = firstItem?.product?.imageUrl || firstItem?.batch?.imageUrl
+    const sizeName = firstItem?.product?.size?.name
+    const totalQty = order.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0
+    return (
+      <div className="h-full border border-border/50 rounded-2xl overflow-hidden hover:shadow-premium transition-all duration-300 bg-card flex flex-col group">
+        {/* Photo - Priority, big */}
+        <div className="relative w-full aspect-[4/3] bg-muted/20 flex-shrink-0">
+          {photo ? (
+            <img src={photo} alt={order.orderNumber} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
+              <ShoppingCart className="h-12 w-12" />
+            </div>
+          )}
+          <div className="absolute top-2 right-2">
+            <Badge variant="default" className="bg-primary text-primary-foreground border-none font-bold text-xs shadow">
+              SOLD
+            </Badge>
           </div>
-          <Badge variant="default" className="bg-primary text-primary-foreground border-none font-bold">
+        </div>
+        <div className="p-3 flex flex-col gap-2 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">{order.orderNumber}</div>
+              <div className="text-xs text-muted-foreground">{order.brand?.name || '—'}</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+            <div><span className="text-muted-foreground">Date: </span><span className="font-medium">{formatDate(order.orderDate)}</span></div>
+            <div><span className="text-muted-foreground">Qty: </span><span className="font-bold">{totalQty}</span></div>
+            {sizeName && <div className="col-span-2"><span className="text-muted-foreground">Size: </span><span className="font-bold">{formatSizeInches(sizeName)}</span></div>}
+          </div>
+          <div className="pt-2 mt-auto border-t border-border/30 flex gap-2">
+            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleView(order) }} className="flex-1 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary gap-1.5 font-bold h-8 text-xs">
+              <Eye className="h-3 w-3" />View
+            </Button>
+            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleEdit(order) }} className="flex-1 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary gap-1.5 font-bold h-8 text-xs">
+              <Edit className="h-3 w-3" />Edit
+            </Button>
+            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleDelete(order) }} className="h-8 w-8 rounded-xl p-0 text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10">
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }, [])
+
+  const renderListRow = useCallback((order: SalesOrder) => {
+    const firstItem = order.items?.[0]
+    const photo = firstItem?.product?.imageUrl || firstItem?.batch?.imageUrl
+    const sizeName = firstItem?.product?.size?.name
+    const totalQty = order.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0
+    return (
+      <>
+        {/* Photo - First column */}
+        <td className="px-3 py-2">
+          <div className="h-16 w-16 rounded-xl overflow-hidden bg-muted/20 border border-border/40 flex-shrink-0">
+            {photo ? (
+              <img src={photo} alt={order.orderNumber} className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-muted-foreground/40">
+                <ShoppingCart className="h-6 w-6" />
+              </div>
+            )}
+          </div>
+        </td>
+        <td className="px-4 py-3"><div className="font-bold">{order.orderNumber}</div></td>
+        <td className="px-4 py-3"><div className="font-medium">{order.brand?.name || '—'}</div></td>
+        <td className="px-4 py-3 font-bold tabular-nums">{totalQty}</td>
+        <td className="px-4 py-3 font-bold text-sm">{formatSizeInches(sizeName)}</td>
+        <td className="px-4 py-3 text-sm text-foreground">{formatDate(order.orderDate)}</td>
+        <td className="px-4 py-3">
+          <Badge variant="default" className="bg-primary text-primary-foreground border-none font-bold text-[10px] h-5">
             SOLD
           </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-4 space-y-4">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">Brand</span>
-            <div className="font-bold text-foreground truncate">{order.brand?.name || '—'}</div>
+        </td>
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="sm" className="rounded-xl hover:bg-primary/10 hover:text-primary gap-2 font-bold px-3 transition-all" onClick={() => handleView(order)}>
+              <Eye className="h-4 w-4" />View
+            </Button>
+            <Button variant="ghost" size="sm" className="rounded-xl hover:bg-primary/10 hover:text-primary gap-2 font-bold px-3 transition-all" onClick={() => handleEdit(order)}>
+              <Edit className="h-4 w-4" />Edit
+            </Button>
+            <Button variant="ghost" size="sm" className="rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 font-bold px-3 transition-all" onClick={() => handleDelete(order)}>
+              <Trash2 className="h-4 w-4" />Delete
+            </Button>
           </div>
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">Amount</span>
-            <div className="font-bold text-primary tabular-nums italic">₹{order.totalAmount.toLocaleString()}</div>
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">Date</span>
-            <div className="font-medium text-foreground">{formatDate(order.orderDate)}</div>
-          </div>
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-muted-foreground">Items</span>
-            <div className="font-medium text-foreground">{order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0}</div>
-          </div>
-        </div>
-
-        <div className="pt-4 border-t border-border/30 flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); handleView(order); }}
-            className="flex-1 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary gap-1.5 font-bold h-9"
-          >
-            <Eye className="h-3.5 w-3.5" />
-            View
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); handleEdit(order); }}
-            className="flex-1 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary gap-1.5 font-bold h-9"
-          >
-            <Edit className="h-3.5 w-3.5" />
-            Edit
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); handleDelete(order); }}
-            className="h-9 w-9 rounded-xl p-0 text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  ), [])
-
-  const renderListRow = useCallback((order: SalesOrder) => (
-    <>
-      <td className="px-4 py-3"><div className="font-bold">{order.orderNumber}</div></td>
-      <td className="px-4 py-3"><div className="font-medium">{order.brand?.name || '—'}</div></td>
-      <td className="px-4 py-3 tabular-nums">
-        {order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0}
-      </td>
-      <td className="px-4 py-3 font-bold text-primary tabular-nums">
-        ₹{order.totalAmount.toLocaleString()}
-      </td>
-      <td className="px-4 py-3 text-sm text-foreground">{formatDate(order.orderDate)}</td>
-      <td className="px-4 py-3">
-        <Badge variant="default" className="bg-primary text-primary-foreground border-none font-bold text-[10px] h-5">
-          SOLD
-        </Badge>
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-          <Button variant="ghost" size="sm" className="rounded-xl hover:bg-primary/10 hover:text-primary gap-2 font-bold px-3 transition-all" onClick={() => handleView(order)}>
-            <Eye className="h-4 w-4" />
-            View
-          </Button>
-          <Button variant="ghost" size="sm" className="rounded-xl hover:bg-primary/10 hover:text-primary gap-2 font-bold px-3 transition-all" onClick={() => handleEdit(order)}>
-            <Edit className="h-4 w-4" />
-            Edit
-          </Button>
-          <Button variant="ghost" size="sm" className="rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 gap-2 font-bold px-3 transition-all" onClick={() => handleDelete(order)}>
-            <Trash2 className="h-4 w-4" />
-            Delete
-          </Button>
-        </div>
-      </td>
-    </>
-  ), [])
+        </td>
+      </>
+    )
+  }, [])
 
   return (
     <div className="w-full px-3 sm:px-4 md:px-6 space-y-8 pb-10">
@@ -314,7 +315,7 @@ export default function SalesOrdersPage() {
           columns: 3
         }}
         listProps={{
-          headers: ['Order #', 'Brand', 'Qty', 'Amount', 'Date', 'Status', 'Actions'],
+          headers: ['Photo', 'Order #', 'Brand', 'Qty', 'Size (in)', 'Date', 'Status', 'Actions'],
           renderRow: renderListRow
         }}
       />

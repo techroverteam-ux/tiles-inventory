@@ -84,37 +84,20 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     const user = requireAuth(request)
-    
-    // Find or create product based on brand, category, and size
-    let product = await prisma.product.findFirst({
-      where: {
-        brandId: data.brandId,
-        categoryId: data.categoryId,
-        sizeId: data.sizeId || null,
-      },
-    })
 
-    // If product doesn't exist, create a basic one
-    if (!product) {
-      const category = await prisma.category.findUnique({ where: { id: data.categoryId } })
-      const size = await prisma.size.findUnique({ where: { id: data.sizeId } })
-      const brand = await prisma.brand.findUnique({ where: { id: data.brandId } })
+    const { productId, orderDate, expectedDate, quantity, batchName, amount, orderNumber } = data
 
-      product = await prisma.product.create({
-        data: {
-          name: `${brand?.name || ''} ${category?.name || ''} ${size?.name || ''}`.trim().replace(/\s+/g, ' '),
-          code: `${brand?.name?.substring(0, 3).toUpperCase()}-${Date.now()}`,
-          brandId: data.brandId,
-          categoryId: data.categoryId,
-          sizeId: data.sizeId || null,
-          sqftPerBox: size?.length && size?.width ? (size.length * size.width) / 144 : 1,
-          pcsPerBox: 1,
-          isActive: true,
-          createdById: user.userId,
-          updatedById: user.userId,
-        } as any,
-      })
+    if (!productId || !orderDate || !quantity) {
+      return NextResponse.json({ error: 'Product, order date and quantity are required' }, { status: 400 })
     }
+
+    const product = await prisma.product.findUnique({ where: { id: productId } })
+    if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+
+    const qty = parseInt(quantity) || 0
+    const totalAmount = parseFloat(amount) || 0
+    const unitPrice = qty > 0 ? totalAmount / qty : 0
+    const batchNum = batchName || `BATCH-${Date.now()}`
 
     // Get default location
     let location = await prisma.location.findFirst({ where: { isActive: true } })
@@ -124,92 +107,41 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const quantity = parseInt(data.quantity) || 0
-    const amount = parseFloat(data.amount) || 0
-    const unitPrice = quantity > 0 ? amount / quantity : 0
-
-    // Find or create batch and update batch number
-    let batch = await prisma.batch.findFirst({
-      where: {
-        productId: product.id,
-        locationId: location.id,
-      },
-    })
-
-    const batchName = data.batchName || `BATCH-${Date.now()}`
-
-    if (batch) {
-      // Update existing batch with new batch number
-      await prisma.batch.update({
-        where: { id: batch.id },
-        data: {
-          batchNumber: batchName,
-          updatedById: user.userId,
-        } as any,
-      })
-    } else {
-      // Create new batch
-      await prisma.batch.create({
-        data: {
-          productId: product.id,
-          locationId: location.id,
-          batchNumber: batchName,
-          quantity: 0,
-          purchasePrice: 0,
-          sellingPrice: 0,
-          createdById: user.userId,
-          updatedById: user.userId,
-        } as any,
-      })
-    }
-
-    // Create order with items
     const order = await prisma.purchaseOrder.create({
       data: {
-        orderNumber: data.orderNumber,
-        brandId: data.brandId,
-        orderDate: new Date(data.orderDate),
-        expectedDate: data.expectedDate ? new Date(data.expectedDate) : null,
+        orderNumber: orderNumber || `PO-${Date.now()}`,
+        brandId: product.brandId,
+        orderDate: new Date(orderDate),
+        expectedDate: expectedDate ? new Date(expectedDate) : null,
         status: 'PENDING',
-        totalAmount: amount,
+        totalAmount,
         items: {
-          create: [
-            {
-              productId: product.id,
-              locationId: location.id,
-              batchNumber: batchName,
-              quantity: quantity,
-              unitPrice: unitPrice,
-              totalPrice: amount,
-              createdById: user.userId,
-              updatedById: user.userId,
-            } as any,
-          ],
+          create: [{
+            productId: product.id,
+            locationId: location.id,
+            batchNumber: batchNum,
+            quantity: qty,
+            unitPrice,
+            totalPrice: totalAmount,
+            createdById: user.userId,
+            updatedById: user.userId,
+          } as any],
         },
         createdById: user.userId,
         updatedById: user.userId,
       } as any,
       include: {
         brand: true,
-        items: {
-          include: {
-            product: {
-              include: {
-                category: true,
-                size: true,
-              },
-            },
-          },
-        },
+        items: { include: { product: { include: { category: true, size: true } } } },
       },
     })
 
     return NextResponse.json(order, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Purchase order creation error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create purchase order' },
-      { status: 500 }
-    )
+    if (error?.code === 'P2002') {
+      return NextResponse.json({ error: 'Order number already exists' }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Failed to create purchase order' }, { status: 500 })
   }
 }

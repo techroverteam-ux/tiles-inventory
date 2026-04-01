@@ -74,95 +74,36 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     const user = requireAuth(request)
-    
-    // Find or create product
-    let product = await prisma.product.findFirst({
-      where: {
-        brandId: data.brandId,
-        categoryId: data.categoryId,
-        sizeId: data.sizeId || null,
-      },
-    })
-
-    if (!product) {
-      const category = await prisma.category.findUnique({ where: { id: data.categoryId } })
-      const size = await prisma.size.findUnique({ where: { id: data.sizeId } })
-      const brand = await prisma.brand.findUnique({ where: { id: data.brandId } })
-
-      product = await prisma.product.create({
-        data: {
-          name: `${brand?.name || ''} ${category?.name || ''} ${size?.name || ''}`.trim().replace(/\s+/g, ' '),
-          code: `${brand?.name?.substring(0, 3).toUpperCase()}-${Date.now()}`,
-          brandId: data.brandId,
-          categoryId: data.categoryId,
-          sizeId: data.sizeId || null,
-          sqftPerBox: size?.length && size?.width ? (size.length * size.width) / 144 : 1,
-          pcsPerBox: 1,
-          isActive: true,
-          createdById: user.userId,
-          updatedById: user.userId,
-        } as any,
-      })
-    }
-
-    // Get or create a batch for this product at the specified location
-    let batch = await prisma.batch.findFirst({
-      where: {
-        productId: product.id,
-        locationId: data.locationId,
-      },
-    })
-
-    if (!batch) {
-      batch = await prisma.batch.create({
-        data: {
-          productId: product.id,
-          locationId: data.locationId,
-          batchNumber: data.batchNumber || `BATCH-${Date.now()}`,
-          quantity: 0,
-          purchasePrice: 0,
-          sellingPrice: 0,
-          createdById: user.userId,
-          updatedById: user.userId,
-        } as any,
-      })
-    } else if (data.batchName) {
-      // Update batch number if provided
-      batch = await prisma.batch.update({
-        where: { id: batch.id },
-        data: {
-          batchNumber: data.batchName,
-          updatedById: user.userId,
-        } as any,
-      })
-    }
 
     const quantity = parseInt(data.quantity) || 0
-    const amount = parseFloat(data.amount) || 0
-    const unitPrice = quantity > 0 ? amount / quantity : 0
-
-    // Log current batch quantity for debugging
-    console.log(`Batch ${batch.id} current quantity: ${batch.quantity}, requested: ${quantity}`)
-
-    // Check if batch has enough quantity (allow negative for manual inventory management)
-    if (batch.quantity < quantity) {
-      console.warn(`Warning: Insufficient stock. Available: ${batch.quantity}, Required: ${quantity}. Proceeding with negative inventory.`)
-      // Optionally uncomment the line below to enforce stock validation:
-      // return NextResponse.json(
-      //   { error: `Insufficient stock. Available: ${batch.quantity}, Required: ${quantity}` },
-      //   { status: 400 }
-      // )
+    if (quantity <= 0) {
+      return NextResponse.json({ error: 'Quantity must be greater than 0' }, { status: 400 })
     }
 
-    // Deduct quantity from batch when sold
+    // Fetch the batch directly by ID
+    const batch = await prisma.batch.findUnique({ where: { id: data.batchId } })
+    if (!batch) {
+      return NextResponse.json({ error: 'Batch not found' }, { status: 404 })
+    }
+
+    // Enforce stock validation
+    if (batch.quantity <= 0) {
+      return NextResponse.json({ error: 'This product is out of stock' }, { status: 400 })
+    }
+    if (batch.quantity < quantity) {
+      return NextResponse.json(
+        { error: `Insufficient stock. Available: ${batch.quantity}, Requested: ${quantity}` },
+        { status: 400 }
+      )
+    }
+
+    const unitPrice = batch.sellingPrice || 0
+    const totalPrice = unitPrice * quantity
+
+    // Deduct quantity from batch
     await prisma.batch.update({
       where: { id: batch.id },
-      data: {
-        quantity: {
-          decrement: quantity,
-        },
-        updatedById: user.userId,
-      } as any,
+      data: { quantity: { decrement: quantity }, updatedById: user.userId } as any,
     })
 
     const order = await prisma.salesOrder.create({
@@ -171,21 +112,19 @@ export async function POST(request: NextRequest) {
         customerName: 'Customer',
         orderDate: new Date(data.soldDate),
         status: 'DELIVERED',
-        totalAmount: amount,
+        totalAmount: totalPrice,
         discount: 0,
-        finalAmount: amount,
+        finalAmount: totalPrice,
         items: {
-          create: [
-            {
-              productId: product.id,
-              batchId: batch.id,
-              quantity: quantity,
-              unitPrice: unitPrice,
-              totalPrice: amount,
-              createdById: user.userId,
-              updatedById: user.userId,
-            } as any,
-          ],
+          create: [{
+            productId: data.productId,
+            batchId: batch.id,
+            quantity,
+            unitPrice,
+            totalPrice,
+            createdById: user.userId,
+            updatedById: user.userId,
+          } as any],
         },
         createdById: user.userId,
         updatedById: user.userId,
@@ -193,13 +132,7 @@ export async function POST(request: NextRequest) {
       include: {
         items: {
           include: {
-            product: {
-              include: {
-                brand: true,
-                category: true,
-                size: true,
-              },
-            },
+            product: { include: { brand: true, category: true, size: true } },
           },
         },
       },
@@ -208,9 +141,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(order, { status: 201 })
   } catch (error) {
     console.error('Sales order creation error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create sales order' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to create sales order' }, { status: 500 })
   }
 }

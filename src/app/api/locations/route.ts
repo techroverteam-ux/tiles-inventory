@@ -22,10 +22,7 @@ export async function GET(request: NextRequest) {
       ]
     }
     
-    // Default list behavior: show active items unless status is explicitly requested
-    if (isActive === null || isActive === undefined || isActive === '') {
-      where.isActive = true
-    } else {
+    if (isActive === 'true' || isActive === 'false') {
       where.isActive = isActive === 'true'
     }
 
@@ -75,12 +72,19 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     
-    const { name, address, isActive = true } = data
+    const { name, address, isActive = true, imageUrl } = data
     
     // Validate required fields
     if (!name || !name.trim()) {
       return NextResponse.json(
         { error: 'Location name is required' },
+        { status: 400 }
+      )
+    }
+    
+    if (!imageUrl) {
+      return NextResponse.json(
+        { error: 'Location photo is required' },
         { status: 400 }
       )
     }
@@ -106,6 +110,7 @@ export async function POST(request: NextRequest) {
       data: {
         name: name.trim(),
         address: address?.trim() || null,
+        imageUrl: imageUrl || null,
         isActive: Boolean(isActive),
         createdById: user.userId,
         updatedById: user.userId,

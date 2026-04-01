@@ -26,9 +26,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Default list behavior: show active items unless status is explicitly requested
-    if (isActive === null || isActive === undefined || isActive === '') {
-      where.isActive = true
-    } else {
+    if (isActive === 'true' || isActive === 'false') {
       where.isActive = isActive === 'true'
     }
 
@@ -99,19 +97,15 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Check if brand name already exists (only active ones)
     const existingBrand = await prisma.brand.findFirst({
-      where: { 
-        name: { equals: name.trim(), mode: 'insensitive' },
-        isActive: true
-      }
+      where: { name: { equals: name.trim(), mode: 'insensitive' } }
     })
-    
+
     const user = requireAuth(request)
 
     if (existingBrand) {
       return NextResponse.json(
-        { error: 'Brand name already exists' },
+        { error: existingBrand.isActive ? 'Brand name already exists' : 'Brand name already exists as an inactive brand. Please reactivate it instead.' },
         { status: 400 }
       )
     }
@@ -135,8 +129,11 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ brand }, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Brand creation error:', error)
+    if (error?.code === 'P2002') {
+      return NextResponse.json({ error: 'Brand name already exists' }, { status: 400 })
+    }
     return NextResponse.json(
       { error: 'Failed to create brand' },
       { status: 500 }

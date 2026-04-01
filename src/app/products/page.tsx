@@ -157,10 +157,12 @@ export default function ProductsPage() {
       label: 'Status',
       type: 'select',
       options: [
+        { value: 'all', label: 'All Status' },
         { value: 'true', label: 'Active' },
         { value: 'false', label: 'Inactive' }
       ],
-      placeholder: 'All Status'
+      placeholder: 'All Status',
+      defaultValue: 'all'
     }
   ], [brands, categories, sizes])
 
@@ -168,11 +170,14 @@ export default function ProductsPage() {
   const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
+      const cleanFilters = Object.fromEntries(
+        Object.entries(filters).filter(([_, v]) => v && v !== '' && v !== 'all')
+      )
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: itemsPerPage.toString(),
         search: search || '',
-        ...filters
+        ...cleanFilters
       })
 
       const response = await fetch(`/api/products?${params}`)
@@ -268,6 +273,7 @@ export default function ProductsPage() {
       } else {
         const allEntries = [...productEntries, formData].filter(e => e.name.trim() && e.code.trim() && e.brandId && e.categoryId && e.imageUrl)
         let successCount = 0
+        const errors: string[] = []
         for (const entry of allEntries) {
           const response = await fetch('/api/products', {
             method: 'POST',
@@ -278,13 +284,23 @@ export default function ProductsPage() {
               pcsPerBox: parseInt(entry.pcsPerBox) || 1
             })
           })
-          if (response.ok) successCount++
+          if (response.ok) {
+            successCount++
+          } else {
+            const errorData = await response.json()
+            errors.push(errorData.error || errorData.details || `Failed to create "${entry.name}"`)
+          }
         }
-        showToast(`${successCount} product(s) created successfully!`, 'success')
-        setShowForm(false)
-        setProductEntries([])
-        resetForm()
-        fetchProducts()
+        if (successCount > 0) {
+          showToast(`${successCount} product(s) created successfully!`, 'success')
+          setShowForm(false)
+          setProductEntries([])
+          resetForm()
+          fetchProducts()
+        }
+        if (errors.length > 0) {
+          showToast(errors.join(' | '), 'error')
+        }
       }
     } catch (error) {
       showToast('Error saving product', 'error')
@@ -394,9 +410,9 @@ export default function ProductsPage() {
   }
 
   const renderGridItem = (product: Product) => (
-    <Card className="h-full hover:shadow-premium transition-all duration-300 border-border/50 group overflow-hidden">
+    <Card className="hover:shadow-premium transition-all duration-300 border-border/50 group overflow-hidden">
       <div
-        className="relative aspect-video overflow-hidden bg-muted/30 cursor-zoom-in group/image"
+        className="relative h-48 overflow-hidden bg-muted/30 cursor-zoom-in group/image flex-shrink-0"
         onClick={(e) => {
           if (product.imageUrl) {
             e.stopPropagation()
@@ -495,41 +511,28 @@ export default function ProductsPage() {
 
   const renderListRow = (product: Product) => (
     <>
-      <td className="px-4 py-2.5">
-        <div className="flex items-center space-x-4">
-          <div
-            className={cn(
-              "h-9 w-9 rounded-lg overflow-hidden bg-muted/30 border border-border/50 flex-shrink-0 relative group/thumb",
-              product.imageUrl ? "cursor-zoom-in" : ""
-            )}
-            onClick={(e) => {
-              if (product.imageUrl) {
-                e.stopPropagation()
-                setPreviewImage({ src: product.imageUrl, alt: product.name })
-              }
-            }}
-          >
-            {product.imageUrl ? (
-              <>
-                <img
-                  src={product.imageUrl}
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/20 transition-colors flex items-center justify-center">
-                  <ZoomIn className="text-white opacity-0 group-hover/thumb:opacity-100 transition-opacity h-4 w-4" />
-                </div>
-              </>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground/20">
-                <Package className="h-6 w-6" />
+      {/* Photo - Separate first column, big */}
+      <td className="px-3 py-2">
+        <div
+          className={cn('h-16 w-16 rounded-xl overflow-hidden bg-muted/30 border border-border/50 flex-shrink-0 relative group/thumb', product.imageUrl ? 'cursor-zoom-in' : '')}
+          onClick={(e) => { if (product.imageUrl) { e.stopPropagation(); setPreviewImage({ src: product.imageUrl, alt: product.name }) } }}
+        >
+          {product.imageUrl ? (
+            <>
+              <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-300" />
+              <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/20 transition-colors flex items-center justify-center">
+                <ZoomIn className="text-white opacity-0 group-hover/thumb:opacity-100 transition-opacity h-4 w-4" />
               </div>
-            )}
-          </div>
-          <div>
-            <div className="font-bold text-foreground group-hover:text-primary transition-colors">{product.name}</div>
-            <div className="text-xs font-medium text-primary bg-primary/5 px-2 py-0.5 rounded-full inline-block mt-1">{product.code}</div>
-          </div>
+            </>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground/20"><Package className="h-6 w-6" /></div>
+          )}
+        </div>
+      </td>
+      <td className="px-4 py-2.5">
+        <div>
+          <div className="font-bold text-foreground group-hover:text-primary transition-colors">{product.name}</div>
+          <div className="text-xs font-medium text-primary bg-primary/5 px-2 py-0.5 rounded-full inline-block mt-1">{product.code}</div>
         </div>
       </td>
       <td className="px-4 py-2.5">
@@ -543,7 +546,7 @@ export default function ProductsPage() {
       <td className="px-4 py-2.5 text-sm font-medium text-foreground whitespace-nowrap">
         <div className="flex items-center gap-1.5">
           <Maximize className="h-4 w-4 text-muted-foreground" />
-          {product.size?.name || '-'}
+          <span className="font-bold">{product.size?.name ? (() => { const m = product.size.name.match(/([\d.]+)\s*[xX×]\s*([\d.]+)/); return m ? `${m[1]}" × ${m[2]}"` : product.size.name })() : '-'}</span>
         </div>
       </td>
       <td className="px-4 py-2.5 text-sm text-foreground">
@@ -829,7 +832,7 @@ export default function ProductsPage() {
           columns: 3
         }}
         listProps={{
-          headers: ['Product', 'Stock', 'Size', 'Category', 'Box Info', 'Status', 'Created', 'Updated', 'Actions'],
+          headers: ['Photo', 'Product', 'Stock', 'Size (in)', 'Category', 'Box Info', 'Status', 'Created', 'Updated', 'Actions'],
           renderRow: renderListRow
         }}
       />

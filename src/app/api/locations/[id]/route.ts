@@ -45,7 +45,7 @@ export async function PUT(
   try {
     const { id } = await params
     const data = await request.json()
-    const { name, address, isActive } = data
+    const { name, address, isActive, imageUrl } = data
 
     // Validate required fields
     if (!name || !name.trim()) {
@@ -84,14 +84,10 @@ export async function PUT(
           { status: 400 }
         )
       } else {
-        // Rename the inactive duplicate to free up the name
-        await prisma.location.update({
-          where: { id: duplicateLocation.id },
-          data: { 
-            name: `${duplicateLocation.name}_deleted_${Date.now()}`,
-            updatedAt: new Date()
-          }
-        })
+        return NextResponse.json(
+          { error: 'Location name already exists as an inactive location. Please reactivate it instead.' },
+          { status: 400 }
+        )
       }
     }
 
@@ -100,6 +96,7 @@ export async function PUT(
       data: {
         name: name.trim(),
         address: address?.trim() || null,
+        imageUrl: imageUrl !== undefined ? (imageUrl || null) : undefined,
         isActive: Boolean(isActive),
         updatedById: user.userId,
         updatedAt: new Date()
@@ -158,14 +155,7 @@ export async function DELETE(
       )
     }
 
-    await prisma.location.update({
-      where: { id },
-      data: {
-        name: `${existingLocation.name}_del_${Date.now()}`,
-        isActive: false,
-        updatedAt: new Date(),
-      },
-    })
+    await prisma.location.delete({ where: { id } })
 
     return NextResponse.json({ message: 'Location deleted successfully' })
   } catch (error) {

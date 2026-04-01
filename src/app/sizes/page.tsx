@@ -126,10 +126,12 @@ export default function SizesPage() {
       label: 'Status',
       type: 'select',
       options: [
+        { value: 'all', label: 'All Status' },
         { value: 'true', label: 'Active' },
         { value: 'false', label: 'Inactive' }
       ],
-      placeholder: 'All Status'
+      placeholder: 'All Status',
+      defaultValue: 'all'
     },
     {
       key: 'createdAt',
@@ -147,9 +149,8 @@ export default function SizesPage() {
         limit: itemsPerPage.toString(),
         search: search || '',
       })
-      // Append all filters except empty values
       Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== '') params.append(key, value as string)
+        if (value && value !== '' && value !== 'all') params.append(key, value as string)
       })
 
       const response = await fetch(`/api/sizes?${params}`)
@@ -219,6 +220,7 @@ export default function SizesPage() {
       } else {
         const allEntries = [...entries, { ...formData, name: finalName }].filter(e => e.name.trim())
         let successCount = 0
+        const errors: string[] = []
         for (const entry of allEntries) {
           const entryName = entry.name.trim() || (entry.length && entry.width ? `${entry.length}x${entry.width}mm` : entry.name)
           const response = await fetch('/api/sizes', {
@@ -231,13 +233,23 @@ export default function SizesPage() {
               width: entry.width ? parseFloat(entry.width) : undefined
             })
           })
-          if (response.ok) successCount++
+          if (response.ok) {
+            successCount++
+          } else {
+            const errorData = await response.json()
+            errors.push(errorData.error || `Failed to create "${entryName}"`)
+          }
         }
-        showToast(`${successCount} size(s) created successfully!`, 'success')
-        setShowForm(false)
-        setEntries([])
-        resetForm()
-        fetchSizes()
+        if (successCount > 0) {
+          showToast(`${successCount} size(s) created successfully!`, 'success')
+          setShowForm(false)
+          setEntries([])
+          resetForm()
+          fetchSizes()
+        }
+        if (errors.length > 0) {
+          showToast(errors.join(' | '), 'error')
+        }
       }
     } catch (error) {
       showToast('Error saving size', 'error')
@@ -292,67 +304,49 @@ export default function SizesPage() {
   }
 
   const renderGridItem = useCallback((size: Size) => (
-    <Card className="h-full hover:shadow-premium transition-all duration-300 border-border/50 group">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg font-bold text-card-foreground group-hover:text-primary transition-colors">
-              {size.name}
-            </CardTitle>
-          </div>
-          <Badge
-            variant={size.isActive ? 'default' : 'secondary'}
-            className={cn(size.isActive ? "bg-primary/20 text-primary border-none" : "")}
-          >
+    <Card className="flex flex-col hover:shadow-premium transition-all duration-300 border-border/50 group overflow-hidden h-full">
+      <CardHeader className="pb-2 flex-shrink-0">
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="text-base font-bold text-card-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1">
+            {size.name}
+          </CardTitle>
+          <Badge variant={size.isActive ? 'default' : 'secondary'} className={cn("shrink-0", size.isActive ? "bg-primary/20 text-primary border-none" : "")}>
             {size.isActive ? 'Active' : 'Inactive'}
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2 italic min-h-10">
-          {size.description?.trim() || 'N/A'}
+      <CardContent className="pt-0 flex flex-col flex-1">
+        {/* Fixed height description */}
+        <p className="text-xs text-muted-foreground italic h-8 line-clamp-2 mb-3">
+          {size.description?.trim() || ''}
         </p>
-        <div className="flex flex-col gap-2 mb-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground bg-primary/5 p-2 rounded-lg border border-primary/10 flex-wrap min-h-10">
-            <Ruler className="h-4 w-4 text-primary" />
-            <span>
-              {size.length || size.width
-                ? `${size.length || '?'} × ${size.width || '?'} mm${size.length && size.width ? ` (${formatMmToFeetInches(size.length)} × ${formatMmToFeetInches(size.width)})` : ''}`
-                : 'N/A'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground ml-1">
+        {/* Fixed height dimensions row */}
+        <div className="flex items-center gap-2 text-xs font-medium text-foreground bg-primary/5 px-2.5 py-2 rounded-lg border border-primary/10 mb-2 h-9">
+          <Ruler className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span className="truncate">
+            {size.length && size.width
+              ? `${size.length} × ${size.width} mm`
+              : 'No dimensions'}
+          </span>
+        </div>
+        {/* Fixed height products row */}
+        <div className="flex items-center text-xs text-muted-foreground mb-3 h-5">
+          <span className="flex items-center gap-1 font-medium">
             <Package className="h-3 w-3" />
-            <span>Products: {size._count?.products || 0}</span>
-          </div>
+            {size._count?.products || 0} Products
+          </span>
         </div>
-
-        <div className="text-xs text-muted-foreground mb-6 space-y-1 bg-muted/30 p-2.5 rounded-xl border border-border/30">
-          <div className="flex justify-between"><span>Created:</span> <span className="font-medium text-foreground">{formatDate(size.createdAt)}</span></div>
-          <div className="flex justify-between">
-            <span>Updated:</span>
-            <span className="font-medium text-foreground">{size.updatedAt && size.updatedAt !== size.createdAt ? formatDate(size.updatedAt) : 'N/A'}</span>
-          </div>
-          <div className="flex justify-between"><span>By:</span> <span className="font-medium text-foreground">{size.createdBy?.name || 'N/A'}</span></div>
+        <div className="text-xs text-muted-foreground space-y-1 bg-muted/30 p-2.5 rounded-xl border border-border/30 mb-3">
+          <div className="flex justify-between"><span>Created:</span><span className="font-medium text-foreground">{formatDate(size.createdAt)}</span></div>
+          <div className="flex justify-between"><span>Updated:</span><span className="font-medium text-foreground">{size.updatedAt && size.updatedAt !== size.createdAt ? formatDate(size.updatedAt) : 'N/A'}</span></div>
+          <div className="flex justify-between"><span>By:</span><span className="font-medium text-foreground">{size.createdBy?.name || 'N/A'}</span></div>
         </div>
-        <div className="flex flex-wrap gap-2 sm:gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); handleEdit(size); }}
-            className="flex-1 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-2 font-bold h-9"
-          >
-            <Edit className="h-3.5 w-3.5" />
-            Edit
+        <div className="flex gap-2 mt-auto">
+          <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleEdit(size) }} className="flex-1 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-1.5 font-bold h-8 text-xs">
+            <Edit className="h-3 w-3" />Edit
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); setDeleteSize(size); }}
-            className="flex-1 rounded-xl text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10 hover:border-destructive/30 gap-2 font-bold h-9"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Delete
+          <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setDeleteSize(size) }} className="flex-1 rounded-xl text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10 gap-1.5 font-bold h-8 text-xs">
+            <Trash2 className="h-3 w-3" />Delete
           </Button>
         </div>
       </CardContent>

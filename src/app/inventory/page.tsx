@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog'
-import { MobileCard, MobileCardHeader, MobileCardField, MobileStatsCard } from '@/components/ui/mobile-card'
+import { MobileStatsCard } from '@/components/ui/mobile-card'
 import { LoadingPage } from '@/components/ui/skeleton'
 import { Pagination } from '@/components/ui/pagination'
 import { useToast } from '@/contexts/ToastContext'
@@ -129,7 +129,7 @@ export default function InventoryPage() {
       label: 'Location',
       type: 'select' as const,
       options: [
-        { value: 'none', label: 'All Locations' },
+        { value: '', label: 'All Locations' },
         ...locations.map(l => ({ value: l.id, label: l.name }))
       ]
     },
@@ -138,7 +138,7 @@ export default function InventoryPage() {
       label: 'Brand',
       type: 'select' as const,
       options: [
-        { value: 'none', label: 'All Brands' },
+        { value: '', label: 'All Brands' },
         ...brands.map(b => ({ value: b.id, label: b.name }))
       ]
     },
@@ -147,7 +147,7 @@ export default function InventoryPage() {
       label: 'Category',
       type: 'select' as const,
       options: [
-        { value: 'none', label: 'All Categories' },
+        { value: '', label: 'All Categories' },
         ...categories.map(c => ({ value: c.id, label: c.name }))
       ]
     },
@@ -156,7 +156,7 @@ export default function InventoryPage() {
       label: 'Stock Level',
       type: 'select' as const,
       options: [
-        { value: 'none', label: 'All Stock Levels' },
+        { value: '', label: 'All Stock Levels' },
         { value: 'low', label: 'Low Stock (< 10)' },
         { value: 'out', label: 'Out of Stock' }
       ]
@@ -166,13 +166,15 @@ export default function InventoryPage() {
   const fetchInventory = async () => {
     setLoading(true)
     try {
+      // Strip empty and 'none' values so they don't get sent as filter params
+      const cleanFilters = Object.fromEntries(
+        Object.entries(filters).filter(([_, v]) => v !== '' && v !== 'none')
+      )
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
         search: search || '',
-        ...Object.fromEntries(
-          Object.entries(filters).filter(([_, value]) => value !== '')
-        )
+        ...cleanFilters
       })
       
       const response = await fetch(`/api/inventory?${params}`)
@@ -251,6 +253,7 @@ export default function InventoryPage() {
       sortBy: 'createdAt',
       sortOrder: 'desc'
     })
+    setPagination(prev => ({ ...prev, page: 1 }))
   }
 
   const handleEdit = (item: InventoryItem) => {
@@ -321,74 +324,95 @@ export default function InventoryPage() {
     return 'default'
   }
 
+  const formatSizeInches = (sizeName?: string) => {
+    if (!sizeName) return 'N/A'
+    // If already has inch symbol or 'x', show as-is with " suffix
+    const match = sizeName.match(/([\d.]+)\s*[xX×]\s*([\d.]+)/)
+    if (match) return `${match[1]}" × ${match[2]}"`
+    return sizeName
+  }
+
   const renderGridItem = (item: InventoryItem) => (
-    <MobileCard 
-      className="cursor-pointer h-full border-border/50 hover:shadow-premium transition-all duration-300"
-      onClick={() => {
-        setSelectedDetailItem(item)
-        setShowDetails(true)
-      }}
+    <div
+      className="cursor-pointer border border-border/50 rounded-2xl overflow-hidden hover:shadow-premium transition-all duration-300 bg-card flex flex-col"
+      onClick={() => { setSelectedDetailItem(item); setShowDetails(true) }}
     >
-      <MobileCardHeader
-        title={item.product.name}
-        subtitle={`${item.product.brand.name} • ${item.product.code}`}
-        badge={
-          <div className="flex items-center gap-2 flex-nowrap">
-            <Badge variant={getStockBadgeVariant(item.quantity)} className="text-xs whitespace-nowrap font-bold">
-              {item.quantity} units
-            </Badge>
-            {item.quantity < 10 && <AlertTriangle className="h-4 w-4 text-destructive" />}
+      {/* Fixed-height image — always cropped consistently */}
+      <div className="relative w-full h-48 bg-muted/20 flex-shrink-0 overflow-hidden">
+        {item.imageUrl || item.product.imageUrl ? (
+          <img
+            src={item.imageUrl || item.product.imageUrl}
+            alt={item.product.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
+            <Package className="h-12 w-12" />
           </div>
-        }
-        actions={
-          <div onClick={(e) => e.stopPropagation()} className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="h-8 w-8 p-0 rounded-lg hover:bg-primary/10">
-              <Edit className="h-4 w-4 text-muted-foreground" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => handleDelete(item)} className="h-8 w-8 p-0 rounded-lg hover:bg-destructive/10">
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
-          </div>
-        }
-      />
-      <div className="space-y-3 mt-4">
-        <MobileCardField label="Size" value={item.product.size?.name || 'N/A'} />
-        <MobileCardField label="Category" value={item.product.category.name} />
-        <MobileCardField label="Batch" value={<code className="bg-muted px-2 py-0.5 rounded text-[10px] font-mono border border-border/40">{item.batchNumber}</code>} />
-        <MobileCardField label="Location" value={item.location.name} />
-        <div className="pt-3 mt-3 border-t border-border/30 grid grid-cols-2 gap-4">
-          <MobileCardField label="Purchase" value={`₹${item.purchasePrice.toLocaleString()}`} />
-          <MobileCardField label="Selling" value={`₹${item.sellingPrice.toLocaleString()}`} />
+        )}
+        <div className="absolute top-2 right-2">
+          <Badge variant={getStockBadgeVariant(item.quantity)} className="text-xs font-bold shadow">
+            {item.quantity} units
+          </Badge>
         </div>
-        <div className="pt-3 mt-3 border-t border-border/30">
-          <MobileCardField label="Total Value" value={`₹${(item.quantity * item.sellingPrice).toLocaleString()}`} className="text-sm font-bold text-primary" />
+        {item.quantity < 10 && (
+          <div className="absolute top-2 left-2">
+            <AlertTriangle className="h-4 w-4 text-destructive drop-shadow" />
+          </div>
+        )}
+      </div>
+      {/* Info */}
+      <div className="p-3 flex flex-col gap-2 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="font-bold text-sm text-foreground truncate">{item.product.name}</div>
+            <div className="text-xs text-primary font-medium truncate">{item.product.brand.name} • {item.product.code}</div>
+          </div>
+          <div onClick={(e) => e.stopPropagation()} className="flex gap-1 flex-shrink-0">
+            <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="h-7 w-7 p-0 rounded-lg hover:bg-primary/10">
+              <Edit className="h-3.5 w-3.5 text-muted-foreground" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => handleDelete(item)} className="h-7 w-7 p-0 rounded-lg hover:bg-destructive/10">
+              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+          <div><span className="text-muted-foreground">Size: </span><span className="font-bold">{formatSizeInches(item.product.size?.name)}</span></div>
+          <div><span className="text-muted-foreground">Cat: </span><span className="font-medium truncate">{item.product.category.name}</span></div>
+          <div><span className="text-muted-foreground">Batch: </span><code className="font-mono text-[10px]">{item.batchNumber}</code></div>
+          <div><span className="text-muted-foreground">Loc: </span><span className="font-medium">{item.location.name}</span></div>
+        </div>
+        <div className="pt-2 mt-auto border-t border-border/30 flex justify-between text-xs">
+          <div><span className="text-muted-foreground">Selling: </span><span className="font-bold text-primary">₹{item.sellingPrice.toLocaleString()}</span></div>
         </div>
       </div>
-    </MobileCard>
+    </div>
   )
 
   const renderListRow = (item: InventoryItem) => (
     <>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl overflow-hidden bg-muted/20 border border-border/40 flex-shrink-0">
-            {item.imageUrl || item.product.imageUrl ? (
-              <img 
-                src={item.imageUrl || item.product.imageUrl} 
-                alt={item.product.name}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center text-muted-foreground/40">
-                <Package className="h-5 w-5" />
-              </div>
-            )}
-          </div>
-          <div>
-            <div className="font-bold text-foreground group-hover:text-primary transition-colors">{item.product.name}</div>
-            <div className="text-xs font-medium text-primary bg-primary/5 px-2 py-0.5 rounded-full inline-block mt-1">
-              {item.product.brand.name} • {item.product.code}
+      {/* Photo - First column, big */}
+      <td className="px-3 py-2">
+        <div className="h-16 w-16 rounded-xl overflow-hidden bg-muted/20 border border-border/40 flex-shrink-0">
+          {item.imageUrl || item.product.imageUrl ? (
+            <img
+              src={item.imageUrl || item.product.imageUrl}
+              alt={item.product.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="h-full w-full flex items-center justify-center text-muted-foreground/40">
+              <Package className="h-6 w-6" />
             </div>
+          )}
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <div>
+          <div className="font-bold text-foreground group-hover:text-primary transition-colors">{item.product.name}</div>
+          <div className="text-xs font-medium text-primary bg-primary/5 px-2 py-0.5 rounded-full inline-block mt-1">
+            {item.product.brand.name} • {item.product.code}
           </div>
         </div>
       </td>
@@ -402,7 +426,7 @@ export default function InventoryPage() {
           )}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm font-medium">{item.product.size?.name || '—'}</td>
+      <td className="px-4 py-3 text-sm font-bold">{formatSizeInches(item.product.size?.name)}</td>
       <td className="px-4 py-3 text-sm">{item.product.category.name}</td>
       <td className="px-4 py-3">
         <code className="bg-muted px-2 py-0.5 rounded-md text-[11px] font-mono border border-border/30">
@@ -410,25 +434,10 @@ export default function InventoryPage() {
         </code>
       </td>
       <td className="px-4 py-3 text-sm">{item.location.name}</td>
-      <td className="px-4 py-3 font-mono tabular-nums text-xs">₹{item.purchasePrice.toLocaleString()}</td>
       <td className="px-4 py-3 font-mono tabular-nums text-xs font-bold">₹{item.sellingPrice.toLocaleString()}</td>
-      <td className="px-4 py-3 font-bold font-mono tabular-nums text-primary text-sm">
-        ₹{(item.quantity * item.sellingPrice).toLocaleString()}
-      </td>
       <td className="px-4 py-3 text-muted-foreground">
         <div className="text-xs font-bold text-foreground">{formatDate(item.createdAt)}</div>
         <div className="text-[10px] opacity-70">{item.createdBy?.name || 'System'}</div>
-      </td>
-      <td className="px-4 py-3 text-muted-foreground">
-        {item.updatedAt && item.updatedAt !== item.createdAt
-          ? (
-            <>
-              <div className="text-xs font-bold text-foreground">{formatDate(item.updatedAt)}</div>
-              <div className="text-[10px] opacity-70">{item.updatedBy?.name || 'System'}</div>
-            </>
-          )
-          : <span className="text-xs opacity-30">—</span>
-        }
       </td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -451,9 +460,13 @@ export default function InventoryPage() {
       <TableFilters
         title="Inventory"
         filters={filterConfigs}
-        values={filters}
+        values={Object.fromEntries(Object.entries(filters).filter(([k]) => k !== 'sortBy' && k !== 'sortOrder'))}
         onFiltersChange={(newFilters) => {
-          setFilters(newFilters)
+          // Strip 'none' sentinel values before storing, preserve sort fields
+          const cleaned = Object.fromEntries(
+            Object.entries(newFilters).map(([k, v]) => [k, v === 'none' ? '' : v])
+          )
+          setFilters((prev: any) => ({ sortBy: prev.sortBy, sortOrder: prev.sortOrder, ...cleaned }))
           setPagination(prev => ({ ...prev, page: 1 }))
         }}
         searchValue={search}
@@ -506,12 +519,16 @@ export default function InventoryPage() {
           onViewChange={setView}
           loading={loading}
           autoResponsive={true}
+          onItemClick={(item) => {
+            setSelectedDetailItem(item)
+            setShowDetails(true)
+          }}
           gridProps={{
             renderItem: renderGridItem,
-            columns: 2
+            columns: 3
           }}
           listProps={{
-            headers: ['Product', 'Stock', 'Size', 'Category', 'Batch', 'Location', 'Purchase', 'Selling', 'Total Value', 'Created', 'Updated', 'Actions'],
+            headers: ['Photo', 'Product', 'Stock', 'Size (in)', 'Category', 'Batch', 'Location', 'Selling', 'Created', 'Actions'],
             renderRow: renderListRow
           }}
         />

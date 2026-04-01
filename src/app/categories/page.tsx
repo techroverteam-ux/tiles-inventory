@@ -107,10 +107,12 @@ export default function CategoriesPage() {
       label: 'Status',
       type: 'select',
       options: [
+        { value: 'all', label: 'All Status' },
         { value: 'true', label: 'Active' },
         { value: 'false', label: 'Inactive' }
       ],
-      placeholder: 'All Status'
+      placeholder: 'All Status',
+      defaultValue: 'all'
     },
     {
       key: 'createdAt',
@@ -128,9 +130,8 @@ export default function CategoriesPage() {
         limit: itemsPerPage.toString(),
         search: search || '',
       })
-      // Append all filters except empty values
       Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== '') params.append(key, value as string)
+        if (value && value !== '' && value !== 'all') params.append(key, value as string)
       })
 
       const response = await fetch(`/api/categories?${params}`)
@@ -193,19 +194,30 @@ export default function CategoriesPage() {
       } else {
         const allEntries = [...entries, formData].filter(e => e.name.trim())
         let successCount = 0
+        const errors: string[] = []
         for (const entry of allEntries) {
           const response = await fetch('/api/categories', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(entry)
           })
-          if (response.ok) successCount++
+          if (response.ok) {
+            successCount++
+          } else {
+            const errorData = await response.json()
+            errors.push(errorData.error || `Failed to create "${entry.name}"`)
+          }
         }
-        showToast(`${successCount} category(s) created successfully!`, 'success')
-        setShowForm(false)
-        setEntries([])
-        resetForm()
-        fetchCategories()
+        if (successCount > 0) {
+          showToast(`${successCount} category(s) created successfully!`, 'success')
+          setShowForm(false)
+          setEntries([])
+          resetForm()
+          fetchCategories()
+        }
+        if (errors.length > 0) {
+          showToast(errors.join(' | '), 'error')
+        }
       }
     } catch (error) {
       showToast('Error saving category', 'error')
@@ -258,58 +270,38 @@ export default function CategoriesPage() {
   }
 
   const renderGridItem = useCallback((category: Category) => (
-    <Card className="h-full hover:shadow-premium transition-all duration-300 border-border/50 group">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg font-bold text-card-foreground group-hover:text-primary transition-colors">
-              {category.name}
-            </CardTitle>
-          </div>
-          <Badge
-            variant={category.isActive ? 'default' : 'secondary'}
-            className={cn(category.isActive ? "bg-primary/20 text-primary border-none" : "")}
-          >
+    <Card className="flex flex-col hover:shadow-premium transition-all duration-300 border-border/50 group overflow-hidden h-full">
+      <CardHeader className="pb-2 flex-shrink-0">
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="text-base font-bold text-card-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1">
+            {category.name}
+          </CardTitle>
+          <Badge variant={category.isActive ? 'default' : 'secondary'} className={cn("shrink-0", category.isActive ? "bg-primary/20 text-primary border-none" : "")}>
             {category.isActive ? 'Active' : 'Inactive'}
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        <p className="text-sm text-muted-foreground mb-4 line-clamp-2 italic min-h-10">
-          {category.description?.trim() || 'N/A'}
+      <CardContent className="pt-0 flex flex-col flex-1">
+        <p className="text-xs text-muted-foreground italic h-8 line-clamp-2 mb-3">
+          {category.description?.trim() || ''}
         </p>
-        <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
-          <span className="flex items-center gap-1.5 font-medium">
+        <div className="flex items-center text-xs text-muted-foreground mb-3 h-5">
+          <span className="flex items-center gap-1 font-medium">
             <Package className="h-3 w-3" />
-            Products: {category._count?.products || 0}
+            {category._count?.products || 0} Products
           </span>
         </div>
-        <div className="text-xs text-muted-foreground mb-6 space-y-1 bg-muted/30 p-2.5 rounded-xl border border-border/30">
-          <div className="flex justify-between"><span>Created:</span> <span className="font-medium text-foreground">{formatDate(category.createdAt)}</span></div>
-          <div className="flex justify-between">
-            <span>Updated:</span>
-            <span className="font-medium text-foreground">{category.updatedAt && category.updatedAt !== category.createdAt ? formatDate(category.updatedAt) : 'N/A'}</span>
-          </div>
-          <div className="flex justify-between"><span>By:</span> <span className="font-medium text-foreground">{category.createdBy?.name || 'N/A'}</span></div>
+        <div className="text-xs text-muted-foreground space-y-1 bg-muted/30 p-2.5 rounded-xl border border-border/30 mb-3">
+          <div className="flex justify-between"><span>Created:</span><span className="font-medium text-foreground">{formatDate(category.createdAt)}</span></div>
+          <div className="flex justify-between"><span>Updated:</span><span className="font-medium text-foreground">{category.updatedAt && category.updatedAt !== category.createdAt ? formatDate(category.updatedAt) : 'N/A'}</span></div>
+          <div className="flex justify-between"><span>By:</span><span className="font-medium text-foreground">{category.createdBy?.name || 'N/A'}</span></div>
         </div>
-        <div className="flex flex-wrap gap-2 sm:gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); handleEdit(category); }}
-            className="flex-1 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-2 font-bold h-9"
-          >
-            <Edit className="h-3.5 w-3.5" />
-            Edit
+        <div className="flex gap-2 mt-auto">
+          <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleEdit(category) }} className="flex-1 rounded-xl border-border/50 hover:bg-primary/10 hover:text-primary hover:border-primary/30 gap-1.5 font-bold h-8 text-xs">
+            <Edit className="h-3 w-3" />Edit
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); setDeleteCategory(category); }}
-            className="flex-1 rounded-xl text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10 hover:border-destructive/30 gap-2 font-bold h-9"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Delete
+          <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setDeleteCategory(category) }} className="flex-1 rounded-xl text-destructive hover:text-destructive border-border/50 hover:bg-destructive/10 gap-1.5 font-bold h-8 text-xs">
+            <Trash2 className="h-3 w-3" />Delete
           </Button>
         </div>
       </CardContent>

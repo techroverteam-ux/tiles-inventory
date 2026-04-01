@@ -26,9 +26,7 @@ export async function GET(request: NextRequest) {
 
 
 
-    if (isActive === null || isActive === undefined || isActive === '') {
-      where.isActive = true
-    } else {
+    if (isActive === 'true' || isActive === 'false') {
       where.isActive = isActive === 'true'
     }
 
@@ -97,19 +95,15 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Check if category name already exists (only active ones)
     const existingCategory = await prisma.category.findFirst({
-      where: { 
-        name: { equals: name.trim(), mode: 'insensitive' },
-        isActive: true
-      }
+      where: { name: { equals: name.trim(), mode: 'insensitive' } }
     })
-    
+
     const user = requireAuth(request)
 
     if (existingCategory) {
       return NextResponse.json(
-        { error: 'Category name already exists' },
+        { error: existingCategory.isActive ? 'Category name already exists' : 'Category name already exists as an inactive category. Please reactivate it instead.' },
         { status: 400 }
       )
     }
@@ -133,8 +127,11 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ category }, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Category creation error:', error)
+    if (error?.code === 'P2002') {
+      return NextResponse.json({ error: 'Category name already exists' }, { status: 400 })
+    }
     return NextResponse.json(
       { error: 'Failed to create category' },
       { status: 500 }

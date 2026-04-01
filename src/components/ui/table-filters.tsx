@@ -123,7 +123,7 @@ export function TableFilters({
   const getActiveFiltersCount = () => {
     const filterCount = Object.keys(values).filter(key => {
       const value = values[key]
-      return value && (Array.isArray(value) ? value.length > 0 : value !== '')
+      return value && (Array.isArray(value) ? value.length > 0 : value !== '' && value !== 'all')
     }).length
     return filterCount + (showSearch && searchValue ? 1 : 0)
   }
@@ -378,7 +378,7 @@ export function TableFilters({
                 </Badge>
               )}
               {Object.entries(values).map(([key, value]) => {
-                if (!value || (Array.isArray(value) && value.length === 0)) return null
+                if (!value || (Array.isArray(value) && value.length === 0) || value === 'all') return null
                 const filter = filters.find((f) => f.type === 'dateRange' ? (key === `${f.key}From` || key === `${f.key}To`) : f.key === key)
                 if (!filter) return null
                 let label = filter.label

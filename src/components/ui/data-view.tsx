@@ -63,12 +63,8 @@ interface GridViewProps {
 }
 
 export function GridView({ items, renderItem, columns = 3, loading = false, onItemClick }: GridViewProps) {
-  const gridCols = {
-    1: 'grid-cols-1',
-    2: 'grid-cols-1 md:grid-cols-2',
-    3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
-    4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
-  }
+  // mobile=1, tablet=2, laptop/desktop=3, ultrawide=4
+  const gridClass = 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4'
 
   if (loading) {
     return <LoadingPage view="grid" showHeader={false} items={6} columns={columns} />
@@ -79,7 +75,7 @@ export function GridView({ items, renderItem, columns = 3, loading = false, onIt
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className={`grid gap-4 ${gridCols[columns as keyof typeof gridCols] || gridCols[3]}`}
+      className={`grid gap-4 items-stretch ${gridClass}`}
     >
       {items.map((item, index) => (
         <motion.div

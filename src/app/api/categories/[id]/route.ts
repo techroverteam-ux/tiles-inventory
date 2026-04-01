@@ -84,14 +84,10 @@ export async function PUT(
           { status: 400 }
         )
       } else {
-        // Rename the inactive duplicate to free up the name
-        await prisma.category.update({
-          where: { id: duplicateCategory.id },
-          data: { 
-            name: `${duplicateCategory.name}_deleted_${Date.now()}`,
-            updatedAt: new Date()
-          }
-        })
+        return NextResponse.json(
+          { error: 'Category name already exists as an inactive category. Please reactivate it instead.' },
+          { status: 400 }
+        )
       }
     }
 
@@ -158,14 +154,7 @@ export async function DELETE(
       )
     }
 
-    await prisma.category.update({
-      where: { id },
-      data: {
-        name: `${existingCategory.name}_del_${Date.now()}`,
-        isActive: false,
-        updatedAt: new Date(),
-      },
-    })
+    await prisma.category.delete({ where: { id } })
 
     return NextResponse.json({ message: 'Category deleted successfully' })
   } catch (error) {
