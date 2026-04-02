@@ -9,7 +9,7 @@ import { FileDown, ImageDown, FileSpreadsheet, Loader2, Download, SlidersHorizon
 import { exportToExcel, ExportColumn } from '@/lib/excel-export'
 import { cn } from '@/lib/utils'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export interface ReportRow {
   imageUrl?: string
   col1: string   // e.g. finish/category
@@ -34,11 +34,7 @@ export interface PageExportConfig {
   fetchAllData?: () => Promise<{ rows: ReportRow[]; excelData: any[] }>
 }
 
-// ─── jsPDF native renderer ───────────────────────────────────────────────────
-const MARGIN = 14        // mm left/right margin
-const FOOTER_H = 10     // mm reserved at bottom for footer
-const ROW_IMG_H = 38    // mm — image cell height per row
-
+// â”€â”€â”€ jsPDF native renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function fmtFooterDate() {
   return new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
@@ -56,15 +52,19 @@ async function loadImage(url: string): Promise<HTMLImageElement | null> {
 async function buildPDF(cfg: PageExportConfig): Promise<import('jspdf').jsPDF> {
   const { default: jsPDF } = await import('jspdf')
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-  const PW = pdf.internal.pageSize.getWidth()   // 210
-  const PH = pdf.internal.pageSize.getHeight()  // 297
+  const PW = pdf.internal.pageSize.getWidth()
+  const PH = pdf.internal.pageSize.getHeight()
+  const MARGIN = 18        // mm left/right margin â€” gives white space on sides
+  const FOOTER_H = 10
+  const IMG_H = 62
+  const BAR_H = 10
+  const ROW_H = IMG_H + BAR_H
   const contentW = PW - MARGIN * 2
   const bodyBottom = PH - FOOTER_H - 6
 
   let page = 1
-  const pages: number[] = []  // track page starts to fill total later
 
-  const addFooter = (p: number) => {
+  const addFooter = (p: number, total: number) => {
     pdf.setPage(p)
     pdf.setDrawColor(200, 200, 200)
     pdf.setLineWidth(0.3)
@@ -72,188 +72,138 @@ async function buildPDF(cfg: PageExportConfig): Promise<import('jspdf').jsPDF> {
     pdf.setFontSize(8)
     pdf.setTextColor(150, 150, 150)
     pdf.text(fmtFooterDate(), MARGIN, PH - FOOTER_H + 5)
-    pdf.text(`Page ${p}`, PW - MARGIN, PH - FOOTER_H + 5, { align: 'right' })
+    pdf.text(`Page ${p} of ${total}`, PW - MARGIN, PH - FOOTER_H + 5, { align: 'right' })
   }
 
   const newPage = () => {
-    addFooter(page)
     pdf.addPage()
     page++
-    return MARGIN + 6  // top margin on new page
+    return MARGIN
   }
 
   let y = MARGIN
 
-  // ── Title ──
-  pdf.setFontSize(18)
+  // Title
+  pdf.setFontSize(16)
   pdf.setFont('helvetica', 'bold')
   pdf.setTextColor(15, 23, 42)
-  pdf.text(cfg.title, MARGIN, y + 8)
-  y += 14
+  pdf.text(cfg.title, MARGIN, y + 7)
+  y += 12
 
   if (cfg.subtitle) {
-    pdf.setFontSize(11)
-    pdf.setTextColor(71, 85, 105)
-    pdf.text(cfg.subtitle.toUpperCase(), MARGIN, y + 5)
-    y += 9
-  }
-
-  if (cfg.partyName) {
     pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'normal')
-    pdf.setTextColor(30, 58, 138)
-    pdf.text(`Party: ${cfg.partyName}`, MARGIN, y + 5)
-    y += 9
+    pdf.setTextColor(71, 85, 105)
+    pdf.text(cfg.subtitle.toUpperCase(), MARGIN, y + 4)
+    y += 8
   }
 
   y += 2
 
-  // ── ITEM DESCRIPTION header ──
-  pdf.setFillColor(241, 245, 249)
-  pdf.setDrawColor(30, 58, 138)
-  pdf.setLineWidth(0.5)
-  pdf.rect(MARGIN, y, contentW, 8, 'FD')
-  pdf.setFontSize(8)
-  pdf.setFont('helvetica', 'bold')
-  pdf.setTextColor(30, 41, 59)
-  pdf.text('ITEM DESCRIPTION', PW / 2, y + 5.5, { align: 'center' })
-  y += 8
-
-  // Column widths (mm)
-  const metaW = contentW * 0.28
-  const qtyW  = contentW * 0.12
-  const imgW  = contentW - metaW - qtyW
-
-  // ── Rows ──
   for (const row of cfg.rows) {
-    const rowH = ROW_IMG_H
-
-    // Check if row fits — if not, start new page and re-draw header
-    if (y + rowH > bodyBottom) {
+    if (y + ROW_H > bodyBottom) {
       y = newPage()
-      // Re-draw header on new page
-      pdf.setFillColor(241, 245, 249)
-      pdf.setDrawColor(30, 58, 138)
-      pdf.setLineWidth(0.5)
-      pdf.rect(MARGIN, y, contentW, 8, 'FD')
-      pdf.setFontSize(8)
-      pdf.setFont('helvetica', 'bold')
-      pdf.setTextColor(30, 41, 59)
-      pdf.text('ITEM DESCRIPTION', PW / 2, y + 5.5, { align: 'center' })
-      y += 8
     }
 
     const rx = MARGIN
     const ry = y
 
-    // Row outer border
-    pdf.setDrawColor(209, 213, 219)
-    pdf.setLineWidth(0.3)
-    pdf.rect(rx, ry, contentW, rowH)
+    // Outer border
+    pdf.setDrawColor(30, 58, 138)
+    pdf.setLineWidth(0.5)
+    pdf.rect(rx, ry, contentW, ROW_H)
 
-    // Meta cell (col1, col2, col3, badge)
-    pdf.setFontSize(8)
-    pdf.setFont('helvetica', 'normal')
-    pdf.setTextColor(100, 116, 139)
-    pdf.text(row.col1, rx + 3, ry + 6)
-    pdf.text(row.col2, rx + 3, ry + 11)
-    pdf.setFont('helvetica', 'bold')
-    pdf.setTextColor(15, 23, 42)
-    pdf.setFontSize(9)
-    const nameLines = pdf.splitTextToSize(row.col3, metaW - 6)
-    pdf.text(nameLines, rx + 3, ry + 17)
-    if (row.badge) {
-      const badgeY = ry + 17 + nameLines.length * 4 + 2
-      pdf.setFillColor(241, 245, 249)
-      pdf.setDrawColor(203, 213, 225)
-      pdf.setLineWidth(0.2)
-      pdf.roundedRect(rx + 3, badgeY - 3, 20, 5, 1, 1, 'FD')
-      pdf.setFontSize(7)
-      pdf.setFont('helvetica', 'bold')
-      pdf.setTextColor(51, 65, 85)
-      pdf.text(row.badge, rx + 13, badgeY + 0.5, { align: 'center' })
-    }
-
-    // Divider between meta and qty
-    pdf.setDrawColor(209, 213, 219)
-    pdf.setLineWidth(0.3)
-    pdf.line(rx + metaW, ry, rx + metaW, ry + rowH)
-
-    // QTY cell
-    if (row.qty !== undefined) {
-      pdf.setFontSize(7)
-      pdf.setFont('helvetica', 'normal')
-      pdf.setTextColor(100, 116, 139)
-      pdf.text('QTY', rx + metaW + qtyW / 2, ry + 8, { align: 'center' })
-      pdf.setFontSize(20)
-      pdf.setFont('helvetica', 'bold')
-      pdf.setTextColor(15, 23, 42)
-      pdf.text(String(row.qty), rx + metaW + qtyW / 2, ry + 22, { align: 'center' })
-    }
-
-    // Divider between qty and image
-    pdf.setDrawColor(209, 213, 219)
-    pdf.line(rx + metaW + qtyW, ry, rx + metaW + qtyW, ry + rowH)
-
-    // Image cell
-    const imgX = rx + metaW + qtyW
+    // Image â€” full width, object-fit cover
     if (row.imageUrl) {
       const img = await loadImage(row.imageUrl)
       if (img) {
-        pdf.addImage(img, 'JPEG', imgX + 0.5, ry + 0.5, imgW - 1, rowH - 1)
+        // Calculate cover crop: fill contentW x IMG_H without stretching
+        const imgAspect = img.naturalWidth / img.naturalHeight
+        const boxAspect = contentW / IMG_H
+        let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight
+        if (imgAspect > boxAspect) {
+          sw = img.naturalHeight * boxAspect
+          sx = (img.naturalWidth - sw) / 2
+        } else {
+          sh = img.naturalWidth / boxAspect
+          sy = (img.naturalHeight - sh) / 2
+        }
+        // Draw cropped image using canvas
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(sw)
+        canvas.height = Math.round(sh)
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height)
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', rx, ry, contentW, IMG_H)
       } else {
-        pdf.setFillColor(248, 250, 252)
-        pdf.rect(imgX, ry, imgW, rowH, 'F')
-        pdf.setFontSize(8)
+        pdf.setFillColor(241, 245, 249)
+        pdf.rect(rx, ry, contentW, IMG_H, 'F')
+        pdf.setFontSize(9)
         pdf.setTextColor(148, 163, 184)
-        pdf.text('No Image', imgX + imgW / 2, ry + rowH / 2, { align: 'center' })
+        pdf.text('No Image', rx + contentW / 2, ry + IMG_H / 2, { align: 'center' })
       }
     } else {
-      pdf.setFillColor(248, 250, 252)
-      pdf.rect(imgX, ry, imgW, rowH, 'F')
-      pdf.setFontSize(8)
+      pdf.setFillColor(241, 245, 249)
+      pdf.rect(rx, ry, contentW, IMG_H, 'F')
+      pdf.setFontSize(9)
       pdf.setTextColor(148, 163, 184)
-      pdf.text('No Image', imgX + imgW / 2, ry + rowH / 2, { align: 'center' })
+      pdf.text('No Image', rx + contentW / 2, ry + IMG_H / 2, { align: 'center' })
     }
 
-    y += rowH
-  }
+    // Info bar
+    const barY = ry + IMG_H
+    pdf.setFillColor(255, 255, 255)
+    pdf.rect(rx, barY, contentW, BAR_H, 'F')
+    pdf.setDrawColor(30, 58, 138)
+    pdf.setLineWidth(0.4)
+    pdf.line(rx, barY, rx + contentW, barY)
 
-  // ── Grand Total ──
+    // Info bar text: CODE (bold left) | col2 (center-left) | col1 (center) | Total label | QTY (bold right)
+    const barTextY = barY + BAR_H * 0.68
+    pdf.setFontSize(9)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(15, 23, 42)
+    pdf.text(row.col3, rx + 2, barTextY)  // product name/code â€” left
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setTextColor(71, 85, 105)
+    pdf.text(row.col2, rx + contentW * 0.38, barTextY, { align: 'center' })  // size
+    pdf.text(row.col1, rx + contentW * 0.58, barTextY, { align: 'center' })  // category/brand
+
+    if (row.qty !== undefined) {
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(71, 85, 105)
+      pdf.text('Total', rx + contentW * 0.76, barTextY, { align: 'center' })
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(15, 23, 42)
+      pdf.setFontSize(10)
+      pdf.text(String(row.qty), rx + contentW - 2, barTextY, { align: 'right' })
+    }
+
+    y += ROW_H + 3  // 3mm gap between cards
+  }
   if (cfg.grandTotalLabel) {
-    if (y + 14 > bodyBottom) y = newPage()
+    if (y + 12 > bodyBottom) y = newPage()
     y += 4
     pdf.setDrawColor(30, 41, 59)
     pdf.setLineWidth(0.5)
     pdf.line(MARGIN, y, PW - MARGIN, y)
     y += 6
-    pdf.setFontSize(11)
+    pdf.setFontSize(10)
     pdf.setFont('helvetica', 'bold')
     pdf.setTextColor(71, 85, 105)
-    pdf.text(cfg.grandTotalLabel.toUpperCase(), PW - MARGIN - 30, y, { align: 'right' })
-    pdf.setFontSize(14)
+    pdf.text(cfg.grandTotalLabel.toUpperCase(), PW - MARGIN - 25, y, { align: 'right' })
+    pdf.setFontSize(13)
     pdf.setTextColor(15, 23, 42)
     pdf.text(String(cfg.grandTotal ?? ''), PW - MARGIN, y, { align: 'right' })
   }
 
-  // Footer on last page
-  addFooter(page)
-
-  // Update all footers with correct total page count
-  for (let p = 1; p <= page; p++) {
-    pdf.setPage(p)
-    pdf.setFontSize(8)
-    pdf.setTextColor(150, 150, 150)
-    // Overwrite page number with "Page X of Y"
-    pdf.setFillColor(255, 255, 255)
-    pdf.rect(PW - MARGIN - 30, PH - FOOTER_H + 1, 32, 6, 'F')
-    pdf.text(`Page ${p} of ${page}`, PW - MARGIN, PH - FOOTER_H + 5, { align: 'right' })
-  }
+  // Stamp footers with correct page total
+  for (let p = 1; p <= page; p++) addFooter(p, page)
 
   return pdf
 }
 
-// ─── Shared export engine ────────────────────────────────────────────────────
+// --- Shared export engine ---
 async function runExport(
   fmt: 'excel' | 'pdf' | 'png',
   cfg: PageExportConfig,
@@ -284,78 +234,62 @@ async function runExport(
       return
     }
 
-    // PNG — render all rows into one tall canvas via html2canvas on a hidden div
+    // PNG â€” build DOM container matching the PDF layout
     const { default: html2canvas } = await import('html2canvas')
-    // Build a temporary DOM node
     const container = document.createElement('div')
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;background:#fff;font-family:Arial,sans-serif;padding:40px 50px;width:880px;box-sizing:border-box;'
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;background:#fff;font-family:Arial,sans-serif;padding:28px 32px 32px;width:700px;box-sizing:border-box;'
     document.body.appendChild(container)
 
     // Title
     const titleEl = document.createElement('div')
-    titleEl.style.cssText = 'font-weight:bold;font-size:22px;margin-bottom:12px;color:#0f172a;'
+    titleEl.style.cssText = 'font-weight:bold;font-size:20px;margin-bottom:14px;color:#0f172a;'
     titleEl.textContent = activeCfg.title
     container.appendChild(titleEl)
 
-    if (activeCfg.partyName) {
-      const pEl = document.createElement('div')
-      pEl.style.cssText = 'font-size:12px;color:#1e3a8a;margin-bottom:12px;'
-      pEl.textContent = `Party: ${activeCfg.partyName}`
-      container.appendChild(pEl)
-    }
-
-    // Header row
-    const hdr = document.createElement('div')
-    hdr.style.cssText = 'background:#f1f5f9;border:2px solid #1e3a8a;padding:7px 14px;text-align:center;font-size:11px;font-weight:bold;letter-spacing:0.1em;text-transform:uppercase;color:#1e293b;'
-    hdr.textContent = 'ITEM DESCRIPTION'
-    container.appendChild(hdr)
-
     for (const row of activeCfg.rows) {
-      const rowEl = document.createElement('div')
-      rowEl.style.cssText = 'display:flex;border-left:2px solid #1e3a8a;border-right:2px solid #1e3a8a;border-bottom:1px solid #d1d5db;'
-
-      // Meta
-      const meta = document.createElement('div')
-      meta.style.cssText = 'width:22%;padding:14px 16px;border-right:1px solid #d1d5db;font-size:12px;line-height:1.8;flex-shrink:0;'
-      meta.innerHTML = `<div style="color:#64748b;font-size:11px">${row.col1}</div><div style="color:#64748b;font-size:11px">${row.col2}</div><div style="font-weight:bold;font-size:13px;color:#0f172a;margin-top:4px">${row.col3}</div>${row.badge ? `<div style="margin-top:6px;display:inline-block;padding:2px 8px;background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:4px;font-size:10px;font-weight:bold">${row.badge}</div>` : ''}`
-      rowEl.appendChild(meta)
-
-      // QTY
-      if (row.qty !== undefined) {
-        const qty = document.createElement('div')
-        qty.style.cssText = 'width:12%;padding:14px 8px;border-right:1px solid #d1d5db;text-align:center;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;'
-        qty.innerHTML = `<div style="font-size:9px;color:#64748b;letter-spacing:0.08em;margin-bottom:6px">QTY</div><div style="font-weight:bold;font-size:26px;color:#0f172a">${row.qty}</div>`
-        rowEl.appendChild(qty)
-      }
+      const card = document.createElement('div')
+      card.style.cssText = 'border:2px solid #1e3a8a;margin-bottom:10px;'
 
       // Image
-      const imgCell = document.createElement('div')
-      imgCell.style.cssText = 'flex:1;overflow:hidden;background:#f8fafc;'
+      const imgWrap = document.createElement('div')
+      imgWrap.style.cssText = 'width:100%;height:220px;overflow:hidden;background:#f1f5f9;'
       if (row.imageUrl) {
         const img = document.createElement('img')
         img.src = row.imageUrl
         img.crossOrigin = 'anonymous'
-        img.style.cssText = 'width:100%;height:140px;object-fit:cover;display:block;'
-        imgCell.appendChild(img)
+        img.style.cssText = 'width:100%;height:220px;object-fit:cover;display:block;'
+        imgWrap.appendChild(img)
       } else {
-        imgCell.style.cssText += 'height:140px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;'
-        imgCell.textContent = 'No Image'
+        imgWrap.style.cssText += 'display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;'
+        imgWrap.textContent = 'No Image'
       }
-      rowEl.appendChild(imgCell)
-      container.appendChild(rowEl)
+      card.appendChild(imgWrap)
+
+      // Info bar
+      const bar = document.createElement('div')
+      bar.style.cssText = 'display:flex;align-items:center;padding:6px 10px;border-top:1.5px solid #1e3a8a;background:#fff;gap:0;'
+      bar.innerHTML = `
+        <span style="font-weight:bold;font-size:13px;color:#0f172a;flex:2;">${row.col3}</span>
+        <span style="font-size:11px;color:#475569;flex:1.2;text-align:center;">${row.col2}</span>
+        <span style="font-size:11px;color:#475569;flex:1.2;text-align:center;">${row.col1}</span>
+        <span style="font-size:11px;color:#475569;flex:0.8;text-align:center;">Total</span>
+        <span style="font-weight:bold;font-size:14px;color:#0f172a;flex:0.6;text-align:right;">${row.qty ?? ''}</span>
+      `
+      card.appendChild(bar)
+      container.appendChild(card)
     }
 
     // Grand total
     if (activeCfg.grandTotalLabel) {
       const gt = document.createElement('div')
-      gt.style.cssText = 'display:flex;justify-content:flex-end;align-items:center;gap:16px;margin-top:20px;padding-top:14px;border-top:2px solid #1e293b;font-weight:bold;font-size:14px;'
-      gt.innerHTML = `<span style="color:#475569;text-transform:uppercase;letter-spacing:0.05em">${activeCfg.grandTotalLabel}</span><span style="font-size:20px;color:#0f172a">${activeCfg.grandTotal}</span>`
+      gt.style.cssText = 'display:flex;justify-content:flex-end;align-items:center;gap:16px;margin-top:16px;padding-top:12px;border-top:2px solid #1e293b;font-weight:bold;font-size:13px;'
+      gt.innerHTML = `<span style="color:#475569;text-transform:uppercase;letter-spacing:0.05em">${activeCfg.grandTotalLabel}</span><span style="font-size:18px;color:#0f172a">${activeCfg.grandTotal}</span>`
       container.appendChild(gt)
     }
 
     // Footer
     const footer = document.createElement('div')
-    footer.style.cssText = 'display:flex;justify-content:space-between;margin-top:32px;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;'
+    footer.style.cssText = 'display:flex;justify-content:space-between;margin-top:24px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;'
     footer.innerHTML = `<span>${fmtFooterDate()}</span><span>Page 1 of 1</span>`
     container.appendChild(footer)
 
@@ -372,7 +306,7 @@ async function runExport(
   }
 }
 
-// ─── Format picker (3 cards) ─────────────────────────────────────────────────
+// --- Format picker (3 cards) ---
 function FormatCards({ onPick, exporting }: { onPick: (f: 'excel' | 'pdf' | 'png') => void; exporting: boolean }) {
   return (
     <div className="grid grid-cols-3 gap-2">
@@ -392,7 +326,7 @@ function FormatCards({ onPick, exporting }: { onPick: (f: 'excel' | 'pdf' | 'png
   )
 }
 
-// ─── Custom Export filter options ────────────────────────────────────────────
+// --- Custom Export filter options ---
 export interface CustomExportFilters {
   brands?: { id: string; name: string }[]
   categories?: { id: string; name: string }[]
@@ -402,7 +336,7 @@ export interface CustomExportFilters {
   filterData: (opts: { brandId: string; categoryId: string; sizeId: string; status: string; dateFrom: string; dateTo: string }) => { rows: ReportRow[]; excelData: any[] }
 }
 
-// ─── Main Export Button (Default + Custom) ───────────────────────────────────
+// --- Main Export Button (Default + Custom) ---
 interface PageExportButtonProps {
   config: PageExportConfig
   customFilters?: CustomExportFilters
@@ -444,7 +378,7 @@ export function PageExportButton({ config, customFilters, disabled, className }:
       <Dialog open={showDefault} onOpenChange={setShowDefault}>
         <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-xs w-[92vw] rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Export All — {config.title}</DialogTitle>
+            <DialogTitle className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Export All {config.title}</DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground -mt-1 mb-1">Exports all {config.excelData.length} records</p>
           <FormatCards onPick={(f) => { setShowDefault(false); doExport(f, config) }} exporting={!!exporting} />
@@ -457,7 +391,7 @@ export function PageExportButton({ config, customFilters, disabled, className }:
         <Dialog open={showCustom} onOpenChange={setShowCustom}>
           <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-sm w-[95vw] rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto no-scrollbar p-6">
             <DialogHeader>
-              <DialogTitle className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Custom Export — {config.title}</DialogTitle>
+              <DialogTitle className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Custom Export {config.title}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 pt-1">
               {/* Filters */}
@@ -633,3 +567,5 @@ export function SmartExportModal({ open, onOpenChange, title, brands = [], repor
     </Dialog>
   )
 }
+
+

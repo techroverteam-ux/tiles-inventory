@@ -613,9 +613,9 @@ export default function ProductsPage() {
 
   const makeExportRows = (data: Product[]) => data.map(p => ({
     imageUrl: p.imageUrl,
-    col1: p.brand?.name || '',
-    col2: p.size?.name || 'N/A',
-    col3: `${p.name} (${p.code})`,
+    col1: p.category?.name || '',
+    col2: p.size?.name || '',
+    col3: p.name || p.code,
     qty: p.totalStock || 0,
     badge: p.isActive ? 'Active' : 'Inactive',
   }))
