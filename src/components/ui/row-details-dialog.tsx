@@ -22,6 +22,8 @@ interface RowDetailsDialogProps {
   data: any
   fields?: DetailField[]
   imageUrl?: string
+  locationImageUrl?: string
+  locationName?: string
   onImageClick?: (src: string) => void
 }
 
@@ -107,7 +109,7 @@ function renderValue(value: any, variant?: string): React.ReactNode {
   return <span className="font-semibold text-foreground break-words">{String(formattedValue)}</span>
 }
 
-export function RowDetailsDialog({ open, onOpenChange, title, data, fields, imageUrl, onImageClick }: RowDetailsDialogProps) {
+export function RowDetailsDialog({ open, onOpenChange, title, data, fields, imageUrl, locationImageUrl, locationName, onImageClick }: RowDetailsDialogProps) {
   if (!data && !fields) return null
 
   const displayFields = fields || (data ? Object.entries(data)
@@ -130,22 +132,55 @@ export function RowDetailsDialog({ open, onOpenChange, title, data, fields, imag
         </DialogHeader>
         
         <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
-          {displayImageUrl && (
-            <div 
-              className="w-full aspect-video md:aspect-[2/1] relative bg-muted/20 flex items-center justify-center border-b border-border/30 cursor-zoom-in group overflow-hidden"
-              onClick={() => onImageClick && onImageClick(displayImageUrl)}
-            >
-              <img 
-                src={displayImageUrl} 
-                alt={title}
-                className="max-w-full max-h-full object-contain transition-all duration-700 group-hover:scale-105"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none'
-                }}
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center duration-300">
-                <ZoomIn className="text-white opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all h-10 w-10 drop-shadow-2xl" />
-              </div>
+          {(displayImageUrl || locationImageUrl) && (
+            <div className={cn(
+              "border-b border-border/30",
+              displayImageUrl && locationImageUrl ? "grid grid-cols-2" : ""
+            )}>
+              {displayImageUrl && (
+                <div 
+                  className={cn(
+                    "relative bg-muted/20 cursor-zoom-in group overflow-hidden",
+                    locationImageUrl ? "h-48 sm:h-64" : "w-full h-64 sm:h-80 md:h-96"
+                  )}
+                  onClick={() => onImageClick && onImageClick(displayImageUrl)}
+                >
+                  <img 
+                    src={displayImageUrl} 
+                    alt={title}
+                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center duration-300">
+                    <ZoomIn className="text-white opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all h-8 w-8 drop-shadow-2xl" />
+                  </div>
+                  {locationImageUrl && (
+                    <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">Product</div>
+                  )}
+                </div>
+              )}
+              {locationImageUrl && (
+                <div 
+                  className={cn(
+                    "relative bg-muted/20 cursor-zoom-in group overflow-hidden",
+                    displayImageUrl ? "h-48 sm:h-64" : "w-full h-64 sm:h-80 md:h-96"
+                  )}
+                  onClick={() => onImageClick && onImageClick(locationImageUrl)}
+                >
+                  <img 
+                    src={locationImageUrl} 
+                    alt={locationName || 'Location'}
+                    className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center duration-300">
+                    <ZoomIn className="text-white opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all h-8 w-8 drop-shadow-2xl" />
+                  </div>
+                  <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
+                    {locationName || 'Location'}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

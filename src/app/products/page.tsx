@@ -411,7 +411,7 @@ export default function ProductsPage() {
   }
 
   const renderGridItem = (product: Product) => (
-    <Card className="hover:shadow-premium transition-all duration-300 border-border/50 group overflow-hidden">
+    <Card className="hover:shadow-premium transition-all duration-300 border-border/50 group overflow-hidden flex flex-col h-full">
       <div
         className="relative h-48 overflow-hidden bg-muted/30 cursor-zoom-in group/image flex-shrink-0"
         onClick={(e) => {
@@ -449,7 +449,7 @@ export default function ProductsPage() {
           <div className="text-white font-bold truncate">{product.code}</div>
         </div>
       </div>
-      <CardHeader className="pb-2 pt-4">
+      <CardHeader className="pb-2 pt-4 flex-shrink-0">
         <CardTitle className="text-lg font-bold text-card-foreground group-hover:text-primary transition-colors truncate">
           {product.name}
         </CardTitle>
@@ -629,7 +629,17 @@ export default function ProductsPage() {
     excelData: products,
     filename: 'products-export',
     sheetName: 'Products',
-  }), [products, totalCount])
+    fetchAllData: async () => {
+      const cleanFilters = Object.fromEntries(
+        Object.entries(filters).filter(([_, v]) => v && v !== '' && v !== 'all')
+      )
+      const params = new URLSearchParams({ page: '1', limit: '10000', search: search || '', ...cleanFilters })
+      const res = await fetch(`/api/products?${params}`)
+      const data = await res.json()
+      const all: Product[] = data.products || []
+      return { rows: makeExportRows(all), excelData: all }
+    },
+  }), [products, totalCount, filters, search])
 
   const customExportFilters = useMemo(() => ({
     brands,

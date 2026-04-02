@@ -166,7 +166,7 @@ export default function SalesOrdersPage() {
     return (
       <div className="h-full border border-border/50 rounded-2xl overflow-hidden hover:shadow-premium transition-all duration-300 bg-card flex flex-col group">
         {/* Photo - Priority, big */}
-        <div className="relative w-full aspect-[4/3] bg-muted/20 flex-shrink-0">
+        <div className="relative w-full h-48 bg-muted/20 flex-shrink-0 overflow-hidden">
           {photo ? (
             <img src={photo} alt={order.orderNumber} className="w-full h-full object-cover" />
           ) : (

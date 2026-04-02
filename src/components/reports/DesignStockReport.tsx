@@ -28,8 +28,10 @@ interface Props {
 }
 
 const NAVY = '#1E3A8A'
+const GRAY_BORDER = '1px solid #d1d5db'
+const HEADER_BG = '#f1f5f9'
 const NAVY_BORDER = `2px solid ${NAVY}`
-const CELL_BORDER = `1px solid ${NAVY}`
+const CELL_BORDER = GRAY_BORDER
 
 export function DesignStockReportView({ brands, grandTotal, partyName }: Props) {
   const reportRef = useRef<HTMLDivElement>(null)
@@ -43,21 +45,144 @@ export function DesignStockReportView({ brands, grandTotal, partyName }: Props) 
     setExporting('pdf')
     try {
       const { default: jsPDF } = await import('jspdf')
-      const { default: html2canvas } = await import('html2canvas')
-      const el = reportRef.current
-      if (!el) return
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false })
-      const imgData = canvas.toDataURL('image/png')
+      const MARGIN = 14, FOOTER_H = 10, ROW_IMG_H = 38
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-      const pdfW = pdf.internal.pageSize.getWidth()
-      const pdfH = (canvas.height * pdfW) / canvas.width
-      const pageH = pdf.internal.pageSize.getHeight()
-      let y = 0
-      while (y < pdfH) {
-        if (y > 0) pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, -y, pdfW, pdfH)
-        y += pageH
+      const PW = pdf.internal.pageSize.getWidth()
+      const PH = pdf.internal.pageSize.getHeight()
+      const contentW = PW - MARGIN * 2
+      const bodyBottom = PH - FOOTER_H - 6
+      let page = 1
+
+      const dateStr = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+
+      const addFooter = (p: number) => {
+        pdf.setPage(p)
+        pdf.setDrawColor(200, 200, 200); pdf.setLineWidth(0.3)
+        pdf.line(MARGIN, PH - FOOTER_H, PW - MARGIN, PH - FOOTER_H)
+        pdf.setFontSize(8); pdf.setTextColor(150, 150, 150)
+        pdf.text(dateStr, MARGIN, PH - FOOTER_H + 5)
+        pdf.text(`Page ${p}`, PW - MARGIN, PH - FOOTER_H + 5, { align: 'right' })
       }
+
+      const newPage = () => { addFooter(page); pdf.addPage(); page++; return MARGIN + 6 }
+
+      let y = MARGIN
+
+      // Title
+      pdf.setFontSize(18); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42)
+      pdf.text('Design Stock Report', MARGIN, y + 8); y += 14
+
+      if (partyName) {
+        pdf.setFontSize(10); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(30, 58, 138)
+        pdf.text(`Party: ${partyName}`, MARGIN, y + 5); y += 9
+      }
+
+      const metaW = contentW * 0.28, qtyW = contentW * 0.12, imgW = contentW - metaW - qtyW
+
+      for (const brand of brands) {
+        const brandTotal = brand.items.reduce((s, i) => s + i.quantity, 0)
+
+        // Brand name
+        if (y + 12 > bodyBottom) y = newPage()
+        pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42)
+        pdf.text(brand.brandName.toUpperCase(), MARGIN, y + 6); y += 10
+
+        // ITEM DESCRIPTION header
+        if (y + 8 > bodyBottom) y = newPage()
+        pdf.setFillColor(241, 245, 249); pdf.setDrawColor(30, 58, 138); pdf.setLineWidth(0.5)
+        pdf.rect(MARGIN, y, contentW, 8, 'FD')
+        pdf.setFontSize(8); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(30, 41, 59)
+        pdf.text('ITEM DESCRIPTION', PW / 2, y + 5.5, { align: 'center' }); y += 8
+
+        for (const item of brand.items) {
+          if (y + ROW_IMG_H > bodyBottom) {
+            y = newPage()
+            pdf.setFillColor(241, 245, 249); pdf.setDrawColor(30, 58, 138); pdf.setLineWidth(0.5)
+            pdf.rect(MARGIN, y, contentW, 8, 'FD')
+            pdf.setFontSize(8); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(30, 41, 59)
+            pdf.text('ITEM DESCRIPTION', PW / 2, y + 5.5, { align: 'center' }); y += 8
+          }
+
+          const rx = MARGIN, ry = y
+          pdf.setDrawColor(209, 213, 219); pdf.setLineWidth(0.3)
+          pdf.rect(rx, ry, contentW, ROW_IMG_H)
+
+          // Meta
+          pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(100, 116, 139)
+          pdf.text(item.finish || item.category, rx + 3, ry + 6)
+          pdf.text(item.size, rx + 3, ry + 11)
+          pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42); pdf.setFontSize(9)
+          const nameLines = pdf.splitTextToSize(item.productName, metaW - 6)
+          pdf.text(nameLines, rx + 3, ry + 17)
+          pdf.setFontSize(7.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(71, 85, 105)
+          pdf.text(item.productCode, rx + 3, ry + 17 + nameLines.length * 4 + 2)
+          // Location badge
+          const badgeY = ry + 17 + nameLines.length * 4 + 7
+          pdf.setFillColor(241, 245, 249); pdf.setDrawColor(203, 213, 225); pdf.setLineWidth(0.2)
+          pdf.roundedRect(rx + 3, badgeY - 3, 24, 5, 1, 1, 'FD')
+          pdf.setFontSize(7); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(51, 65, 85)
+          pdf.text(item.location, rx + 15, badgeY + 0.5, { align: 'center' })
+
+          // Dividers
+          pdf.setDrawColor(209, 213, 219); pdf.setLineWidth(0.3)
+          pdf.line(rx + metaW, ry, rx + metaW, ry + ROW_IMG_H)
+
+          // QTY
+          pdf.setFontSize(7); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(100, 116, 139)
+          pdf.text('QTY', rx + metaW + qtyW / 2, ry + 8, { align: 'center' })
+          pdf.setFontSize(20); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(15, 23, 42)
+          pdf.text(String(item.quantity), rx + metaW + qtyW / 2, ry + 22, { align: 'center' })
+
+          pdf.setDrawColor(209, 213, 219)
+          pdf.line(rx + metaW + qtyW, ry, rx + metaW + qtyW, ry + ROW_IMG_H)
+
+          // Image
+          const imgX = rx + metaW + qtyW
+          if (item.imageUrl) {
+            await new Promise<void>(resolve => {
+              const img = new Image(); img.crossOrigin = 'anonymous'
+              img.onload = () => { pdf.addImage(img, 'JPEG', imgX + 0.5, ry + 0.5, imgW - 1, ROW_IMG_H - 1); resolve() }
+              img.onerror = () => resolve()
+              img.src = item.imageUrl!
+            })
+          } else {
+            pdf.setFillColor(248, 250, 252); pdf.rect(imgX, ry, imgW, ROW_IMG_H, 'F')
+            pdf.setFontSize(8); pdf.setTextColor(148, 163, 184)
+            pdf.text('No Image', imgX + imgW / 2, ry + ROW_IMG_H / 2, { align: 'center' })
+          }
+          y += ROW_IMG_H
+        }
+
+        // Brand total
+        if (y + 10 > bodyBottom) y = newPage()
+        pdf.setFillColor(248, 250, 252); pdf.setDrawColor(209, 213, 219); pdf.setLineWidth(0.3)
+        pdf.rect(MARGIN, y, contentW, 9, 'FD')
+        pdf.setFontSize(9); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(71, 85, 105)
+        pdf.text('Brand Total:', PW - MARGIN - 20, y + 6, { align: 'right' })
+        pdf.setFontSize(11); pdf.setTextColor(15, 23, 42)
+        pdf.text(String(brandTotal), PW - MARGIN - 2, y + 6, { align: 'right' })
+        y += 9 + 6
+      }
+
+      // Grand Total
+      if (y + 14 > bodyBottom) y = newPage()
+      y += 4
+      pdf.setDrawColor(30, 41, 59); pdf.setLineWidth(0.5)
+      pdf.line(MARGIN, y, PW - MARGIN, y); y += 6
+      pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(71, 85, 105)
+      pdf.text('GRAND TOTAL', PW - MARGIN - 30, y, { align: 'right' })
+      pdf.setFontSize(14); pdf.setTextColor(15, 23, 42)
+      pdf.text(String(grandTotal), PW - MARGIN, y, { align: 'right' })
+
+      addFooter(page)
+      // Overwrite page numbers with "X of Y"
+      for (let p = 1; p <= page; p++) {
+        pdf.setPage(p); pdf.setFontSize(8); pdf.setTextColor(150, 150, 150)
+        pdf.setFillColor(255, 255, 255)
+        pdf.rect(PW - MARGIN - 30, PH - FOOTER_H + 1, 32, 6, 'F')
+        pdf.text(`Page ${p} of ${page}`, PW - MARGIN, PH - FOOTER_H + 5, { align: 'right' })
+      }
+
       pdf.save(`design-stock-report-${Date.now()}.pdf`)
     } finally { setExporting(null) }
   }
@@ -216,19 +341,17 @@ export function DesignStockReportView({ brands, grandTotal, partyName }: Props) 
                   {brand.brandName}
                 </div>
 
-                {/* ── ITEM DESCRIPTION header row ──
-                    Light blue bg, navy text, centered, full width  */}
+                {/* ── ITEM DESCRIPTION header row ── */}
                 <div style={{
                   border: NAVY_BORDER,
-                  padding: '6px 14px',
-                  backgroundColor: '#ffffff',
-                  color: NAVY,
+                  padding: '7px 14px',
+                  backgroundColor: HEADER_BG,
+                  color: '#1e293b',
                   fontWeight: 'bold',
                   textAlign: 'center',
-                  fontSize: '12px',
-                  letterSpacing: '0.08em',
+                  fontSize: '11px',
+                  letterSpacing: '0.1em',
                   textTransform: 'uppercase',
-                  marginBottom: '0',
                 }}>
                   ITEM DESCRIPTION
                 </div>
@@ -239,48 +362,63 @@ export function DesignStockReportView({ brands, grandTotal, partyName }: Props) 
                     key={iIdx}
                     style={{
                       display: 'flex',
-                      border: NAVY_BORDER,
-                      borderTop: 'none',
-                      marginBottom: '0',
+                      borderLeft: NAVY_BORDER,
+                      borderRight: NAVY_BORDER,
+                      borderBottom: CELL_BORDER,
                     }}
                   >
-                    {/* Col 1 — Finish / Size / Code bold */}
+                    {/* Col 1 — meta info */}
                     <div style={{
-                      width: '20%',
-                      minWidth: '120px',
-                      padding: '12px 14px',
+                      width: '22%',
+                      minWidth: '130px',
+                      padding: '14px 16px',
                       borderRight: CELL_BORDER,
                       fontSize: '12px',
-                      lineHeight: '1.7',
+                      lineHeight: '1.8',
                       flexShrink: 0,
+                      verticalAlign: 'top',
                     }}>
-                      <div>{item.finish || item.category}</div>
-                      <div>{item.size}</div>
-                      <div style={{ fontWeight: 'bold', marginTop: '4px' }}>
-                        {item.productCode}{item.finish ? ` ${item.finish}` : ''}
+                      <div style={{ color: '#64748b', fontSize: '11px' }}>{item.finish || item.category}</div>
+                      <div style={{ color: '#64748b', fontSize: '11px' }}>{item.size}</div>
+                      <div style={{ fontWeight: 'bold', fontSize: '13px', marginTop: '4px', color: '#0f172a' }}>
+                        {item.productName}
                       </div>
+                      <div style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}>{item.productCode}</div>
+                      <div style={{
+                        marginTop: '6px',
+                        display: 'inline-block',
+                        padding: '2px 8px',
+                        background: '#f1f5f9',
+                        color: '#334155',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '4px',
+                        fontSize: '10px',
+                        fontWeight: 'bold',
+                      }}>{item.location}</div>
                     </div>
 
-                    {/* Col 2 — PRE + large qty */}
+                    {/* Col 2 — qty */}
                     <div style={{
                       width: '10%',
-                      minWidth: '60px',
-                      padding: '12px 8px',
+                      minWidth: '64px',
+                      padding: '14px 8px',
                       borderRight: CELL_BORDER,
                       textAlign: 'center',
                       flexShrink: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}>
-                      <div style={{ fontWeight: 'bold', fontSize: '10px', letterSpacing: '0.05em', marginBottom: '4px' }}>PRE</div>
-                      <div style={{ fontWeight: 'bold', fontSize: '28px', lineHeight: '1' }}>{item.quantity}</div>
+                      <div style={{ fontWeight: '600', fontSize: '9px', letterSpacing: '0.08em', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>QTY</div>
+                      <div style={{ fontWeight: 'bold', fontSize: '26px', lineHeight: '1', color: '#0f172a' }}>{item.quantity}</div>
                     </div>
 
-                    {/* Col 3 — Tile image, navy bg fallback */}
+                    {/* Col 3 — Tile image */}
                     <div style={{
                       flex: '1',
-                      backgroundColor: NAVY,
                       overflow: 'hidden',
-                      borderRight: CELL_BORDER,
-                      position: 'relative',
+                      backgroundColor: '#f8fafc',
                     }}>
                       {item.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -288,90 +426,70 @@ export function DesignStockReportView({ brands, grandTotal, partyName }: Props) 
                           src={item.imageUrl}
                           alt={item.productName}
                           crossOrigin="anonymous"
-                          style={{ width: '100%', height: '150px', objectFit: 'cover', display: 'block' }}
+                          style={{ width: '100%', height: '140px', objectFit: 'cover', display: 'block' }}
                         />
                       ) : (
                         <div style={{
-                          height: '150px',
+                          height: '140px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: '#93C5FD',
+                          color: '#94a3b8',
                           fontSize: '11px',
+                          background: '#f1f5f9',
                         }}>
-                          {item.productCode}
+                          No Image
                         </div>
                       )}
                     </div>
-
-                    {/* Col 4 — Solid navy right panel */}
-                    <div style={{
-                      width: '22%',
-                      minWidth: '100px',
-                      backgroundColor: NAVY,
-                      flexShrink: 0,
-                    }} />
                   </div>
                 ))}
 
-                {/* ── Per-item summary row (last item info + Total + count) ──
-                    "ANW 790 MATT  |  600X1200  |  MATT  |  Total  |  53"  */}
-                {brand.items.length > 0 && (() => {
-                  const last = brand.items[brand.items.length - 1]
-                  return (
-                    <div style={{
-                      display: 'flex',
-                      border: NAVY_BORDER,
-                      borderTop: 'none',
-                      fontSize: '13px',
-                    }}>
-                      <div style={{ flex: '2', padding: '7px 12px', fontWeight: 'bold', borderRight: CELL_BORDER }}>
-                        {last.productCode}{last.finish ? ` ${last.finish}` : ''}
-                      </div>
-                      <div style={{ flex: '1', padding: '7px 12px', textAlign: 'center', borderRight: CELL_BORDER }}>
-                        {last.size}
-                      </div>
-                      <div style={{ flex: '1', padding: '7px 12px', textAlign: 'center', borderRight: CELL_BORDER }}>
-                        {last.finish || last.category}
-                      </div>
-                      <div style={{ flex: '1', padding: '7px 12px', textAlign: 'center', fontWeight: 'bold', borderRight: CELL_BORDER }}>
-                        Total
-                      </div>
-                      <div style={{ flex: '1', padding: '7px 12px', textAlign: 'center', fontWeight: 'bold', fontSize: '16px' }}>
-                        {brandTotal}
-                      </div>
-                    </div>
-                  )
-                })()}
+                {/* ── Brand total row ── */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                  gap: '12px',
+                  borderLeft: NAVY_BORDER,
+                  borderRight: NAVY_BORDER,
+                  borderBottom: NAVY_BORDER,
+                  padding: '8px 16px',
+                  background: '#f8fafc',
+                  fontSize: '12px',
+                }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Brand Total:</span>
+                  <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#0f172a' }}>{brandTotal}</span>
+                </div>
               </div>
             )
           })}
 
-          {/* ══ GRAND TOTAL ══
-              "GRAND TOTAL :          2774"  centered, bold  */}
+          {/* ══ GRAND TOTAL ══ */}
           <div style={{
             display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'baseline',
-            gap: '80px',
-            marginTop: '16px',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            gap: '16px',
+            marginTop: '20px',
             paddingTop: '14px',
-            borderTop: '1px solid #ccc',
+            borderTop: '2px solid #1e293b',
             fontWeight: 'bold',
-            fontSize: '15px',
+            fontSize: '14px',
           }}>
-            <span>GRAND TOTAL :</span>
-            <span style={{ fontSize: '18px' }}>{grandTotal}</span>
+            <span style={{ color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Grand Total</span>
+            <span style={{ fontSize: '20px', color: '#0f172a' }}>{grandTotal}</span>
           </div>
 
-          {/* ══ FOOTER ══
-              "Friday, December 12, 2025"          "Page 10 of 10"  */}
+          {/* ══ FOOTER ══ */}
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
-            marginTop: '40px',
-            fontSize: '11px',
-            color: '#555',
+            marginTop: '32px',
+            paddingTop: '10px',
+            borderTop: '1px solid #e2e8f0',
+            fontSize: '10px',
+            color: '#94a3b8',
           }}>
             <span>{todayStr}</span>
             <span>Page 1 of 1</span>

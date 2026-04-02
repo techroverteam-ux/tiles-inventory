@@ -473,7 +473,17 @@ export default function InventoryPage() {
     excelData: inventory,
     filename: 'inventory-export',
     sheetName: 'Inventory',
-  }), [inventory, pagination.total])
+    fetchAllData: async () => {
+      const cleanFilters = Object.fromEntries(
+        Object.entries(filters).filter(([_, v]) => v !== '' && v !== 'none')
+      )
+      const params = new URLSearchParams({ page: '1', limit: '10000', search: search || '', ...cleanFilters })
+      const res = await fetch(`/api/inventory?${params}`)
+      const data = await res.json()
+      const all: typeof inventory = data.inventory || []
+      return { rows: makeExportRows(all), excelData: all }
+    },
+  }), [inventory, pagination.total, filters, search])
 
   const customExportFilters = useMemo(() => ({
     brands,
@@ -676,7 +686,9 @@ export default function InventoryPage() {
           { label: 'Size', value: selectedDetailItem?.product?.size?.name },
           { label: 'Created At', value: selectedDetailItem?.createdAt },
         ].filter(f => f.value !== undefined)}
-        imageUrl={selectedDetailItem?.product?.imageUrl}
+        imageUrl={selectedDetailItem?.imageUrl || selectedDetailItem?.product?.imageUrl}
+        locationImageUrl={(locations.find(l => l.id === (selectedDetailItem as any)?.locationId) || locations.find(l => l.name === selectedDetailItem?.location?.name))?.imageUrl}
+        locationName={selectedDetailItem?.location?.name}
       />
     </div>
   )
