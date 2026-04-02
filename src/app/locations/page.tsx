@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge'
 import { ConfirmationDialog, useDeleteConfirmation } from '@/components/ui/confirmation-dialog'
 import { Pagination, usePagination } from '@/components/ui/pagination'
 import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/table-filters'
-import { ExportButton, commonColumns } from '@/lib/excel-export'
+import { commonColumns } from '@/lib/excel-export'
+import { PageExportButton } from '@/components/reports/PageExport'
 import { LoadingPage } from '@/components/ui/skeleton'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 import { ImagePreview } from '@/components/ui/image-preview'
@@ -247,6 +248,49 @@ export default function LocationsPage() {
     </>
   ), [])
 
+  const makeExportRows = (data: Location[]) => data.map(l => ({
+    imageUrl: l.imageUrl,
+    col1: l.isActive ? 'Active' : 'Inactive',
+    col2: l.address || '',
+    col3: l.name,
+    qty: l._count?.batches || 0,
+    badge: l.isActive ? 'Active' : 'Inactive',
+  }))
+
+  const exportConfig = useMemo(() => ({
+    title: 'Locations Report',
+    rows: makeExportRows(locations),
+    grandTotal: totalCount,
+    grandTotalLabel: 'Total Locations',
+    excelColumns: commonColumns.location,
+    excelData: locations,
+    filename: 'locations-export',
+    sheetName: 'Locations',
+    fetchAllData: async () => {
+      const cleanFilters = Object.fromEntries(Object.entries(filters).filter(([_, v]) => v && v !== '' && v !== 'all'))
+      const params = new URLSearchParams({ page: '1', limit: '10000', search: search || '', ...cleanFilters })
+      const res = await fetch(`/api/locations?${params}`)
+      const data = await res.json()
+      const all: Location[] = data.locations || []
+      return { rows: makeExportRows(all), excelData: all }
+    },
+  }), [locations, totalCount, filters, search])
+
+  const customExportFilters = useMemo(() => ({
+    statuses: [
+      { value: 'active', label: 'Active' },
+      { value: 'inactive', label: 'Inactive' },
+    ],
+    filterData: ({ status, dateFrom, dateTo }: any) => {
+      let filtered = locations
+      if (status === 'active') filtered = filtered.filter(l => l.isActive)
+      if (status === 'inactive') filtered = filtered.filter(l => !l.isActive)
+      if (dateFrom) filtered = filtered.filter(l => new Date(l.createdAt) >= new Date(dateFrom))
+      if (dateTo) filtered = filtered.filter(l => new Date(l.createdAt) <= new Date(dateTo))
+      return { rows: makeExportRows(filtered), excelData: filtered }
+    },
+  }), [locations])
+
   if (loading && locations.length === 0) return <LoadingPage view={view} title="Locations" />
 
   return (
@@ -255,10 +299,7 @@ export default function LocationsPage() {
         title="Locations"
         actions={
           <div className="flex items-center gap-2">
-            <ExportButton data={locations} columns={commonColumns.location} filename="locations-export" reportTitle="Locations Report"
-              onExportComplete={(result) => showToast(result.success ? `Exported ${locations.length} locations!` : result.error || 'Export failed', result.success ? 'success' : 'error')}
-              disabled={locations.length === 0}
-            />
+            <PageExportButton config={exportConfig} customFilters={customExportFilters} disabled={locations.length === 0} />
             <Button size="sm" onClick={() => { resetForm(); setShowForm(true) }} className="gap-2 font-bold shadow-lg shadow-primary/20">
               <Plus className="h-4 w-4" />Add Location
             </Button>

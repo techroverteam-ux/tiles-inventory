@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TableSkeleton } from '@/components/ui/skeleton'
-import { ExportButton, ExportColumn } from '@/lib/excel-export'
+import { ExportButton, ExportColumn, commonColumns } from '@/lib/excel-export'
+import { PageExportButton } from '@/components/reports/PageExport'
 import { BarChart3, Calendar, Filter, Search, PieChart, TrendingUp, Clock, CalendarRange, LayoutGrid } from 'lucide-react'
 import { useToast } from '@/contexts/ToastContext'
 import { cn } from '@/lib/utils'
@@ -179,6 +180,47 @@ export default function ReportsPage() {
     } catch { showToast('Failed to load design stock report', 'error') }
     finally { setDsLoading(false) }
   }
+
+  const makeReportExportRows = useMemo(() => rows.map(row => ({
+    col1: columns[1] ? formatCellValue(columns[1].key, row[columns[1].key]) : '',
+    col2: columns[2] ? formatCellValue(columns[2].key, row[columns[2].key]) : '',
+    col3: columns[0] ? formatCellValue(columns[0].key, row[columns[0].key]) : '',
+    badge: row['status'] || row['isActive'] !== undefined ? (row['isActive'] ? 'Active' : row['status'] || '') : undefined,
+  })), [rows, columns])
+
+  const pageExportConfig = useMemo(() => ({
+    title: exportReportTitle,
+    rows: makeReportExportRows,
+    grandTotal: rows.length,
+    grandTotalLabel: 'Total Records',
+    excelColumns: excelColumns,
+    excelData: rows,
+    filename: reportType === 'sales' ? 'sales-report' : reportType === 'purchase' ? 'purchase-report' : 'inventory-report',
+    sheetName: reportTitle,
+    fetchAllData: async () => {
+      const params = new URLSearchParams({
+        reportType,
+        ...(dateMode === 'custom' && dateFrom ? { dateFrom } : {}),
+        ...(dateMode === 'custom' && dateTo ? { dateTo } : {}),
+        ...(brandId ? { brandId } : {}),
+        ...(categoryId ? { categoryId } : {}),
+        ...(sizeId ? { sizeId } : {}),
+        ...(locationId ? { locationId } : {}),
+      })
+      const res = await fetch(`/api/reports?${params}`)
+      const data = await res.json()
+      const allRows = data.rows || []
+      return {
+        rows: allRows.map((row: any) => ({
+          col1: columns[1] ? formatCellValue(columns[1].key, row[columns[1].key]) : '',
+          col2: columns[2] ? formatCellValue(columns[2].key, row[columns[2].key]) : '',
+          col3: columns[0] ? formatCellValue(columns[0].key, row[columns[0].key]) : '',
+          badge: row['status'] || undefined,
+        })),
+        excelData: allRows,
+      }
+    },
+  }), [makeReportExportRows, rows, exportReportTitle, excelColumns, reportTitle, reportType, dateMode, dateFrom, dateTo, brandId, categoryId, sizeId, locationId, columns])
 
   const filterBar = (
     <Card className="border-border/50 rounded-3xl overflow-hidden glass-card shadow-premium animate-in slide-in-from-top-4 duration-300">
@@ -363,11 +405,9 @@ export default function ReportsPage() {
               <div className="p-2 rounded-xl bg-primary/10 text-primary"><BarChart3 className="h-5 w-5" /></div>
               {reportTitle}
             </CardTitle>
-            <ExportButton
-              data={rows} columns={excelColumns}
-              filename={reportType === 'sales' ? 'sales-report' : reportType === 'purchase' ? 'purchase-report' : 'inventory-report'}
-              sheetName={reportTitle} reportTitle={exportReportTitle}
-              headerColor={COMPANY_LOGO_HEADER_COLOR} disabled={rows.length === 0}
+            <PageExportButton
+              config={pageExportConfig}
+              disabled={rows.length === 0}
               className="rounded-xl font-bold border-border/50"
             />
           </CardHeader>

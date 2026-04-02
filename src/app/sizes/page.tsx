@@ -12,7 +12,8 @@ import { Badge } from '@/components/ui/badge'
 import { ConfirmationDialog, useDeleteConfirmation } from '@/components/ui/confirmation-dialog'
 import { Pagination, usePagination } from '@/components/ui/pagination'
 import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/table-filters'
-import { ExportButton, commonColumns } from '@/lib/excel-export'
+import { commonColumns } from '@/lib/excel-export'
+import { PageExportButton } from '@/components/reports/PageExport'
 import { LoadingPage } from '@/components/ui/skeleton'
 import { Filter, Plus, Edit, Trash2, Package, Ruler } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
@@ -408,6 +409,48 @@ export default function SizesPage() {
     </>
   ), [formatDate])
 
+  const makeExportRows = (data: Size[]) => data.map(s => ({
+    col1: s.isActive ? 'Active' : 'Inactive',
+    col2: s.length && s.width ? `${s.length}×${s.width}mm` : 'N/A',
+    col3: s.name,
+    qty: s._count?.products || 0,
+    badge: s.isActive ? 'Active' : 'Inactive',
+  }))
+
+  const exportConfig = useMemo(() => ({
+    title: 'Sizes Report',
+    rows: makeExportRows(sizes),
+    grandTotal: totalCount,
+    grandTotalLabel: 'Total Sizes',
+    excelColumns: commonColumns.size,
+    excelData: sizes,
+    filename: 'sizes-export',
+    sheetName: 'Sizes',
+    fetchAllData: async () => {
+      const params = new URLSearchParams({ page: '1', limit: '10000', search: search || '' })
+      Object.entries(filters).forEach(([k, v]) => { if (v && v !== '' && v !== 'all') params.append(k, v as string) })
+      const res = await fetch(`/api/sizes?${params}`)
+      const data = await res.json()
+      const all: Size[] = data.sizes || []
+      return { rows: makeExportRows(all), excelData: all }
+    },
+  }), [sizes, totalCount, filters, search])
+
+  const customExportFilters = useMemo(() => ({
+    statuses: [
+      { value: 'active', label: 'Active' },
+      { value: 'inactive', label: 'Inactive' },
+    ],
+    filterData: ({ status, dateFrom, dateTo }: any) => {
+      let filtered = sizes
+      if (status === 'active') filtered = filtered.filter(s => s.isActive)
+      if (status === 'inactive') filtered = filtered.filter(s => !s.isActive)
+      if (dateFrom) filtered = filtered.filter(s => new Date(s.createdAt) >= new Date(dateFrom))
+      if (dateTo) filtered = filtered.filter(s => new Date(s.createdAt) <= new Date(dateTo))
+      return { rows: makeExportRows(filtered), excelData: filtered }
+    },
+  }), [sizes])
+
   if (loading && sizes.length === 0) {
     return <LoadingPage view={view} title="Sizes" />
   }
@@ -419,20 +462,7 @@ export default function SizesPage() {
         title="Sizes"
         actions={
           <div className="flex items-center gap-2">
-            <ExportButton
-              data={sizes}
-              columns={commonColumns.size}
-              filename="sizes-export"
-              reportTitle="Sizes Report"
-              onExportComplete={(result) => {
-                if (result.success) {
-                  showToast(`Exported ${sizes.length} sizes successfully!`, 'success')
-                } else {
-                  showToast(result.error || 'Export failed', 'error')
-                }
-              }}
-              disabled={sizes.length === 0}
-            />
+            <PageExportButton config={exportConfig} customFilters={customExportFilters} disabled={sizes.length === 0} />
             <Button
               size="sm"
               onClick={() => {

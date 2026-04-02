@@ -12,7 +12,8 @@ import { Badge } from '@/components/ui/badge'
 import { ConfirmationDialog, useDeleteConfirmation } from '@/components/ui/confirmation-dialog'
 import { Pagination, usePagination } from '@/components/ui/pagination'
 import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/table-filters'
-import { ExportButton, commonColumns } from '@/lib/excel-export'
+import { commonColumns } from '@/lib/excel-export'
+import { PageExportButton } from '@/components/reports/PageExport'
 import { LoadingPage } from '@/components/ui/skeleton'
 import { Filter, Plus, Edit, Trash2, Package } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
@@ -360,6 +361,47 @@ export default function BrandsPage() {
     </>
   ), [formatDate])
 
+  const makeExportRows = (data: Brand[]) => data.map(b => ({
+    col1: b.isActive ? 'Active' : 'Inactive',
+    col2: `${b._count?.products || 0} products`,
+    col3: b.name,
+    badge: b.isActive ? 'Active' : 'Inactive',
+  }))
+
+  const exportConfig = useMemo(() => ({
+    title: 'Brands Report',
+    rows: makeExportRows(brands),
+    grandTotal: totalCount,
+    grandTotalLabel: 'Total Brands',
+    excelColumns: commonColumns.brand,
+    excelData: brands,
+    filename: 'brands-export',
+    sheetName: 'Brands',
+    fetchAllData: async () => {
+      const params = new URLSearchParams({ page: '1', limit: '10000', search: search || '' })
+      Object.entries(filters).forEach(([k, v]) => { if (v && v !== '' && v !== 'all') params.append(k, v as string) })
+      const res = await fetch(`/api/brands?${params}`)
+      const data = await res.json()
+      const all: Brand[] = data.brands || []
+      return { rows: makeExportRows(all), excelData: all }
+    },
+  }), [brands, totalCount, filters, search])
+
+  const customExportFilters = useMemo(() => ({
+    statuses: [
+      { value: 'active', label: 'Active' },
+      { value: 'inactive', label: 'Inactive' },
+    ],
+    filterData: ({ status, dateFrom, dateTo }: any) => {
+      let filtered = brands
+      if (status === 'active') filtered = filtered.filter(b => b.isActive)
+      if (status === 'inactive') filtered = filtered.filter(b => !b.isActive)
+      if (dateFrom) filtered = filtered.filter(b => new Date(b.createdAt) >= new Date(dateFrom))
+      if (dateTo) filtered = filtered.filter(b => new Date(b.createdAt) <= new Date(dateTo))
+      return { rows: makeExportRows(filtered), excelData: filtered }
+    },
+  }), [brands])
+
   if (loading && brands.length === 0) {
     return <LoadingPage view={view} title="Brands" />
   }
@@ -371,19 +413,7 @@ export default function BrandsPage() {
         title="Brands"
         actions={
           <div className="flex items-center gap-2">
-            <ExportButton
-              data={brands}
-              columns={commonColumns.brand}
-              filename="brands-export"
-              onExportComplete={(result) => {
-                if (result.success) {
-                  showToast(`Exported ${brands.length} brands successfully!`, 'success')
-                } else {
-                  showToast(result.error || 'Export failed', 'error')
-                }
-              }}
-              disabled={brands.length === 0}
-            />
+            <PageExportButton config={exportConfig} customFilters={customExportFilters} disabled={brands.length === 0} />
             <Dialog open={showForm} onOpenChange={setShowForm}>
               <DialogTrigger asChild>
                 <Button
