@@ -128,9 +128,9 @@ export default function WebsitePage() {
                          product.brand.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.category.name.toLowerCase().includes(searchTerm.toLowerCase())
     
-    const matchesBrand = !selectedBrand || product.brand.id === selectedBrand
-    const matchesCategory = !selectedCategory || product.category.id === selectedCategory
-    const matchesSize = !selectedSize || product.size?.id === selectedSize
+    const matchesBrand = selectedBrand === 'all' || !selectedBrand || product.brand.id === selectedBrand
+    const matchesCategory = selectedCategory === 'all' || !selectedCategory || product.category.id === selectedCategory
+    const matchesSize = selectedSize === 'all' || !selectedSize || product.size?.id === selectedSize
 
     return matchesSearch && matchesBrand && matchesCategory && matchesSize
   })
@@ -576,7 +576,7 @@ export default function WebsitePage() {
                   <SelectValue placeholder="All Brands" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Brands</SelectItem>
+                  <SelectItem value="all">All Brands</SelectItem>
                   {brands.map(brand => (
                     <SelectItem key={brand.id} value={brand.id}>
                       {brand.name}
@@ -590,7 +590,7 @@ export default function WebsitePage() {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {categories.map(category => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
@@ -604,7 +604,7 @@ export default function WebsitePage() {
                   <SelectValue placeholder="All Sizes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Sizes</SelectItem>
+                  <SelectItem value="all">All Sizes</SelectItem>
                   {sizes.map(size => (
                     <SelectItem key={size.id} value={size.id}>
                       {size.name}
@@ -767,6 +767,7 @@ export default function WebsitePage() {
               ))}
             </div>
           )}
+        </div>
         </div>
         </div>
       </section>
