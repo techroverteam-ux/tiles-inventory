@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -9,19 +9,19 @@ import { FileDown, ImageDown, FileSpreadsheet, Loader2, Download, SlidersHorizon
 import { exportToExcel, ExportColumn } from '@/lib/excel-export'
 import { cn } from '@/lib/utils'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export interface ReportRow {
   imageUrl?: string
   col1: string   // e.g. finish/category
   col2: string   // e.g. size
   col3: string   // e.g. code / order number (bold)
-  qty?: number   // large number shown in PRE column
+  qty?: number   // large number shown in QTY column
   badge?: string // status badge
 }
 
 export interface PageExportConfig {
-  title: string          // "Products Report"
-  subtitle?: string      // brand name or section header
+  title: string
+  subtitle?: string
   partyName?: string
   rows: ReportRow[]
   grandTotal?: number
@@ -30,151 +30,283 @@ export interface PageExportConfig {
   excelData: any[]
   filename: string
   sheetName?: string
+  /** If provided, called before PDF/PNG export to fetch ALL records (ignores pagination) */
+  fetchAllData?: () => Promise<{ rows: ReportRow[]; excelData: any[] }>
 }
 
-// ─── Printable Report (same layout as Design Stock Report) ───────────────────
-const NAVY = '#1E3A8A'
-const NB = `2px solid ${NAVY}`
-const CB = `1px solid ${NAVY}`
-
-function fmtDate(v: any) {
-  if (!v) return ''
-  const d = v instanceof Date ? v : new Date(v)
-  if (isNaN(d.getTime())) return String(v)
-  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+// â”€â”€â”€ jsPDF native renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function fmtFooterDate() {
+  return new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-interface PrintableProps { cfg: PageExportConfig; divRef: React.RefObject<HTMLDivElement | null> }
-
-function PrintableReport({ cfg, divRef }: PrintableProps) {
-  return (
-    <div ref={divRef} style={{
-      backgroundColor: '#fff', color: '#000',
-      fontFamily: 'Arial, Helvetica, sans-serif',
-      padding: '40px 50px 50px', minWidth: '680px', maxWidth: '880px',
-      margin: '0 auto', boxSizing: 'border-box',
-    }}>
-      {/* Title */}
-      <div style={{ fontWeight: 'bold', fontSize: '22px', marginBottom: '8px' }}>{cfg.title}</div>
-      {cfg.subtitle && <div style={{ fontWeight: 'bold', fontSize: '15px', textTransform: 'uppercase', marginBottom: '12px' }}>{cfg.subtitle}</div>}
-
-      {/* Party Name */}
-      {cfg.partyName && (
-        <div style={{ display: 'flex', border: NB, marginBottom: '18px', fontSize: '13px' }}>
-          <div style={{ padding: '6px 14px', color: NAVY, fontWeight: 'bold', borderRight: NB, whiteSpace: 'nowrap' }}>Party Name:</div>
-          <div style={{ padding: '6px 14px' }}>{cfg.partyName}</div>
-        </div>
-      )}
-
-      {/* ITEM DESCRIPTION header */}
-      <div style={{ border: NB, padding: '6px 14px', color: NAVY, fontWeight: 'bold', textAlign: 'center', fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-        ITEM DESCRIPTION
-      </div>
-
-      {/* Rows */}
-      {cfg.rows.map((row, i) => (
-        <div key={i} style={{ display: 'flex', border: CB, borderTop: 'none' }}>
-          {/* Col 1 — meta */}
-          <div style={{ width: '20%', minWidth: '120px', padding: '12px 14px', borderRight: CB, fontSize: '12px', lineHeight: '1.7', flexShrink: 0 }}>
-            <div>{row.col1}</div>
-            <div>{row.col2}</div>
-            <div style={{ fontWeight: 'bold', marginTop: '4px' }}>{row.col3}</div>
-            {row.badge && <div style={{ marginTop: '4px', display: 'inline-block', padding: '1px 6px', background: NAVY, color: '#fff', borderRadius: '3px', fontSize: '10px', fontWeight: 'bold' }}>{row.badge}</div>}
-          </div>
-          {/* Col 2 — qty */}
-          {row.qty !== undefined && (
-            <div style={{ width: '10%', minWidth: '60px', padding: '12px 8px', borderRight: CB, textAlign: 'center', flexShrink: 0 }}>
-              <div style={{ fontWeight: 'bold', fontSize: '10px', letterSpacing: '0.05em', marginBottom: '4px' }}>PRE</div>
-              <div style={{ fontWeight: 'bold', fontSize: '28px', lineHeight: '1' }}>{row.qty}</div>
-            </div>
-          )}
-          {/* Col 3 — image */}
-          <div style={{ flex: '1', backgroundColor: NAVY, overflow: 'hidden', borderRight: CB, position: 'relative' }}>
-            {row.imageUrl
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={row.imageUrl} alt={row.col3} crossOrigin="anonymous" style={{ width: '100%', height: '150px', objectFit: 'cover', display: 'block' }} />
-              : <div style={{ height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#93C5FD', fontSize: '11px' }}>{row.col3}</div>
-            }
-          </div>
-          {/* Col 4 — navy panel */}
-          <div style={{ width: '20%', minWidth: '90px', backgroundColor: NAVY, flexShrink: 0 }} />
-        </div>
-      ))}
-
-      {/* Summary row */}
-      {cfg.rows.length > 0 && (() => {
-        const last = cfg.rows[cfg.rows.length - 1]
-        return (
-          <div style={{ display: 'flex', border: CB, borderTop: 'none', fontSize: '13px' }}>
-            <div style={{ flex: '2', padding: '7px 12px', fontWeight: 'bold', borderRight: CB }}>{last.col3}</div>
-            <div style={{ flex: '1', padding: '7px 12px', textAlign: 'center', borderRight: CB }}>{last.col2}</div>
-            <div style={{ flex: '1', padding: '7px 12px', textAlign: 'center', borderRight: CB }}>{last.col1}</div>
-            {cfg.grandTotalLabel && <>
-              <div style={{ flex: '1', padding: '7px 12px', textAlign: 'center', fontWeight: 'bold', borderRight: CB }}>{cfg.grandTotalLabel}</div>
-              <div style={{ flex: '1', padding: '7px 12px', textAlign: 'center', fontWeight: 'bold', fontSize: '16px' }}>{cfg.grandTotal}</div>
-            </>}
-          </div>
-        )
-      })()}
-
-      {/* Grand Total */}
-      {cfg.grandTotalLabel && (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: '80px', marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #ccc', fontWeight: 'bold', fontSize: '15px' }}>
-          <span>GRAND TOTAL :</span>
-          <span style={{ fontSize: '18px' }}>{cfg.grandTotal}</span>
-        </div>
-      )}
-
-      {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '40px', fontSize: '11px', color: '#555' }}>
-        <span>{fmtDate(new Date())}</span>
-        <span>Page 1 of 1</span>
-      </div>
-    </div>
-  )
+async function loadImage(url: string): Promise<HTMLImageElement | null> {
+  return new Promise(resolve => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => resolve(img)
+    img.onerror = () => resolve(null)
+    img.src = url
+  })
 }
 
-// ─── Shared export engine ────────────────────────────────────────────────────
-async function runExport(fmt: 'excel' | 'pdf' | 'png', cfg: PageExportConfig, divRef: React.RefObject<HTMLDivElement | null>, setExporting: (v: 'excel' | 'pdf' | 'png' | null) => void, setShowHidden: (v: boolean) => void) {
-  setExporting(fmt)
-  if (fmt === 'excel') {
-    exportToExcel({ filename: cfg.filename, sheetName: cfg.sheetName || 'Report', columns: cfg.excelColumns, data: cfg.excelData, reportTitle: cfg.title })
-    setExporting(null)
-    return
+async function buildPDF(cfg: PageExportConfig): Promise<import('jspdf').jsPDF> {
+  const { default: jsPDF } = await import('jspdf')
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const PW = pdf.internal.pageSize.getWidth()
+  const PH = pdf.internal.pageSize.getHeight()
+  const MARGIN = 18        // mm left/right margin â€” gives white space on sides
+  const FOOTER_H = 10
+  const IMG_H = 62
+  const BAR_H = 10
+  const ROW_H = IMG_H + BAR_H
+  const contentW = PW - MARGIN * 2
+  const bodyBottom = PH - FOOTER_H - 6
+
+  let page = 1
+
+  const addFooter = (p: number, total: number) => {
+    pdf.setPage(p)
+    pdf.setDrawColor(200, 200, 200)
+    pdf.setLineWidth(0.3)
+    pdf.line(MARGIN, PH - FOOTER_H, PW - MARGIN, PH - FOOTER_H)
+    pdf.setFontSize(8)
+    pdf.setTextColor(150, 150, 150)
+    pdf.text(fmtFooterDate(), MARGIN, PH - FOOTER_H + 5)
+    pdf.text(`Page ${p} of ${total}`, PW - MARGIN, PH - FOOTER_H + 5, { align: 'right' })
   }
-  setShowHidden(true)
-  await new Promise(r => setTimeout(r, 400))
-  try {
-    const { default: html2canvas } = await import('html2canvas')
-    const el = divRef.current
-    if (!el) return
-    const canvas = await html2canvas(el, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false })
-    if (fmt === 'png') {
-      const a = document.createElement('a')
-      a.download = `${cfg.filename}-${Date.now()}.png`
-      a.href = canvas.toDataURL('image/png')
-      a.click()
-    } else {
-      const { default: jsPDF } = await import('jspdf')
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-      const pdfW = pdf.internal.pageSize.getWidth()
-      const pdfH = (canvas.height * pdfW) / canvas.width
-      const pageH = pdf.internal.pageSize.getHeight()
-      let y = 0
-      while (y < pdfH) {
-        if (y > 0) pdf.addPage()
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, -y, pdfW, pdfH)
-        y += pageH
-      }
-      pdf.save(`${cfg.filename}-${Date.now()}.pdf`)
+
+  const newPage = () => {
+    pdf.addPage()
+    page++
+    return MARGIN
+  }
+
+  let y = MARGIN
+
+  // Title
+  pdf.setFontSize(16)
+  pdf.setFont('helvetica', 'bold')
+  pdf.setTextColor(15, 23, 42)
+  pdf.text(cfg.title, MARGIN, y + 7)
+  y += 12
+
+  if (cfg.subtitle) {
+    pdf.setFontSize(10)
+    pdf.setTextColor(71, 85, 105)
+    pdf.text(cfg.subtitle.toUpperCase(), MARGIN, y + 4)
+    y += 8
+  }
+
+  y += 2
+
+  for (const row of cfg.rows) {
+    if (y + ROW_H > bodyBottom) {
+      y = newPage()
     }
+
+    const rx = MARGIN
+    const ry = y
+
+    // Outer border
+    pdf.setDrawColor(30, 58, 138)
+    pdf.setLineWidth(0.5)
+    pdf.rect(rx, ry, contentW, ROW_H)
+
+    // Image â€” full width, object-fit cover
+    if (row.imageUrl) {
+      const img = await loadImage(row.imageUrl)
+      if (img) {
+        // Calculate cover crop: fill contentW x IMG_H without stretching
+        const imgAspect = img.naturalWidth / img.naturalHeight
+        const boxAspect = contentW / IMG_H
+        let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight
+        if (imgAspect > boxAspect) {
+          sw = img.naturalHeight * boxAspect
+          sx = (img.naturalWidth - sw) / 2
+        } else {
+          sh = img.naturalWidth / boxAspect
+          sy = (img.naturalHeight - sh) / 2
+        }
+        // Draw cropped image using canvas
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(sw)
+        canvas.height = Math.round(sh)
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height)
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', rx, ry, contentW, IMG_H)
+      } else {
+        pdf.setFillColor(241, 245, 249)
+        pdf.rect(rx, ry, contentW, IMG_H, 'F')
+        pdf.setFontSize(9)
+        pdf.setTextColor(148, 163, 184)
+        pdf.text('No Image', rx + contentW / 2, ry + IMG_H / 2, { align: 'center' })
+      }
+    } else {
+      pdf.setFillColor(241, 245, 249)
+      pdf.rect(rx, ry, contentW, IMG_H, 'F')
+      pdf.setFontSize(9)
+      pdf.setTextColor(148, 163, 184)
+      pdf.text('No Image', rx + contentW / 2, ry + IMG_H / 2, { align: 'center' })
+    }
+
+    // Info bar
+    const barY = ry + IMG_H
+    pdf.setFillColor(255, 255, 255)
+    pdf.rect(rx, barY, contentW, BAR_H, 'F')
+    pdf.setDrawColor(30, 58, 138)
+    pdf.setLineWidth(0.4)
+    pdf.line(rx, barY, rx + contentW, barY)
+
+    // Info bar text: CODE (bold left) | col2 (center-left) | col1 (center) | Total label | QTY (bold right)
+    const barTextY = barY + BAR_H * 0.68
+    pdf.setFontSize(9)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(15, 23, 42)
+    pdf.text(row.col3, rx + 2, barTextY)  // product name/code â€” left
+
+    pdf.setFont('helvetica', 'normal')
+    pdf.setTextColor(71, 85, 105)
+    pdf.text(row.col2, rx + contentW * 0.38, barTextY, { align: 'center' })  // size
+    pdf.text(row.col1, rx + contentW * 0.58, barTextY, { align: 'center' })  // category/brand
+
+    if (row.qty !== undefined) {
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(71, 85, 105)
+      pdf.text('Total', rx + contentW * 0.76, barTextY, { align: 'center' })
+      pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(15, 23, 42)
+      pdf.setFontSize(10)
+      pdf.text(String(row.qty), rx + contentW - 2, barTextY, { align: 'right' })
+    }
+
+    y += ROW_H + 3  // 3mm gap between cards
+  }
+  if (cfg.grandTotalLabel) {
+    if (y + 12 > bodyBottom) y = newPage()
+    y += 4
+    pdf.setDrawColor(30, 41, 59)
+    pdf.setLineWidth(0.5)
+    pdf.line(MARGIN, y, PW - MARGIN, y)
+    y += 6
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setTextColor(71, 85, 105)
+    pdf.text(cfg.grandTotalLabel.toUpperCase(), PW - MARGIN - 25, y, { align: 'right' })
+    pdf.setFontSize(13)
+    pdf.setTextColor(15, 23, 42)
+    pdf.text(String(cfg.grandTotal ?? ''), PW - MARGIN, y, { align: 'right' })
+  }
+
+  // Stamp footers with correct page total
+  for (let p = 1; p <= page; p++) addFooter(p, page)
+
+  return pdf
+}
+
+// --- Shared export engine ---
+async function runExport(
+  fmt: 'excel' | 'pdf' | 'png',
+  cfg: PageExportConfig,
+  _divRef: React.RefObject<HTMLDivElement | null>,
+  setExporting: (v: 'excel' | 'pdf' | 'png' | null) => void,
+  _setShowHidden: (v: boolean) => void
+) {
+  setExporting(fmt)
+  try {
+    // Fetch all data if callback provided (bypass pagination)
+    let activeCfg = cfg
+    if (fmt !== 'excel' && cfg.fetchAllData) {
+      const { rows, excelData } = await cfg.fetchAllData()
+      activeCfg = { ...cfg, rows, excelData }
+    } else if (fmt === 'excel' && cfg.fetchAllData) {
+      const { excelData } = await cfg.fetchAllData()
+      activeCfg = { ...cfg, excelData }
+    }
+
+    if (fmt === 'excel') {
+      exportToExcel({ filename: activeCfg.filename, sheetName: activeCfg.sheetName || 'Report', columns: activeCfg.excelColumns, data: activeCfg.excelData, reportTitle: activeCfg.title })
+      return
+    }
+
+    if (fmt === 'pdf') {
+      const pdf = await buildPDF(activeCfg)
+      pdf.save(`${activeCfg.filename}-${Date.now()}.pdf`)
+      return
+    }
+
+    // PNG â€” build DOM container matching the PDF layout
+    const { default: html2canvas } = await import('html2canvas')
+    const container = document.createElement('div')
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;background:#fff;font-family:Arial,sans-serif;padding:28px 32px 32px;width:700px;box-sizing:border-box;'
+    document.body.appendChild(container)
+
+    // Title
+    const titleEl = document.createElement('div')
+    titleEl.style.cssText = 'font-weight:bold;font-size:20px;margin-bottom:14px;color:#0f172a;'
+    titleEl.textContent = activeCfg.title
+    container.appendChild(titleEl)
+
+    for (const row of activeCfg.rows) {
+      const card = document.createElement('div')
+      card.style.cssText = 'border:2px solid #1e3a8a;margin-bottom:10px;'
+
+      // Image
+      const imgWrap = document.createElement('div')
+      imgWrap.style.cssText = 'width:100%;height:220px;overflow:hidden;background:#f1f5f9;'
+      if (row.imageUrl) {
+        const img = document.createElement('img')
+        img.src = row.imageUrl
+        img.crossOrigin = 'anonymous'
+        img.style.cssText = 'width:100%;height:220px;object-fit:cover;display:block;'
+        imgWrap.appendChild(img)
+      } else {
+        imgWrap.style.cssText += 'display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:13px;'
+        imgWrap.textContent = 'No Image'
+      }
+      card.appendChild(imgWrap)
+
+      // Info bar
+      const bar = document.createElement('div')
+      bar.style.cssText = 'display:flex;align-items:center;padding:6px 10px;border-top:1.5px solid #1e3a8a;background:#fff;gap:0;'
+      bar.innerHTML = `
+        <span style="font-weight:bold;font-size:13px;color:#0f172a;flex:2;">${row.col3}</span>
+        <span style="font-size:11px;color:#475569;flex:1.2;text-align:center;">${row.col2}</span>
+        <span style="font-size:11px;color:#475569;flex:1.2;text-align:center;">${row.col1}</span>
+        <span style="font-size:11px;color:#475569;flex:0.8;text-align:center;">Total</span>
+        <span style="font-weight:bold;font-size:14px;color:#0f172a;flex:0.6;text-align:right;">${row.qty ?? ''}</span>
+      `
+      card.appendChild(bar)
+      container.appendChild(card)
+    }
+
+    // Grand total
+    if (activeCfg.grandTotalLabel) {
+      const gt = document.createElement('div')
+      gt.style.cssText = 'display:flex;justify-content:flex-end;align-items:center;gap:16px;margin-top:16px;padding-top:12px;border-top:2px solid #1e293b;font-weight:bold;font-size:13px;'
+      gt.innerHTML = `<span style="color:#475569;text-transform:uppercase;letter-spacing:0.05em">${activeCfg.grandTotalLabel}</span><span style="font-size:18px;color:#0f172a">${activeCfg.grandTotal}</span>`
+      container.appendChild(gt)
+    }
+
+    // Footer
+    const footer = document.createElement('div')
+    footer.style.cssText = 'display:flex;justify-content:space-between;margin-top:24px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;'
+    footer.innerHTML = `<span>${fmtFooterDate()}</span><span>Page 1 of 1</span>`
+    container.appendChild(footer)
+
+    await new Promise(r => setTimeout(r, 300))
+    const canvas = await html2canvas(container, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false })
+    document.body.removeChild(container)
+
+    const a = document.createElement('a')
+    a.download = `${activeCfg.filename}-${Date.now()}.png`
+    a.href = canvas.toDataURL('image/png')
+    a.click()
   } finally {
-    setShowHidden(false)
     setExporting(null)
   }
 }
 
-// ─── Format picker (3 cards) ─────────────────────────────────────────────────
+// --- Format picker (3 cards) ---
 function FormatCards({ onPick, exporting }: { onPick: (f: 'excel' | 'pdf' | 'png') => void; exporting: boolean }) {
   return (
     <div className="grid grid-cols-3 gap-2">
@@ -194,7 +326,7 @@ function FormatCards({ onPick, exporting }: { onPick: (f: 'excel' | 'pdf' | 'png
   )
 }
 
-// ─── Custom Export filter options ────────────────────────────────────────────
+// --- Custom Export filter options ---
 export interface CustomExportFilters {
   brands?: { id: string; name: string }[]
   categories?: { id: string; name: string }[]
@@ -204,7 +336,7 @@ export interface CustomExportFilters {
   filterData: (opts: { brandId: string; categoryId: string; sizeId: string; status: string; dateFrom: string; dateTo: string }) => { rows: ReportRow[]; excelData: any[] }
 }
 
-// ─── Main Export Button (Default + Custom) ───────────────────────────────────
+// --- Main Export Button (Default + Custom) ---
 interface PageExportButtonProps {
   config: PageExportConfig
   customFilters?: CustomExportFilters
@@ -213,9 +345,7 @@ interface PageExportButtonProps {
 }
 
 export function PageExportButton({ config, customFilters, disabled, className }: PageExportButtonProps) {
-  const divRef = useRef<HTMLDivElement>(null)
   const [exporting, setExporting] = useState<'excel' | 'pdf' | 'png' | null>(null)
-  const [showHidden, setShowHidden] = useState(false)
   const [showDefault, setShowDefault] = useState(false)
   const [showCustom, setShowCustom] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
@@ -232,7 +362,7 @@ export function PageExportButton({ config, customFilters, disabled, className }:
   const isDisabled = disabled || config.excelData.length === 0
 
   const doExport = (fmt: 'excel' | 'pdf' | 'png', cfg: PageExportConfig) =>
-    runExport(fmt, cfg, divRef as React.RefObject<HTMLDivElement | null>, setExporting, setShowHidden)
+    runExport(fmt, cfg, null as any, setExporting, null as any)
 
   const applyCustomAndOpen = () => {
     if (!customFilters) return
@@ -244,17 +374,11 @@ export function PageExportButton({ config, customFilters, disabled, className }:
 
   return (
     <>
-      {showHidden && (
-        <div style={{ position: 'fixed', left: '-9999px', top: 0, zIndex: -1, pointerEvents: 'none' }}>
-          <PrintableReport cfg={customCfg || config} divRef={divRef as React.RefObject<HTMLDivElement>} />
-        </div>
-      )}
-
       {/* Default Export dialog */}
       <Dialog open={showDefault} onOpenChange={setShowDefault}>
         <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-xs w-[92vw] rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Export All — {config.title}</DialogTitle>
+            <DialogTitle className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Export All {config.title}</DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground -mt-1 mb-1">Exports all {config.excelData.length} records</p>
           <FormatCards onPick={(f) => { setShowDefault(false); doExport(f, config) }} exporting={!!exporting} />
@@ -267,7 +391,7 @@ export function PageExportButton({ config, customFilters, disabled, className }:
         <Dialog open={showCustom} onOpenChange={setShowCustom}>
           <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-sm w-[95vw] rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto no-scrollbar p-6">
             <DialogHeader>
-              <DialogTitle className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Custom Export — {config.title}</DialogTitle>
+              <DialogTitle className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Custom Export {config.title}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 pt-1">
               {/* Filters */}
@@ -443,3 +567,5 @@ export function SmartExportModal({ open, onOpenChange, title, brands = [], repor
     </Dialog>
   )
 }
+
+

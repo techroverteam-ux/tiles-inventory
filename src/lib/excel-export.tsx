@@ -334,8 +334,8 @@ export const commonColumns = {
     { key: 'name', label: 'Size Name', width: 20 },
     { key: 'brand.name', label: 'Brand', width: 20 },
     { key: 'category.name', label: 'Category', width: 20 },
-    { key: 'length', label: 'Length (mm)', width: 15, format: (value: number) => value?.toString() || '' },
-    { key: 'width', label: 'Width (mm)', width: 15, format: (value: number) => value?.toString() || '' },
+    { key: 'length', label: 'Length (in)', width: 15, format: (value: number) => value?.toString() || '' },
+    { key: 'width', label: 'Width (in)', width: 15, format: (value: number) => value?.toString() || '' },
     { key: 'description', label: 'Description', width: 25 },
     { key: 'isActive', label: 'Status', width: 12, format: (value: boolean) => value ? 'Active' : 'Inactive' },
     { key: '_count.products', label: 'Products', width: 12, format: (value: number) => value?.toString() || '0' },
@@ -352,7 +352,7 @@ export const commonColumns = {
 
   product: [
     { key: 'name', label: 'Product Name', width: 25 },
-    { key: 'code', label: 'Product Code', width: 15 },
+    { key: 'name', label: 'Product Name', width: 25 },
     { key: 'brand.name', label: 'Brand', width: 20 },
     { key: 'category.name', label: 'Category', width: 20 },
     { key: 'size.name', label: 'Size', width: 15 },

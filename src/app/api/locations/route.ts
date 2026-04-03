@@ -72,19 +72,11 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     
-    const { name, address, isActive = true, imageUrl } = data
+    const { name, address, isActive = true } = data
     
-    // Validate required fields
     if (!name || !name.trim()) {
       return NextResponse.json(
         { error: 'Location name is required' },
-        { status: 400 }
-      )
-    }
-    
-    if (!imageUrl) {
-      return NextResponse.json(
-        { error: 'Location photo is required' },
         { status: 400 }
       )
     }
@@ -110,7 +102,6 @@ export async function POST(request: NextRequest) {
       data: {
         name: name.trim(),
         address: address?.trim() || null,
-        imageUrl: imageUrl || null,
         isActive: Boolean(isActive),
         createdById: user.userId,
         updatedById: user.userId,

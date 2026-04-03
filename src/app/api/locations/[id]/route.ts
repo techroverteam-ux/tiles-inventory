@@ -45,7 +45,7 @@ export async function PUT(
   try {
     const { id } = await params
     const data = await request.json()
-    const { name, address, isActive, imageUrl } = data
+    const { name, address, isActive } = data
 
     // Validate required fields
     if (!name || !name.trim()) {
@@ -96,7 +96,6 @@ export async function PUT(
       data: {
         name: name.trim(),
         address: address?.trim() || null,
-        imageUrl: imageUrl !== undefined ? (imageUrl || null) : undefined,
         isActive: Boolean(isActive),
         updatedById: user.userId,
         updatedAt: new Date()
@@ -140,20 +139,9 @@ export async function DELETE(
       )
     }
 
-    // Only active inventory batches should block deletion.
-    const activeBatchesCount = await prisma.batch.count({
-      where: {
-        locationId: id,
-        isActive: true,
-      },
-    })
-
-    if (activeBatchesCount > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete location with associated inventory batches. Please remove them first.' },
-        { status: 400 }
-      )
-    }
+    // Cascade-delete all batches and purchase items linked to this location, then delete
+    await prisma.purchaseItem.deleteMany({ where: { locationId: id } })
+    await prisma.batch.deleteMany({ where: { locationId: id } })
 
     await prisma.location.delete({ where: { id } })
 

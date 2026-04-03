@@ -14,19 +14,6 @@ async function uploadImageFile(image: File | null) {
   return blob.url
 }
 
-async function checkDuplicateCode(code: string, excludeId: string) {
-  const duplicate = await prisma.product.findFirst({
-    where: { code: { equals: code, mode: 'insensitive' }, id: { not: excludeId } }
-  })
-  if (!duplicate) return null
-  return NextResponse.json({
-    error: 'Duplicate entry',
-    details: duplicate.isActive
-      ? 'A product with this code already exists'
-      : 'A product with this code already exists as inactive. Please reactivate it instead.'
-  }, { status: 409 })
-}
-
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
@@ -36,20 +23,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       const data = await request.json()
       const user = requireAuth(request)
       const name = data.name?.trim()
-      const code = data.code?.trim()
       const brandId = data.brandId
       const categoryId = data.categoryId
       const sizeId = data.sizeId || null
 
-      if (!name || !code || !brandId || !categoryId || !data.imageUrl) {
-        return NextResponse.json({ error: 'Missing required fields', details: 'Name, code, brand, category, and image are required' }, { status: 400 })
+      if (!name || !brandId || !categoryId) {
+        return NextResponse.json({ error: 'Missing required fields', details: 'Name, brand, and category are required' }, { status: 400 })
       }
 
-      const dupError = await checkDuplicateCode(code, id)
-      if (dupError) return dupError
-
       const updateData: any = {
-        name, code, brandId, categoryId, sizeId,
+        name, brandId, categoryId, sizeId,
         sqftPerBox: Number(data.sqftPerBox) || 1,
         pcsPerBox: Number(data.pcsPerBox) || 1,
         updatedById: user.userId,
@@ -63,7 +46,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const formData = await request.formData()
     const user = requireAuth(request)
     const name = (formData.get('name') as string)?.trim()
-    const code = (formData.get('code') as string)?.trim()
     const brandId = formData.get('brandId') as string
     const categoryId = formData.get('categoryId') as string
     const sizeId = (formData.get('sizeId') as string) || null
@@ -72,16 +54,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const sqftPerBox = formData.get('sqftPerBox') as string
     const image = formData.get('image') as File | null
 
-    if (!name || !code || !brandId || !categoryId) {
-      return NextResponse.json({ error: 'Missing required fields', details: 'Name, code, brand, and category are required' }, { status: 400 })
+    if (!name || !brandId || !categoryId) {
+      return NextResponse.json({ error: 'Missing required fields', details: 'Name, brand, and category are required' }, { status: 400 })
     }
-
-    const dupError = await checkDuplicateCode(code, id)
-    if (dupError) return dupError
 
     const imageUrl = await uploadImageFile(image)
     const updateData: any = {
-      name, code, brandId, categoryId, sizeId,
+      name, brandId, categoryId, sizeId,
       sqftPerBox: parseFloat(sqftPerBox || '1') || 1,
       pcsPerBox: parseInt(pcsPerBox || stock || '1') || 1,
       updatedById: user.userId,
@@ -93,7 +72,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   } catch (error: any) {
     console.error('Product update error:', error)
-    if (error.code === 'P2002') return NextResponse.json({ error: 'Duplicate entry', details: 'A product with this code already exists' }, { status: 409 })
     if (error.code === 'P2025') return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     return NextResponse.json({ error: 'Failed to update product', message: error.message }, { status: 500 })
   }

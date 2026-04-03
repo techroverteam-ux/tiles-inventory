@@ -68,13 +68,13 @@ export default function AddStockForm({ onSuccess, onCancel }: AddStockFormProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.productId || !formData.locationId || !formData.batchNumber || !formData.quantity) {
+    if (!formData.productId || !formData.quantity) {
       showToast('Please fill in all required fields', 'error')
       return
     }
     setLoading(true)
     try {
-      const allEntries = [...entries, formData].filter(e => e.productId && e.locationId && e.batchNumber && e.quantity)
+      const allEntries = [...entries, formData].filter(e => e.productId && e.quantity)
       let successCount = 0
       for (const entry of allEntries) {
         const response = await fetch('/api/inventory', {
@@ -102,7 +102,7 @@ export default function AddStockForm({ onSuccess, onCancel }: AddStockFormProps)
     }
   }
 
-  const isValid = formData.productId && formData.locationId && formData.batchNumber && formData.quantity
+  const isValid = formData.productId && formData.quantity
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 pt-2">
@@ -136,19 +136,18 @@ export default function AddStockForm({ onSuccess, onCancel }: AddStockFormProps)
           <SearchableSelect
             value={formData.productId}
             onValueChange={(val) => setFormData({ ...formData, productId: val })}
-            options={products.map(p => ({ value: p.id, label: `${p.name} (${p.code})` }))}
+            options={products.map(p => ({ value: p.id, label: p.name }))}
             placeholder="Select a product"
             required
           />
         </div>
         <div className="space-y-1.5">
-          <label className="text-sm font-bold text-foreground/80 ml-0.5">Location <span className="text-destructive">*</span></label>
+          <label className="text-sm font-bold text-foreground/80 ml-0.5">Location <span className="text-muted-foreground font-normal text-xs">(Optional)</span></label>
           <SearchableSelect
             value={formData.locationId}
             onValueChange={(val) => setFormData({ ...formData, locationId: val })}
             options={locations.map(l => ({ value: l.id, label: l.name }))}
             placeholder="Select a location"
-            required
           />
         </div>
       </div>
@@ -156,12 +155,11 @@ export default function AddStockForm({ onSuccess, onCancel }: AddStockFormProps)
       {/* Batch Number & Shade */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label className="text-sm font-bold text-foreground/80 ml-0.5">Batch Number <span className="text-destructive">*</span></label>
+          <label className="text-sm font-bold text-foreground/80 ml-0.5">Batch Number <span className="text-muted-foreground font-normal text-xs">(Optional)</span></label>
           <Input
             placeholder="e.g., BATCH-001"
             value={formData.batchNumber}
             onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value })}
-            required
             className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-11"
           />
         </div>
@@ -228,14 +226,14 @@ export default function AddStockForm({ onSuccess, onCancel }: AddStockFormProps)
 
       {/* Batch Photo */}
       <div className="p-4 bg-muted/20 rounded-2xl border border-border/30">
-        <label className="text-sm font-bold text-foreground/80 mb-2.5 block">Batch Photo <span className="text-muted-foreground font-normal">(Optional)</span></label>
+        <label className="text-sm font-bold text-foreground/80 mb-2.5 block">Stock Location Photo <span className="text-muted-foreground font-normal">(Optional)</span></label>
         <ImageUpload
           key={imageResetKey}
           onImageUploaded={(url) => setFormData({ ...formData, imageUrl: url })}
           currentImage={formData.imageUrl}
           label={null}
         />
-        <p className="text-[10px] text-muted-foreground mt-2">Add a photo if this batch has unique characteristics or shades.</p>
+        <p className="text-[10px] text-muted-foreground mt-2">Photo of the stock in its warehouse location — helps you find it quickly.</p>
       </div>
 
       {/* Actions */}

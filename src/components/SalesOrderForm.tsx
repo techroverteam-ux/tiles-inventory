@@ -209,9 +209,9 @@ export default function SalesOrderForm({ onSuccess, order }: SalesOrderFormProps
             .filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i)
             .map(p => ({
               value: p.id,
-              label: [p.name, p.code, p.brand?.name, p.size?.name ? formatSizeInches(p.size.name) || p.size.name : null].filter(Boolean).join(' · ')
+              label: [p.name, p.brand?.name, p.size?.name ? formatSizeInches(p.size.name) || p.size.name : null].filter(Boolean).join(' · ')
             }))}
-          placeholder="Search product by name, code, brand..."
+          placeholder="Search product by name, brand..."
         />
 
         {/* Product preview + stock info */}
@@ -226,7 +226,7 @@ export default function SalesOrderForm({ onSuccess, order }: SalesOrderFormProps
             </div>
             <div className="flex-1 min-w-0 text-xs space-y-0.5">
               <div className="font-bold text-foreground text-sm truncate">{selectedProduct.name}</div>
-              <div className="text-muted-foreground">Code: <span className="font-mono font-bold text-foreground">{selectedProduct.code}</span></div>
+
               <div className="text-muted-foreground">Brand: <span className="font-medium text-foreground">{selectedProduct.brand?.name}</span></div>
               {selectedProduct.size?.name && (
                 <div className="text-muted-foreground">Size: <span className="font-bold text-primary">{formatSizeInches(selectedProduct.size.name) || selectedProduct.size.name}</span></div>

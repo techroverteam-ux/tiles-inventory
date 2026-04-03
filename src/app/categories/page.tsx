@@ -13,9 +13,9 @@ import { ConfirmationDialog, useDeleteConfirmation } from '@/components/ui/confi
 import { Pagination, usePagination } from '@/components/ui/pagination'
 import { TableFilters, useTableFilters, FilterConfig } from '@/components/ui/table-filters'
 import { exportToExcel, commonColumns } from '@/lib/excel-export'
-import { SmartExportModal } from '@/components/reports/PageExport'
+import { PageExportButton } from '@/components/reports/PageExport'
 import { LoadingPage } from '@/components/ui/skeleton'
-import { Filter, Plus, Edit, Trash2, Package, Download } from 'lucide-react'
+import { Filter, Plus, Edit, Trash2, Package } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 import { cn } from '@/lib/utils'
 import { useResponsiveDefaultView } from '@/hooks/use-responsive-default-view'
@@ -70,9 +70,6 @@ export default function CategoriesPage() {
   const [deleteCategory, setDeleteCategory] = useState<Category | null>(null)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedDetailItem, setSelectedDetailItem] = useState<Category | null>(null)
-  const [showExportModal, setShowExportModal] = useState(false)
-  const [exportingReport, setExportingReport] = useState(false)
-  const [exportBrands, setExportBrands] = useState<any[]>([])
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
@@ -159,114 +156,6 @@ export default function CategoriesPage() {
   useEffect(() => {
     fetchCategories()
   }, [fetchCategories])
-
-  useEffect(() => {
-    fetch('/api/brands?limit=1000&isActive=true').then(r => r.json()).then(d => setExportBrands(d.brands || []))
-  }, [])
-
-  const handleSmartExport = async (opts: { format: 'excel' | 'pdf' | 'png'; reportType: string; brandId?: string; categoryId?: string; sizeId?: string; status: string }) => {
-    setExportingReport(true)
-    try {
-      const params = new URLSearchParams({ limit: '1000' })
-      if (opts.brandId) params.set('brandId', opts.brandId)
-      if (opts.status === 'active') params.set('isActive', 'true')
-      else if (opts.status === 'inactive') params.set('isActive', 'false')
-
-      let data: any[] = []
-      let title = 'Report'
-      let cols = commonColumns.category
-
-      if (opts.reportType === 'categories') {
-        const res = await fetch(`/api/categories?${params}`)
-        data = (await res.json()).categories || []
-        title = 'Categories Report'; cols = commonColumns.category
-      } else if (opts.reportType === 'products') {
-        const res = await fetch(`/api/products?${params}`)
-        data = (await res.json()).products || []
-        title = 'Products Report'; cols = commonColumns.product
-      } else if (opts.reportType === 'inventory') {
-        const res = await fetch(`/api/inventory?limit=1000`)
-        data = (await res.json()).inventory || []
-        title = 'Inventory Report'; cols = commonColumns.inventory
-      } else if (opts.reportType === 'sales') {
-        const res = await fetch('/api/sales-orders')
-        data = (await res.json()).orders || []
-        title = 'Sales Orders Report'; cols = commonColumns.salesOrder
-      } else if (opts.reportType === 'purchase') {
-        const res = await fetch('/api/purchase-orders')
-        data = (await res.json()).orders || []
-        title = 'Purchase Orders Report'; cols = commonColumns.purchaseOrder
-      }
-
-      if (opts.format === 'excel') {
-        exportToExcel({ filename: `${opts.reportType}-export`, sheetName: title, columns: cols, data, reportTitle: title })
-        setShowExportModal(false)
-        return
-      }
-
-      // PDF / PNG — build rows and render to temp div
-      const NAVY = '#1E3A8A'
-      const CB = `1px solid ${NAVY}`
-      const NB = `2px solid ${NAVY}`
-      const rows = data.slice(0, 60).map((item: any) => ({
-        imageUrl: item.imageUrl || item.product?.imageUrl,
-        col1: item.brand?.name || item.product?.brand?.name || item.category?.name || '',
-        col2: item.size?.name || item.product?.size?.name || item.status || '',
-        col3: item.name || item.orderNumber || item.product?.name || '',
-        qty: item._count?.products ?? item.quantity ?? undefined,
-        badge: item.isActive !== undefined ? (item.isActive ? 'Active' : 'Inactive') : (item.status || ''),
-      }))
-
-      const tempDiv = document.createElement('div')
-      tempDiv.style.cssText = 'position:fixed;left:-9999px;top:0;background:#fff;width:880px;z-index:-1;'
-      document.body.appendChild(tempDiv)
-      tempDiv.innerHTML = `<div style="background:#fff;color:#000;font-family:Arial,sans-serif;padding:40px 50px 50px;min-width:680px;max-width:880px;box-sizing:border-box">
-        <div style="font-weight:bold;font-size:22px;margin-bottom:8px">${title}</div>
-        <div style="border:${NB};padding:6px 14px;color:${NAVY};font-weight:bold;text-align:center;font-size:12px;letter-spacing:.08em;text-transform:uppercase">ITEM DESCRIPTION</div>
-        ${rows.map((r: any) => `
-          <div style="display:flex;border:${CB};border-top:none">
-            <div style="width:20%;min-width:120px;padding:12px 14px;border-right:${CB};font-size:12px;line-height:1.7;flex-shrink:0">
-              <div>${r.col1}</div><div>${r.col2}</div><div style="font-weight:bold">${r.col3}</div>
-              ${r.badge ? `<div style="margin-top:4px;display:inline-block;padding:1px 6px;background:${NAVY};color:#fff;border-radius:3px;font-size:10px;font-weight:bold">${r.badge}</div>` : ''}
-            </div>
-            ${r.qty !== undefined ? `<div style="width:10%;min-width:60px;padding:12px 8px;border-right:${CB};text-align:center;flex-shrink:0"><div style="font-weight:bold;font-size:10px">PRE</div><div style="font-weight:bold;font-size:28px">${r.qty}</div></div>` : ''}
-            <div style="flex:1;background:${NAVY};overflow:hidden;border-right:${CB}">
-              ${r.imageUrl ? `<img src="${r.imageUrl}" crossorigin="anonymous" style="width:100%;height:150px;object-fit:cover;display:block" />` : `<div style="height:150px;display:flex;align-items:center;justify-content:center;color:#93C5FD;font-size:11px">${r.col3}</div>`}
-            </div>
-            <div style="width:20%;min-width:90px;background:${NAVY};flex-shrink:0"></div>
-          </div>`).join('')}
-        <div style="display:flex;justify-content:center;align-items:baseline;gap:80px;margin-top:16px;padding-top:14px;border-top:1px solid #ccc;font-weight:bold;font-size:15px">
-          <span>GRAND TOTAL :</span><span style="font-size:18px">${data.length}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:40px;font-size:11px;color:#555">
-          <span>${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
-          <span>Page 1 of 1</span>
-        </div>
-      </div>`
-
-      await new Promise(r => setTimeout(r, 300))
-      const { default: html2canvas } = await import('html2canvas')
-      const el = tempDiv.firstElementChild as HTMLElement
-      if (el) {
-        const canvas = await html2canvas(el, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false })
-        if (opts.format === 'png') {
-          const a = document.createElement('a'); a.download = `${opts.reportType}-${Date.now()}.png`; a.href = canvas.toDataURL('image/png'); a.click()
-        } else {
-          const { default: jsPDF } = await import('jspdf')
-          const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-          const pdfW = pdf.internal.pageSize.getWidth()
-          const pdfH = (canvas.height * pdfW) / canvas.width
-          const pageH = pdf.internal.pageSize.getHeight()
-          let y = 0
-          while (y < pdfH) { if (y > 0) pdf.addPage(); pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, -y, pdfW, pdfH); y += pageH }
-          pdf.save(`${opts.reportType}-${Date.now()}.pdf`)
-        }
-      }
-      document.body.removeChild(tempDiv)
-      setShowExportModal(false)
-    } catch (e) { console.error(e) }
-    finally { setExportingReport(false) }
-  }
 
 
 
@@ -471,6 +360,47 @@ export default function CategoriesPage() {
     </>
   ), [formatDate])
 
+  const makeExportRows = (data: Category[]) => data.map(c => ({
+    col1: c.isActive ? 'Active' : 'Inactive',
+    col2: `${c._count?.products || 0} products`,
+    col3: c.name,
+    badge: c.isActive ? 'Active' : 'Inactive',
+  }))
+
+  const exportConfig = useMemo(() => ({
+    title: 'Categories Report',
+    rows: makeExportRows(categories),
+    grandTotal: totalCount,
+    grandTotalLabel: 'Total Categories',
+    excelColumns: commonColumns.category,
+    excelData: categories,
+    filename: 'categories-export',
+    sheetName: 'Categories',
+    fetchAllData: async () => {
+      const params = new URLSearchParams({ page: '1', limit: '10000', search: search || '' })
+      Object.entries(filters).forEach(([k, v]) => { if (v && v !== '' && v !== 'all') params.append(k, v as string) })
+      const res = await fetch(`/api/categories?${params}`)
+      const data = await res.json()
+      const all: Category[] = data.categories || []
+      return { rows: makeExportRows(all), excelData: all }
+    },
+  }), [categories, totalCount, filters, search])
+
+  const customExportFilters = useMemo(() => ({
+    statuses: [
+      { value: 'active', label: 'Active' },
+      { value: 'inactive', label: 'Inactive' },
+    ],
+    filterData: ({ status, dateFrom, dateTo }: any) => {
+      let filtered = categories
+      if (status === 'active') filtered = filtered.filter(c => c.isActive)
+      if (status === 'inactive') filtered = filtered.filter(c => !c.isActive)
+      if (dateFrom) filtered = filtered.filter(c => new Date(c.createdAt) >= new Date(dateFrom))
+      if (dateTo) filtered = filtered.filter(c => new Date(c.createdAt) <= new Date(dateTo))
+      return { rows: makeExportRows(filtered), excelData: filtered }
+    },
+  }), [categories])
+
   if (loading && categories.length === 0) {
     return <LoadingPage view={view} title="Categories" />
   }
@@ -487,11 +417,7 @@ export default function CategoriesPage() {
         loading={loading}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowExportModal(true)}
-              className="gap-2 rounded-xl border-border/50 font-bold h-9">
-              <Download className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline text-xs">Export</span>
-            </Button>
+            <PageExportButton config={exportConfig} customFilters={customExportFilters} disabled={categories.length === 0} />
             <Button size="sm" onClick={() => {
               setEditingCategory(null)
               resetForm()
@@ -634,22 +560,6 @@ export default function CategoriesPage() {
         variant={deleteConfirmation.variant}
         onConfirm={handleDeleteConfirm}
         icon={deleteConfirmation.icon}
-      />
-
-      <SmartExportModal
-        open={showExportModal}
-        onOpenChange={setShowExportModal}
-        title="Categories & Reports"
-        brands={exportBrands}
-        onExport={handleSmartExport}
-        exporting={exportingReport}
-        reportTypes={[
-          { value: 'categories', label: 'Categories List' },
-          { value: 'products', label: 'All Products (Design Stock)' },
-          { value: 'inventory', label: 'Inventory Stock Report' },
-          { value: 'sales', label: 'Sales Orders Report' },
-          { value: 'purchase', label: 'Purchase Orders Report' },
-        ]}
       />
 
       <RowDetailsDialog

@@ -16,17 +16,16 @@ import { ExportButton, commonColumns } from '@/lib/excel-export'
 import { PageExportButton } from '@/components/reports/PageExport'
 import { LoadingPage } from '@/components/ui/skeleton'
 import ImageUpload from '@/components/ui/image-upload'
-import { Filter, Plus, Edit, Trash2, Hash, Layers, Box, Maximize, Package, ZoomIn } from 'lucide-react'
+import { Filter, Plus, Edit, Trash2, Hash, Layers, Package, ZoomIn } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
 import { ImagePreview } from '@/components/ui/image-preview'
 import { SearchableSelect } from '@/components/ui/searchable-select'
-import { cn, formatMmToFeetInches } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { useResponsiveDefaultView } from '@/hooks/use-responsive-default-view'
 
 interface Product {
   id: string
   name: string
-  code: string
   brandId: string
   categoryId: string
   sizeId: string
@@ -55,7 +54,6 @@ interface Product {
 
 interface FormData {
   name: string
-  code: string
   brandId: string
   categoryId: string
   sizeId: string
@@ -66,7 +64,6 @@ interface FormData {
 
 interface ProductEntry {
   name: string
-  code: string
   brandId: string
   categoryId: string
   sizeId: string
@@ -96,7 +93,6 @@ export default function ProductsPage() {
   const [selectedDetailItem, setSelectedDetailItem] = useState<Product | null>(null)
   const [formData, setFormData] = useState<FormData>({
     name: '',
-    code: '',
     brandId: '',
     categoryId: '',
     sizeId: '',
@@ -244,8 +240,8 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name.trim() || !formData.code.trim() || !formData.brandId || !formData.categoryId || !formData.imageUrl) {
-      showToast('Please fill in all required fields including product image', 'error')
+    if (!formData.name.trim() || !formData.brandId || !formData.categoryId) {
+      showToast('Please fill in all required fields', 'error')
       return
     }
 
@@ -272,7 +268,7 @@ export default function ProductsPage() {
           showToast(errorData.error || 'Failed to save product', 'error')
         }
       } else {
-        const allEntries = [...productEntries, formData].filter(e => e.name.trim() && e.code.trim() && e.brandId && e.categoryId && e.imageUrl)
+        const allEntries = [...productEntries, formData].filter(e => e.name.trim() && e.brandId && e.categoryId)
         let successCount = 0
         const errors: string[] = []
         for (const entry of allEntries) {
@@ -314,7 +310,8 @@ export default function ProductsPage() {
     if (!sizeId || !pcs) return ''
     const selectedSize = sizes.find(s => s.id === sizeId)
     if (selectedSize && selectedSize.length && selectedSize.width) {
-      const areaSqFt = (selectedSize.length / 304.8) * (selectedSize.width / 304.8)
+      // sizes stored in inches, convert to sqft
+      const areaSqFt = (selectedSize.length / 12) * (selectedSize.width / 12)
       return (areaSqFt * parseInt(pcs)).toFixed(2)
     }
     return ''
@@ -341,7 +338,6 @@ export default function ProductsPage() {
   const resetForm = () => {
     setFormData({
       name: '',
-      code: '',
       brandId: '',
       categoryId: '',
       sizeId: '',
@@ -357,7 +353,6 @@ export default function ProductsPage() {
     setEditingProduct(product)
     setFormData({
       name: product.name,
-      code: product.code,
       brandId: product.brandId,
       categoryId: product.categoryId,
       sizeId: product.sizeId || '',
@@ -411,7 +406,7 @@ export default function ProductsPage() {
   }
 
   const renderGridItem = (product: Product) => (
-    <Card className="hover:shadow-premium transition-all duration-300 border-border/50 group overflow-hidden">
+    <Card className="hover:shadow-premium transition-all duration-300 border-border/50 group overflow-hidden flex flex-col h-full">
       <div
         className="relative h-48 overflow-hidden bg-muted/30 cursor-zoom-in group/image flex-shrink-0"
         onClick={(e) => {
@@ -445,11 +440,9 @@ export default function ProductsPage() {
             {product.isActive ? 'Active' : 'Inactive'}
           </Badge>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
-          <div className="text-white font-bold truncate">{product.code}</div>
-        </div>
+
       </div>
-      <CardHeader className="pb-2 pt-4">
+      <CardHeader className="pb-2 pt-4 flex-shrink-0">
         <CardTitle className="text-lg font-bold text-card-foreground group-hover:text-primary transition-colors truncate">
           {product.name}
         </CardTitle>
@@ -465,11 +458,9 @@ export default function ProductsPage() {
             <span className="truncate">{product.category.name}</span>
           </div>
           <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30 overflow-hidden">
-            <Maximize className="h-3 w-3 text-primary shrink-0" />
             <span className="truncate">{product.size?.name || '-'}</span>
           </div>
           <div className="flex items-center gap-1.5 p-2 rounded-xl bg-muted/30 border border-border/30 overflow-hidden">
-            <Box className="h-3 w-3 text-primary shrink-0" />
             <span className="truncate">{product.pcsPerBox} pcs</span>
           </div>
         </div>
@@ -533,7 +524,6 @@ export default function ProductsPage() {
       <td className="px-4 py-2.5">
         <div>
           <div className="font-bold text-foreground group-hover:text-primary transition-colors">{product.name}</div>
-          <div className="text-xs font-medium text-primary bg-primary/5 px-2 py-0.5 rounded-full inline-block mt-1">{product.code}</div>
         </div>
       </td>
       <td className="px-4 py-2.5">
@@ -546,7 +536,6 @@ export default function ProductsPage() {
       </td>
       <td className="px-4 py-2.5 text-sm font-medium text-foreground whitespace-nowrap">
         <div className="flex items-center gap-1.5">
-          <Maximize className="h-4 w-4 text-muted-foreground" />
           <span className="font-bold">{product.size?.name ? (() => { const m = product.size.name.match(/([\d.]+)\s*[xX×]\s*([\d.]+)/); return m ? `${m[1]}" × ${m[2]}"` : product.size.name })() : '-'}</span>
         </div>
       </td>
@@ -557,7 +546,6 @@ export default function ProductsPage() {
       <td className="px-4 py-2.5 text-sm text-muted-foreground">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 font-bold text-foreground">
-            <Box className="h-4 w-4 text-muted-foreground" />
             {product.pcsPerBox} pcs
           </div>
           <div className="text-xs opacity-70 ml-6">{product.sqftPerBox} sqft</div>
@@ -613,9 +601,9 @@ export default function ProductsPage() {
 
   const makeExportRows = (data: Product[]) => data.map(p => ({
     imageUrl: p.imageUrl,
-    col1: p.brand?.name || '',
-    col2: p.size?.name || 'N/A',
-    col3: `${p.name} (${p.code})`,
+    col1: p.category?.name || '',
+    col2: p.size?.name || '',
+    col3: p.name,
     qty: p.totalStock || 0,
     badge: p.isActive ? 'Active' : 'Inactive',
   }))
@@ -629,7 +617,17 @@ export default function ProductsPage() {
     excelData: products,
     filename: 'products-export',
     sheetName: 'Products',
-  }), [products, totalCount])
+    fetchAllData: async () => {
+      const cleanFilters = Object.fromEntries(
+        Object.entries(filters).filter(([_, v]) => v && v !== '' && v !== 'all')
+      )
+      const params = new URLSearchParams({ page: '1', limit: '10000', search: search || '', ...cleanFilters })
+      const res = await fetch(`/api/products?${params}`)
+      const data = await res.json()
+      const all: Product[] = data.products || []
+      return { rows: makeExportRows(all), excelData: all }
+    },
+  }), [products, totalCount, filters, search])
 
   const customExportFilters = useMemo(() => ({
     brands,
@@ -657,10 +655,8 @@ export default function ProductsPage() {
   }
 
   const isFormValid = formData.name.trim() !== '' &&
-    formData.code.trim() !== '' &&
     formData.brandId !== '' &&
-    formData.categoryId !== '' &&
-    formData.imageUrl !== ''
+    formData.categoryId !== ''
 
   return (
     <div className="w-full px-3 sm:px-4 md:px-6 space-y-6">
@@ -698,7 +694,6 @@ export default function ProductsPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-bold text-foreground truncate">{entry.name}</div>
-                            <div className="text-xs text-muted-foreground">{entry.code}</div>
                           </div>
                           <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive flex-shrink-0" onClick={() => setProductEntries(productEntries.filter((_, i) => i !== idx))}>
                             ✕
@@ -708,22 +703,12 @@ export default function ProductsPage() {
                     </div>
                   )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
+                    <div className="space-y-2 md:col-span-2">
                       <label className="text-sm font-bold text-foreground/80 ml-1">Name <span className="text-destructive">*</span></label>
                       <Input
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder="Enter product name"
-                        required
-                        className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-foreground/80 ml-1">Code <span className="text-destructive">*</span></label>
-                      <Input
-                        value={formData.code}
-                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                        placeholder="Enter product code"
                         required
                         className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
                       />
@@ -756,7 +741,6 @@ export default function ProductsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-foreground/80 ml-1 flex items-center gap-2">
-                        <Maximize className="h-4 w-4" />
                         Size
                       </label>
                       <SearchableSelect
@@ -764,7 +748,7 @@ export default function ProductsPage() {
                         onValueChange={handleSizeChange}
                         options={sizes.map(s => ({
                           value: s.id,
-                          label: s.length && s.width ? `${s.name} (${formatMmToFeetInches(s.length)} × ${formatMmToFeetInches(s.width)})` : s.name
+                          label: s.length && s.width ? `${s.name} (${s.length}" × ${s.width}")` : s.name
                         }))}
                         placeholder="Select a size"
                       />
@@ -796,7 +780,7 @@ export default function ProductsPage() {
                   </div>
 
                   <div className="p-4 bg-muted/20 rounded-3xl border border-border/30">
-                    <label className="text-sm font-bold text-foreground/80 mb-3 block ml-1">Product Image <span className="text-destructive">*</span></label>
+                    <label className="text-sm font-bold text-foreground/80 mb-3 block ml-1">Product Image <span className="text-muted-foreground font-normal text-xs">(Optional)</span></label>
                     <ImageUpload
                       key={imageResetKey}
                       onImageUploaded={handleImageUploaded}
@@ -811,9 +795,9 @@ export default function ProductsPage() {
                         type="button"
                         variant="outline"
                         onClick={() => {
-                          if (!isFormValid) { showToast('Please fill all required fields including image', 'error'); return }
+                          if (!isFormValid) { showToast('Please fill all required fields', 'error'); return }
                           setProductEntries([...productEntries, { ...formData }])
-                          setFormData({ name: '', code: '', brandId: '', categoryId: '', sizeId: '', sqftPerBox: '', pcsPerBox: '', imageUrl: '' })
+                          setFormData({ name: '', brandId: '', categoryId: '', sizeId: '', sqftPerBox: '', pcsPerBox: '', imageUrl: '' })
                           setImageResetKey(k => k + 1)
                         }}
                         className="rounded-2xl h-12 px-5 border-primary/30 text-primary hover:bg-primary/10 font-bold gap-2"
@@ -896,7 +880,6 @@ export default function ProductsPage() {
         data={selectedDetailItem}
         fields={[
           { label: 'Product Name', value: selectedDetailItem?.name },
-          { label: 'Product Code', value: selectedDetailItem?.code },
           { label: 'Brand', value: selectedDetailItem?.brand?.name },
           { label: 'Category', value: selectedDetailItem?.category?.name },
           { label: 'Size', value: selectedDetailItem?.size?.name },
