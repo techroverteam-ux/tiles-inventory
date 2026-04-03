@@ -82,7 +82,7 @@ export default function WebsitePage() {
 
       if (productsRes.ok) {
         const productsData = await productsRes.json()
-        const allProducts = productsData.products || []
+        const allProducts: Product[] = productsData.products || []
         setProducts(allProducts)
         // Set featured products (first 8 products with images)
         setFeaturedProducts(allProducts.filter(p => p.imageUrl).slice(0, 8))

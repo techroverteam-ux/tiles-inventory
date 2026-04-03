@@ -23,6 +23,7 @@ interface Product {
   sqftPerBox: number
   pcsPerBox: number
   totalStock: number
+  isActive: boolean
 }
 
 interface CartItem extends Product {
