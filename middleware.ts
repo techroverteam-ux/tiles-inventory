@@ -5,7 +5,24 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/api/auth/login', '/api/auth/logout', '/api/auth/verify']
+  const publicRoutes = [
+    '/login', 
+    '/api/auth/login', 
+    '/api/auth/logout', 
+    '/api/auth/verify',
+    '/website',
+    '/api/products',
+    '/api/brands', 
+    '/api/categories',
+    '/api/sizes',
+    '/api/enquiries',
+    '/api/dashboard/stats'
+  ]
+
+  // Always allow website routes
+  if (pathname.startsWith('/website')) {
+    return NextResponse.next()
+  }
 
   // Root redirect
   if (pathname === '/') {
@@ -32,6 +49,15 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|login|_next/static|_next/image|favicon.ico|logo.jpeg).*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - website (public website)
+     * - login (login page)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|website|login|.*\\.).*)',
   ],
 }
