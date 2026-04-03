@@ -333,7 +333,7 @@ export default function PurchaseOrdersPage() {
     <>
       {/* Photo - First column */}
       <td className="px-3 py-2">
-        <div className="h-16 w-16 rounded-xl overflow-hidden bg-muted/20 border border-border/40 flex-shrink-0">
+        <div className="rounded-xl overflow-hidden bg-muted/20 border border-border/40 flex-shrink-0" style={{ height: '50px', width: '100px' }}>
           {photo ? (
             <img src={photo} alt={order.orderNumber} className="h-full w-full object-cover" />
           ) : (

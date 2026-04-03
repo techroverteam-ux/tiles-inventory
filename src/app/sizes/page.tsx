@@ -647,6 +647,7 @@ export default function SizesPage() {
         itemsPerPage={itemsPerPage}
         onPageChange={handlePageChange}
         onItemsPerPageChange={handleItemsPerPageChange}
+        showItemsPerPage={view === 'list'}
         loading={loading}
       />
 

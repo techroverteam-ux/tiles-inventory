@@ -16,6 +16,7 @@ import {
   Ruler
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useState, useRef } from 'react'
 
 interface SidebarProps {
   isOpen: boolean
@@ -38,9 +39,9 @@ const navigation = [
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const [tooltip, setTooltip] = useState<{ name: string; y: number } | null>(null)
 
   const handleNavItemClick = () => {
-    // Keep desktop sidebar state stable; close only on mobile navigation.
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       onClose()
     }
@@ -58,39 +59,44 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed left-0 top-16 sm:top-20 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] border-r border-border bg-card transition-all duration-200 ease-out z-50 flex flex-col",
+        "fixed left-0 top-16 sm:top-20 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] border-r border-border/50 glass backdrop-blur-xl transition-all duration-200 ease-out z-50 flex flex-col",
         isOpen ? "w-64 translate-x-0" : "w-16 -translate-x-full md:translate-x-0"
       )}>
         <nav className="space-y-2 flex-1 px-0 py-3 no-scrollbar overflow-y-auto overflow-x-hidden pb-20">
           {navigation.map((item) => {
             const isActive = pathname === item.href
             return (
-              <div key={item.name} className="relative group flex justify-center">
+              <div
+                key={item.name}
+                className="relative group flex justify-center"
+                onMouseEnter={(e) => {
+                  if (window.matchMedia('(hover: none)').matches) return
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                  setTooltip({ name: item.name, y: rect.top + rect.height / 2 })
+                }}
+                onMouseLeave={() => setTooltip(null)}
+              >
                 <Link
                   href={item.href}
                   onClick={handleNavItemClick}
                   className={cn(
                     "relative flex items-center h-12 w-full rounded-xl transition-colors duration-300",
                     isActive
-                      ? "bg-primary/10 text-primary shadow-[0_0_15px_hsla(var(--primary)/0.1)]"
+                      ? "bg-muted text-primary shadow-none"
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   )}
                 >
-                  <div className={cn(
-                    "flex-shrink-0 flex items-center justify-center transition-all duration-300 w-12 ml-2"
-                  )}>
+                  <div className="flex-shrink-0 flex items-center justify-center transition-all duration-300 w-12 ml-2">
                     <item.icon className={cn(
                       "h-5 w-5 transition-colors duration-200",
                       isActive ? "text-primary" : "text-muted-foreground/70 group-hover:text-primary"
                     )} />
                   </div>
 
-                  <span
-                    className={cn(
-                      "overflow-hidden whitespace-nowrap font-medium text-sm transition-all duration-200",
-                      isOpen ? "max-w-xs opacity-100 translate-x-0 ml-1" : "max-w-0 opacity-0 -translate-x-4 ml-0"
-                    )}
-                  >
+                  <span className={cn(
+                    "overflow-hidden whitespace-nowrap font-medium text-sm transition-all duration-200",
+                    isOpen ? "max-w-xs opacity-100 translate-x-0 ml-1" : "max-w-0 opacity-0 -translate-x-4 ml-0"
+                  )}>
                     {item.name}
                   </span>
 
@@ -101,13 +107,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     )} />
                   )}
                 </Link>
-
-                {/* Tooltip for collapsed sidebar */}
-                {!isOpen && (
-                  <div className="absolute left-[calc(100%+8px)] px-3 py-1.5 bg-foreground text-background text-xs font-semibold rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-[100] top-1/2 transform -translate-y-1/2 shadow-sm pointer-events-none">
-                    {item.name}
-                  </div>
-                )}
               </div>
             )
           })}
@@ -130,6 +129,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
       </aside>
+
+      {/* Fixed tooltip — renders outside sidebar, never clipped */}
+      {tooltip && (
+        <div
+          className="fixed z-[300] px-3 py-1.5 bg-popover text-popover-foreground border border-border text-xs font-semibold rounded-md shadow-md whitespace-nowrap pointer-events-none"
+          style={{
+            left: isOpen ? '272px' : '72px',
+            top: tooltip.y,
+            transform: 'translateY(-50%)',
+          }}
+        >
+          {tooltip.name}
+        </div>
+      )}
     </>
   )
 }

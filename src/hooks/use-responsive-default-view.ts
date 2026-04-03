@@ -10,12 +10,7 @@ export type ViewMode = "grid" | "list"
  */
 export function useResponsiveDefaultView() {
   const isMobile = useMediaQuery("(max-width: 768px)")
-  const defaultView: ViewMode = isMobile ? "grid" : "list"
-  const [view, setView] = React.useState<ViewMode>(defaultView)
-
-  React.useEffect(() => {
-    setView(defaultView)
-  }, [defaultView])
+  const [view, setView] = React.useState<ViewMode>("grid")
 
   return { view, setView, isMobile }
 }

@@ -506,7 +506,8 @@ export default function ProductsPage() {
       {/* Photo - Separate first column, big */}
       <td className="px-3 py-2">
         <div
-          className={cn('h-16 w-16 rounded-xl overflow-hidden bg-muted/30 border border-border/50 flex-shrink-0 relative group/thumb', product.imageUrl ? 'cursor-zoom-in' : '')}
+          className={cn('rounded-xl overflow-hidden bg-muted/30 border border-border/50 flex-shrink-0 relative group/thumb', product.imageUrl ? 'cursor-zoom-in' : '')}
+          style={{ height: '50px', width: '100px' }}
           onClick={(e) => { if (product.imageUrl) { e.stopPropagation(); setPreviewImage({ src: product.imageUrl, alt: product.name }) } }}
         >
           {product.imageUrl ? (
@@ -858,6 +859,7 @@ export default function ProductsPage() {
         itemsPerPage={itemsPerPage}
         onPageChange={handlePageChange}
         onItemsPerPageChange={handleItemsPerPageChange}
+        showItemsPerPage={view === 'list'}
         loading={loading}
       />
 

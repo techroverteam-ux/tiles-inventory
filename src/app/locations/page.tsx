@@ -285,7 +285,7 @@ export default function LocationsPage() {
       />
 
       <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalCount} itemsPerPage={itemsPerPage}
-        onPageChange={handlePageChange} onItemsPerPageChange={handleItemsPerPageChange} loading={loading} />
+        onPageChange={handlePageChange} onItemsPerPageChange={handleItemsPerPageChange} showItemsPerPage={view === 'list'} loading={loading} />
 
       {/* Add/Edit Dialog */}
       <Dialog open={showForm} onOpenChange={(open) => { if (!open) { setShowForm(false); resetForm() } else setShowForm(true) }}>

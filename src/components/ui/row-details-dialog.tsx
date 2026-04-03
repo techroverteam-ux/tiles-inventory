@@ -155,7 +155,7 @@ export function RowDetailsDialog({ open, onOpenChange, title, data, fields, imag
                     <ZoomIn className="text-white opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all h-8 w-8 drop-shadow-2xl" />
                   </div>
                   {locationImageUrl && (
-                    <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">Stock Photo</div>
+                    <div className="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">Product Photo</div>
                   )}
                 </div>
               )}

@@ -359,31 +359,15 @@ export default function InventoryPage() {
       className="cursor-pointer border border-border/50 rounded-2xl overflow-hidden hover:shadow-premium transition-all duration-300 bg-card flex flex-col"
       onClick={() => { setSelectedDetailItem(item); setShowDetails(true) }}
     >
-      {/* Two photos side by side */}
-      <div className="relative w-full h-48 bg-muted/20 flex-shrink-0 overflow-hidden flex">
-        {/* Product photo - left half */}
-        <div className="relative w-1/2 h-full border-r border-border/30 overflow-hidden">
-          {item.product.imageUrl ? (
-            <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground/20 bg-muted/30">
-              <Package className="h-8 w-8" />
-            </div>
-          )}
-          <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-sm">Product</div>
-        </div>
-        {/* Stock location photo - right half */}
-        <div className="relative w-1/2 h-full overflow-hidden">
-          {item.imageUrl ? (
-            <img src={item.imageUrl} alt="Stock location" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/20 bg-muted/20 gap-1">
-              <Package className="h-6 w-6" />
-              <span className="text-[9px] text-muted-foreground/40">No stock photo</span>
-            </div>
-          )}
-          <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-sm">Stock</div>
-        </div>
+      {/* Product photo only */}
+      <div className="relative w-full bg-muted/20 flex-shrink-0 overflow-hidden" style={{ aspectRatio: '2/1' }}>
+        {item.product.imageUrl ? (
+          <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground/20 bg-muted/30">
+            <Package className="h-8 w-8" />
+          </div>
+        )}
         {/* Badges */}
         <div className="absolute top-2 right-2">
           <Badge variant={getStockBadgeVariant(item.quantity)} className="text-xs font-bold shadow">
@@ -427,25 +411,14 @@ export default function InventoryPage() {
 
   const renderListRow = (item: InventoryItem) => (
     <>
-      {/* Two photos side by side */}
+      {/* Product photo only, 2:1 aspect ratio */}
       <td className="px-3 py-2">
-        <div className="flex gap-1">
-          <div className="relative h-14 w-14 rounded-lg overflow-hidden bg-muted/20 border border-border/40 flex-shrink-0">
-            {item.product.imageUrl ? (
-              <img src={item.product.imageUrl} alt={item.product.name} className="h-full w-full object-cover" />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center text-muted-foreground/30"><Package className="h-5 w-5" /></div>
-            )}
-            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5">Product</div>
-          </div>
-          <div className="relative h-14 w-14 rounded-lg overflow-hidden bg-muted/20 border border-border/40 flex-shrink-0">
-            {item.imageUrl ? (
-              <img src={item.imageUrl} alt="Stock" className="h-full w-full object-cover" />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center text-muted-foreground/20"><Package className="h-4 w-4" /></div>
-            )}
-            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5">Stock</div>
-          </div>
+        <div className="relative rounded-lg overflow-hidden bg-muted/20 border border-border/40 flex-shrink-0" style={{ height: '50px', width: '100px' }}>
+          {item.product.imageUrl ? (
+            <img src={item.product.imageUrl} alt={item.product.name} className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full flex items-center justify-center text-muted-foreground/30"><Package className="h-5 w-5" /></div>
+          )}
         </div>
       </td>
       <td className="px-4 py-3">
@@ -616,6 +589,7 @@ export default function InventoryPage() {
           itemsPerPage={pagination.limit}
           onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
           onItemsPerPageChange={(limit) => setPagination(prev => ({ ...prev, limit, page: 1 }))}
+          showItemsPerPage={view === 'list'}
           loading={loading}
         />
       </div>
@@ -724,9 +698,9 @@ export default function InventoryPage() {
           { label: 'Size', value: selectedDetailItem?.product?.size?.name },
           { label: 'Created At', value: selectedDetailItem?.createdAt },
         ].filter(f => f.value !== undefined)}
-        imageUrl={selectedDetailItem?.imageUrl}
-        locationImageUrl={selectedDetailItem?.product?.imageUrl}
-        locationName="Product Photo"
+        imageUrl={selectedDetailItem?.product?.imageUrl}
+        locationImageUrl={selectedDetailItem?.imageUrl}
+        locationName="Stock Photo"
       />
     </div>
   )
