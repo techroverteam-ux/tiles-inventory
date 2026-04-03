@@ -89,6 +89,7 @@ export default function InventoryPage() {
   const [locations, setLocations] = useState<any[]>([])
   const [brands, setBrands] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
+  const [sizes, setSizes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
@@ -153,6 +154,15 @@ export default function InventoryPage() {
       ]
     },
     {
+      key: 'sizeId',
+      label: 'Size',
+      type: 'select' as const,
+      options: [
+        { value: '', label: 'All Sizes' },
+        ...sizes.map(s => ({ value: s.id, label: s.name }))
+      ]
+    },
+    {
       key: 'lowStock',
       label: 'Stock Level',
       type: 'select' as const,
@@ -162,7 +172,7 @@ export default function InventoryPage() {
         { value: 'out', label: 'Out of Stock' }
       ]
     }
-  ], [locations, brands, categories])
+  ], [locations, brands, categories, sizes])
 
   const fetchInventory = async () => {
     setLoading(true)
@@ -222,6 +232,16 @@ export default function InventoryPage() {
     }
   }
 
+  const fetchSizes = async () => {
+    try {
+      const response = await fetch('/api/sizes')
+      const data = await response.json()
+      if (response.ok) setSizes((data.sizes || []).filter((s: any) => s.isActive))
+    } catch (error) {
+      console.error('Error fetching sizes:', error)
+    }
+  }
+
   useEffect(() => {
     fetchInventory()
   }, [pagination.page, pagination.limit, filters, search])
@@ -230,6 +250,7 @@ export default function InventoryPage() {
     fetchLocations()
     fetchBrands()
     fetchCategories()
+    fetchSizes()
   }, [])
 
   useEffect(() => {
@@ -338,19 +359,32 @@ export default function InventoryPage() {
       className="cursor-pointer border border-border/50 rounded-2xl overflow-hidden hover:shadow-premium transition-all duration-300 bg-card flex flex-col"
       onClick={() => { setSelectedDetailItem(item); setShowDetails(true) }}
     >
-      {/* Fixed-height image — always cropped consistently */}
-      <div className="relative w-full h-48 bg-muted/20 flex-shrink-0 overflow-hidden">
-        {item.imageUrl || item.product.imageUrl ? (
-          <img
-            src={item.imageUrl || item.product.imageUrl}
-            alt={item.product.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
-            <Package className="h-12 w-12" />
-          </div>
-        )}
+      {/* Two photos side by side */}
+      <div className="relative w-full h-48 bg-muted/20 flex-shrink-0 overflow-hidden flex">
+        {/* Product photo - left half */}
+        <div className="relative w-1/2 h-full border-r border-border/30 overflow-hidden">
+          {item.product.imageUrl ? (
+            <img src={item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground/20 bg-muted/30">
+              <Package className="h-8 w-8" />
+            </div>
+          )}
+          <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-sm">Product</div>
+        </div>
+        {/* Stock location photo - right half */}
+        <div className="relative w-1/2 h-full overflow-hidden">
+          {item.imageUrl ? (
+            <img src={item.imageUrl} alt="Stock location" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/20 bg-muted/20 gap-1">
+              <Package className="h-6 w-6" />
+              <span className="text-[9px] text-muted-foreground/40">No stock photo</span>
+            </div>
+          )}
+          <div className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-sm">Stock</div>
+        </div>
+        {/* Badges */}
         <div className="absolute top-2 right-2">
           <Badge variant={getStockBadgeVariant(item.quantity)} className="text-xs font-bold shadow">
             {item.quantity} units
@@ -367,7 +401,7 @@ export default function InventoryPage() {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="font-bold text-sm text-foreground truncate">{item.product.name}</div>
-            <div className="text-xs text-primary font-medium truncate">{item.product.brand.name} • {item.product.code}</div>
+            <div className="text-xs text-primary font-medium truncate">{item.product.brand.name}</div>
           </div>
           <div onClick={(e) => e.stopPropagation()} className="flex gap-1 flex-shrink-0">
             <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="h-7 w-7 p-0 rounded-lg hover:bg-primary/10">
@@ -393,27 +427,32 @@ export default function InventoryPage() {
 
   const renderListRow = (item: InventoryItem) => (
     <>
-      {/* Photo - First column, big */}
+      {/* Two photos side by side */}
       <td className="px-3 py-2">
-        <div className="h-16 w-16 rounded-xl overflow-hidden bg-muted/20 border border-border/40 flex-shrink-0">
-          {item.imageUrl || item.product.imageUrl ? (
-            <img
-              src={item.imageUrl || item.product.imageUrl}
-              alt={item.product.name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="h-full w-full flex items-center justify-center text-muted-foreground/40">
-              <Package className="h-6 w-6" />
-            </div>
-          )}
+        <div className="flex gap-1">
+          <div className="relative h-14 w-14 rounded-lg overflow-hidden bg-muted/20 border border-border/40 flex-shrink-0">
+            {item.product.imageUrl ? (
+              <img src={item.product.imageUrl} alt={item.product.name} className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-muted-foreground/30"><Package className="h-5 w-5" /></div>
+            )}
+            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5">Product</div>
+          </div>
+          <div className="relative h-14 w-14 rounded-lg overflow-hidden bg-muted/20 border border-border/40 flex-shrink-0">
+            {item.imageUrl ? (
+              <img src={item.imageUrl} alt="Stock" className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-muted-foreground/20"><Package className="h-4 w-4" /></div>
+            )}
+            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] font-bold text-center py-0.5">Stock</div>
+          </div>
         </div>
       </td>
       <td className="px-4 py-3">
         <div>
           <div className="font-bold text-foreground group-hover:text-primary transition-colors">{item.product.name}</div>
           <div className="text-xs font-medium text-primary bg-primary/5 px-2 py-0.5 rounded-full inline-block mt-1">
-            {item.product.brand.name} • {item.product.code}
+            {item.product.brand.name}
           </div>
         </div>
       </td>
@@ -627,14 +666,14 @@ export default function InventoryPage() {
             </div>
 
             <div className="space-y-2 border-t border-border/30 pt-4">
-              <label className="text-sm font-bold text-foreground/80 ml-1 italic">Update Batch Photo (Optional)</label>
+              <label className="text-sm font-bold text-foreground/80 ml-1 italic">Update Stock Location Photo (Optional)</label>
               <ImageUpload
                 onImageUploaded={(url) => setEditFormData({ ...editFormData, imageUrl: url })}
                 currentImage={editFormData.imageUrl}
                 className="rounded-2xl border-dashed border-2 border-border/40 hover:border-primary/40 transition-all bg-muted/5 max-w-sm"
                 label={null}
               />
-              <p className="text-[10px] text-muted-foreground ml-1">Update the specific photo for this batch.</p>
+              <p className="text-[10px] text-muted-foreground ml-1">Photo of the stock in its warehouse location.</p>
             </div>
 
             <div className="flex gap-3 pt-4">
@@ -675,7 +714,6 @@ export default function InventoryPage() {
         data={selectedDetailItem}
         fields={[
           { label: 'Product', value: selectedDetailItem?.product?.name },
-          { label: 'Code', value: selectedDetailItem?.product?.code },
           { label: 'Batch Number', value: selectedDetailItem?.batchNumber },
           { label: 'Location', value: selectedDetailItem?.location?.name },
           { label: 'Quantity', value: selectedDetailItem?.quantity, variant: 'number' as const },
@@ -686,9 +724,9 @@ export default function InventoryPage() {
           { label: 'Size', value: selectedDetailItem?.product?.size?.name },
           { label: 'Created At', value: selectedDetailItem?.createdAt },
         ].filter(f => f.value !== undefined)}
-        imageUrl={selectedDetailItem?.imageUrl || selectedDetailItem?.product?.imageUrl}
-        locationImageUrl={(locations.find(l => l.id === (selectedDetailItem as any)?.locationId) || locations.find(l => l.name === selectedDetailItem?.location?.name))?.imageUrl}
-        locationName={selectedDetailItem?.location?.name}
+        imageUrl={selectedDetailItem?.imageUrl}
+        locationImageUrl={selectedDetailItem?.product?.imageUrl}
+        locationName="Product Photo"
       />
     </div>
   )

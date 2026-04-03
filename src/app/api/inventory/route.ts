@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 
+async function getOrCreateDefaultLocation(userId: string): Promise<string> {
+  let loc = await prisma.location.findFirst({ where: { name: 'Unassigned' } })
+  if (!loc) {
+    loc = await prisma.location.create({
+      data: { name: 'Unassigned', isActive: true, createdById: userId, updatedById: userId }
+    })
+  }
+  return loc.id
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -11,6 +21,7 @@ export async function GET(request: NextRequest) {
     const locationId = searchParams.get('locationId') || ''
     const brandId = searchParams.get('brandId') || ''
     const categoryId = searchParams.get('categoryId') || ''
+    const sizeId = searchParams.get('sizeId') || ''
     const lowStock = searchParams.get('lowStock') || ''
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
@@ -31,6 +42,7 @@ export async function GET(request: NextRequest) {
       ...(locationId && { locationId }),
       ...(brandId && { product: { brandId } }),
       ...(categoryId && { product: { categoryId } }),
+      ...(sizeId && { product: { sizeId } }),
       ...(lowStock === 'low' && { quantity: { lt: 10 } }),
       ...(lowStock === 'out' && { quantity: { equals: 0 } }),
       ...(dateFrom && dateTo && {
@@ -123,8 +135,8 @@ export async function POST(request: NextRequest) {
     const batch = await prisma.batch.create({
       data: {
         productId: data.productId,
-        locationId: data.locationId,
-        batchNumber: data.batchNumber,
+        locationId: data.locationId || await getOrCreateDefaultLocation(user.userId),
+        batchNumber: data.batchNumber || `BATCH-${Date.now().toString().slice(-6)}`,
         shade: data.shade,
         quantity: data.quantity,
         purchasePrice: data.purchasePrice,

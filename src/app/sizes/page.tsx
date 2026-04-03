@@ -17,7 +17,7 @@ import { PageExportButton } from '@/components/reports/PageExport'
 import { LoadingPage } from '@/components/ui/skeleton'
 import { Filter, Plus, Edit, Trash2, Package, Ruler } from 'lucide-react'
 import { RowDetailsDialog } from '@/components/ui/row-details-dialog'
-import { cn, formatMmToFeetInches } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { useResponsiveDefaultView } from '@/hooks/use-responsive-default-view'
 
 interface Size {
@@ -188,7 +188,7 @@ export default function SizesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const finalName = formData.name.trim() || (formData.length && formData.width ? `${formData.length}x${formData.width}mm` : '')
+    const finalName = formData.name.trim() || (formData.length && formData.width ? `${formData.length}x${formData.width}"` : '')
 
     if (!finalName) {
       showToast('Please enter a name or provide length and width', 'error')
@@ -223,7 +223,7 @@ export default function SizesPage() {
         let successCount = 0
         const errors: string[] = []
         for (const entry of allEntries) {
-          const entryName = entry.name.trim() || (entry.length && entry.width ? `${entry.length}x${entry.width}mm` : entry.name)
+          const entryName = entry.name.trim() || (entry.length && entry.width ? `${entry.length}x${entry.width}"` : entry.name)
           const response = await fetch('/api/sizes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -326,7 +326,7 @@ export default function SizesPage() {
           <Ruler className="h-3.5 w-3.5 text-primary shrink-0" />
           <span className="truncate">
             {size.length && size.width
-              ? `${size.length} × ${size.width} mm`
+              ? `${size.length}" × ${size.width}"`
               : 'No dimensions'}
           </span>
         </div>
@@ -359,7 +359,7 @@ export default function SizesPage() {
       <td className="px-4 py-2.5">
         <div className="font-bold text-foreground group-hover:text-primary transition-colors">{size.name}</div>
         <div className="text-xs text-muted-foreground mt-1">
-          {size.length && size.width ? `${size.length} × ${size.width} mm (${formatMmToFeetInches(size.length)} × ${formatMmToFeetInches(size.width)})` : 'N/A'}
+          {size.length && size.width ? `${size.length}" × ${size.width}"` : 'N/A'}
         </div>
       </td>
 
@@ -411,7 +411,7 @@ export default function SizesPage() {
 
   const makeExportRows = (data: Size[]) => data.map(s => ({
     col1: s.isActive ? 'Active' : 'Inactive',
-    col2: s.length && s.width ? `${s.length}×${s.width}mm` : 'N/A',
+    col2: s.length && s.width ? `${s.length}×${s.width}"` : 'N/A',
     col3: s.name,
     qty: s._count?.products || 0,
     badge: s.isActive ? 'Active' : 'Inactive',
@@ -523,8 +523,8 @@ export default function SizesPage() {
               <div className="space-y-2">
                 {entries.map((entry, idx) => (
                   <div key={idx} className="flex items-center gap-3 p-3 bg-primary/5 rounded-2xl border border-primary/10">
-                    <div className="flex-1 text-sm font-bold text-foreground">{entry.name || `${entry.length}x${entry.width}mm`}</div>
-                    <div className="text-xs text-muted-foreground">{entry.length && entry.width ? `${entry.length} × ${entry.width} mm` : '—'}</div>
+                    <div className="flex-1 text-sm font-bold text-foreground">{entry.name || `${entry.length}x${entry.width}"`}</div>
+                    <div className="text-xs text-muted-foreground">{entry.length && entry.width ? `${entry.length}" × ${entry.width}"` : '—'}</div>
                     <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive" onClick={() => setEntries(entries.filter((_, i) => i !== idx))}>
                       ✕
                     </Button>
@@ -539,7 +539,7 @@ export default function SizesPage() {
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., 600x600mm"
+                  placeholder="e.g., 24x24"
                   className="rounded-2xl bg-muted/20 border-border/40 focus:bg-background transition-all h-12"
                 />
               </div>
@@ -558,20 +558,20 @@ export default function SizesPage() {
               <div className="space-y-2">
                 <label className="text-sm font-bold text-primary/80 ml-1 flex items-center gap-2">
                   <Ruler className="h-4 w-4" />
-                  Length (mm)
+                  Length (inch)
                 </label>
                 <Input
                   type="number"
                   value={formData.length}
                   onChange={(e) => setFormData({ ...formData, length: e.target.value })}
-                  placeholder="Enter length"
+                  placeholder="Enter length in inches"
                   className="rounded-xl bg-background border-primary/20 focus:border-primary transition-all h-11"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-primary/80 ml-1 flex items-center gap-2">
                   <Ruler className="h-4 w-4" />
-                  Width (mm)
+                  Width (inch)
                 </label>
                 <Input
                   type="number"
@@ -583,11 +583,7 @@ export default function SizesPage() {
               </div>
               {(formData.length || formData.width) && (
                 <div className="col-span-1 md:col-span-2 text-sm text-primary/80 bg-primary/10 p-2 rounded-xl border border-primary/20 flex items-center justify-center gap-2 font-medium">
-                  {formData.length && formData.width ? (
-                    <>Equivalent: {formatMmToFeetInches(Number(formData.length))} × {formatMmToFeetInches(Number(formData.width))}</>
-                  ) : (
-                    <>Equivalent: {formData.length ? formatMmToFeetInches(Number(formData.length)) : '?'} × {formData.width ? formatMmToFeetInches(Number(formData.width)) : '?'}</>
-                  )}
+                  Size: {formData.length || '?'}" × {formData.width || '?'}"
                 </div>
               )}
             </div>
@@ -612,10 +608,11 @@ export default function SizesPage() {
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    const name = formData.name.trim() || (formData.length && formData.width ? `${formData.length}x${formData.width}mm` : '')
+                    const name = formData.name.trim() || (formData.length && formData.width ? `${formData.length}x${formData.width}"` : '')
                     if (!name) { showToast('Enter a name or dimensions first', 'error'); return }
                     setEntries([...entries, { ...formData, name }])
                     setFormData({ name: '', description: '', length: '', width: '', isActive: true })
+
                   }}
                   className="rounded-2xl h-12 px-5 border-primary/30 text-primary hover:bg-primary/10 font-bold gap-2"
                 >
@@ -673,8 +670,7 @@ export default function SizesPage() {
         fields={[
           { label: 'Name', value: selectedDetailItem?.name },
           { label: 'Description', value: selectedDetailItem?.description },
-          { label: 'Dimensions (mm)', value: selectedDetailItem?.length && selectedDetailItem?.width ? `${selectedDetailItem.length} × ${selectedDetailItem.width} mm` : undefined },
-          { label: 'Dimensions (ft/in)', value: selectedDetailItem?.length && selectedDetailItem?.width ? `${formatMmToFeetInches(selectedDetailItem.length)} × ${formatMmToFeetInches(selectedDetailItem.width)}` : undefined },
+          { label: 'Dimensions', value: selectedDetailItem?.length && selectedDetailItem?.width ? `${selectedDetailItem.length}" × ${selectedDetailItem.width}"` : undefined },
           { label: 'Status', value: selectedDetailItem?.isActive, variant: 'badge' as const },
           { label: 'Products Using This Size', value: selectedDetailItem?._count?.products || 0, variant: 'number' as const },
           { label: 'Created At', value: selectedDetailItem?.createdAt },

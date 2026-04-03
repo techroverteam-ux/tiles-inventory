@@ -68,7 +68,6 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { code: { contains: search, mode: 'insensitive' } },
         { brand: { is: { name: { contains: search, mode: 'insensitive' } } } },
         { category: { is: { name: { contains: search, mode: 'insensitive' } } } },
         { size: { is: { name: { contains: search, mode: 'insensitive' } } } },
@@ -140,7 +139,6 @@ export async function POST(request: NextRequest) {
     if (contentType.includes('application/json')) {
       const data = await request.json()
       const name = data.name?.trim()
-      const code = data.code?.trim()
       const brandId = data.brandId
       const categoryId = data.categoryId
       const sizeId = data.sizeId || null
@@ -148,10 +146,10 @@ export async function POST(request: NextRequest) {
       const sqftPerBox = Number(data.sqftPerBox) || 1
       const pcsPerBox = Number(data.pcsPerBox) || 1
 
-      if (!name || !code || !brandId || !categoryId || !imageUrl) {
+      if (!name || !brandId || !categoryId) {
         return NextResponse.json({
           error: 'Missing required fields',
-          details: 'Name, code, brand, category, and image are required'
+          details: 'Name, brand, and category are required'
         }, { status: 400 })
       }
 
@@ -162,20 +160,8 @@ export async function POST(request: NextRequest) {
         return relationCheck.error
       }
 
-      // Check if product with same code already exists (only active ones)
-      const existingProduct = await prisma.product.findFirst({
-        where: { 
-          code: { equals: code, mode: 'insensitive' },
-          isActive: true
-        }
-      })
-
-      if (existingProduct) {
-        return NextResponse.json({
-          error: 'Duplicate entry',
-          details: 'A product with this code already exists'
-        }, { status: 409 })
-      }
+      // Auto-generate code from name
+      const code = data.code?.trim() || `PRD-${Date.now().toString().slice(-6)}`
 
       const product = await prisma.product.create({
         data: {
@@ -204,7 +190,6 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const name = (formData.get('name') as string)?.trim()
-    const code = (formData.get('code') as string)?.trim()
     const sizeId = (formData.get('sizeId') as string) || null
     const categoryId = formData.get('categoryId') as string
     const brandId = formData.get('brandId') as string
@@ -216,10 +201,10 @@ export async function POST(request: NextRequest) {
     const existingImageUrl = (formData.get('imageUrl') as string) || null
     const image = formData.get('image') as File | null
 
-    if (!name || !code || !brandId || !categoryId || (!existingImageUrl && (!image || image.size === 0))) {
+    if (!name || !brandId || !categoryId || (!existingImageUrl && (!image || image.size === 0))) {
       return NextResponse.json({
         error: 'Missing required fields',
-        details: 'Name, code, brand, category, and image are required'
+        details: 'Name, brand, category, and image are required'
       }, { status: 400 })
     }
 
@@ -235,25 +220,12 @@ export async function POST(request: NextRequest) {
 
     const user = requireAuth(request)
 
-    // Check if product with same code already exists (only active ones)
-    const existingProduct = await prisma.product.findFirst({
-      where: { 
-        code: { equals: code, mode: 'insensitive' },
-        isActive: true
-      }
-    })
-
-    if (existingProduct) {
-      return NextResponse.json({
-        error: 'Duplicate entry',
-        details: 'A product with this code already exists'
-      }, { status: 409 })
-    }
+    // Remove duplicate code check — code is auto-generated
 
     const product = await prisma.product.create({
       data: {
         name,
-        code,
+        code: `PRD-${Date.now().toString().slice(-6)}`,
         brandId,
         categoryId,
         sizeId,

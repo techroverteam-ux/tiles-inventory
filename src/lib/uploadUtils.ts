@@ -1,36 +1,54 @@
+const compressImage = (file: File, maxWidthPx = 1200, quality = 0.75): Promise<File> => {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const canvas = document.createElement('canvas')
+      let { width, height } = img
+      if (width > maxWidthPx) {
+        height = Math.round((height * maxWidthPx) / width)
+        width = maxWidthPx
+      }
+      canvas.width = width
+      canvas.height = height
+      canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return }
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }))
+        },
+        'image/jpeg',
+        quality
+      )
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+    img.src = url
+  })
+}
+
 export const uploadImage = async (file: File): Promise<string> => {
   try {
-    // Validate file
-    if (!file) {
-      throw new Error('No file provided');
-    }
+    if (!file) throw new Error('No file provided')
+    if (!file.type.startsWith('image/')) throw new Error('Only image files are allowed.')
 
-    // Check file size (limit to 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      throw new Error('File size too large. Maximum 5MB allowed.');
-    }
+    const compressed = await compressImage(file)
+    const filename = `${Date.now()}-${encodeURIComponent(compressed.name)}`
 
-    // Check file type
-    if (!file.type.startsWith('image/')) {
-      throw new Error('Only image files are allowed.');
-    }
-
-    const filename = `${Date.now()}-${encodeURIComponent(file.name)}`;
-    
     const response = await fetch(`/api/upload?filename=${filename}`, {
       method: 'POST',
-      body: file,
-    });
+      body: compressed,
+    })
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.details || errorData.error || 'Upload failed');
+      const errorData = await response.json()
+      throw new Error(errorData.details || errorData.error || 'Upload failed')
     }
 
-    const { url } = await response.json();
-    return url;
+    const { url } = await response.json()
+    return url
   } catch (error) {
-    console.error('Upload error:', error);
-    throw error; // Re-throw to let the caller handle it
+    console.error('Upload error:', error)
+    throw error
   }
-};
+}
