@@ -322,7 +322,7 @@ export default function SalesOrdersPage() {
             <PageExportButton config={exportConfig} customFilters={customExportFilters} disabled={orders.length === 0} />
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
               <DialogTrigger asChild>
-                <Button size="sm" className="rounded-xl font-bold gap-2 shadow-lg shadow-primary/20">
+                <Button size="sm" className="h-10 rounded-xl font-bold gap-2 shadow-lg shadow-primary/20">
                   <Plus className="h-4 w-4" />
                   New Order
                 </Button>

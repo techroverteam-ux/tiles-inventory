@@ -279,7 +279,7 @@ export default function LocationsPage() {
         actions={
           <div className="flex items-center gap-2">
             <PageExportButton config={exportConfig} customFilters={customExportFilters} disabled={locations.length === 0} />
-            <Button size="sm" onClick={() => { resetForm(); setShowForm(true) }} className="gap-2 font-bold shadow-lg shadow-primary/20">
+            <Button size="sm" onClick={() => { resetForm(); setShowForm(true) }} className="h-10 rounded-xl gap-2 font-bold shadow-lg shadow-primary/20">
               <Plus className="h-4 w-4" />Add Location
             </Button>
           </div>

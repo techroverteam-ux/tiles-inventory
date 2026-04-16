@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -349,6 +350,9 @@ export function PageExportButton({ config, customFilters, disabled, className }:
   const [showDefault, setShowDefault] = useState(false)
   const [showCustom, setShowCustom] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
+  const menuTriggerRef = useRef<HTMLDivElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
 
   // Custom filter state
   const [brandId, setBrandId] = useState('')
@@ -360,6 +364,39 @@ export function PageExportButton({ config, customFilters, disabled, className }:
   const [customCfg, setCustomCfg] = useState<PageExportConfig | null>(null)
 
   const isDisabled = disabled || config.excelData.length === 0
+
+  useEffect(() => {
+    if (!showMenu) return
+
+    const updateMenuPosition = () => {
+      const trigger = menuTriggerRef.current
+      if (!trigger) return
+
+      const rect = trigger.getBoundingClientRect()
+      const menuWidth = 180
+      const left = Math.max(8, Math.min(window.innerWidth - menuWidth - 8, rect.right - menuWidth))
+      const top = rect.bottom + 6
+      setMenuPosition({ top, left })
+    }
+
+    const onClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (menuRef.current?.contains(target)) return
+      if (menuTriggerRef.current?.contains(target)) return
+      setShowMenu(false)
+    }
+
+    updateMenuPosition()
+    window.addEventListener('resize', updateMenuPosition)
+    window.addEventListener('scroll', updateMenuPosition, true)
+    document.addEventListener('mousedown', onClickOutside)
+
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition)
+      window.removeEventListener('scroll', updateMenuPosition, true)
+      document.removeEventListener('mousedown', onClickOutside)
+    }
+  }, [showMenu])
 
   const doExport = (fmt: 'excel' | 'pdf' | 'png', cfg: PageExportConfig) =>
     runExport(fmt, cfg, null as any, setExporting, null as any)
@@ -480,36 +517,41 @@ export function PageExportButton({ config, customFilters, disabled, className }:
       )}
 
       {/* Dropdown menu */}
-      <div className="relative">
+      <div className="relative" ref={menuTriggerRef}>
         {customFilters ? (
           <div className="flex items-center">
             <Button variant="outline" size="sm" onClick={() => { setShowMenu(false); setShowDefault(true) }} disabled={isDisabled}
-              className={cn('gap-1.5 rounded-l-xl rounded-r-none border-r-0 border-border/50 font-bold h-9', className)}>
+              className={cn('gap-1.5 rounded-l-xl rounded-r-none border-r-0 border-border/50 font-bold h-10', className)}>
               {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline text-xs">Export</span>
+              <span className="text-xs">Export</span>
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowMenu(m => !m)} disabled={isDisabled}
-              className="rounded-l-none rounded-r-xl border-border/50 font-bold h-9 px-2">
+              className="rounded-l-none rounded-r-xl border-border/50 font-bold h-10 px-2">
               <ChevronDown className="h-3.5 w-3.5" />
             </Button>
-            {showMenu && (
-              <div className="absolute right-0 top-full mt-1 z-50 bg-popover border border-border/50 rounded-2xl shadow-premium overflow-hidden min-w-[160px]">
+            {showMenu && typeof document !== 'undefined' && createPortal(
+              <div
+                ref={menuRef}
+                className="fixed z-[120] bg-popover border border-border/50 rounded-2xl shadow-premium overflow-hidden min-w-[180px]"
+                style={{ top: menuPosition.top, left: menuPosition.left }}
+              >
                 <button onClick={() => { setShowMenu(false); setShowDefault(true) }}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-bold hover:bg-muted/50 transition-colors">
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-bold hover:bg-muted/50 transition-colors text-left">
                   <Download className="h-4 w-4" />Default Export
                 </button>
                 <button onClick={() => { applyCustomAndOpen() }}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-bold hover:bg-muted/50 transition-colors border-t border-border/30">
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-bold hover:bg-muted/50 transition-colors border-t border-border/30 text-left">
                   <SlidersHorizontal className="h-4 w-4" />Custom Export
                 </button>
-              </div>
+              </div>,
+              document.body
             )}
           </div>
         ) : (
           <Button variant="outline" size="sm" onClick={() => setShowDefault(true)} disabled={isDisabled}
-            className={cn('gap-2 rounded-xl border-border/50 font-bold h-9', className)}>
+            className={cn('gap-2 rounded-xl border-border/50 font-bold h-10', className)}>
             {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-            <span className="hidden sm:inline text-xs">Export</span>
+            <span className="text-xs">Export</span>
           </Button>
         )}
       </div>

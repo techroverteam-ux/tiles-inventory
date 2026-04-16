@@ -702,7 +702,7 @@ export default function ProductsPage() {
                 <Button size="sm" onClick={() => {
                   setEditingProduct(null)
                   resetForm()
-                }} className="gap-2">
+                }} className="h-10 rounded-xl font-bold gap-2 shadow-lg shadow-primary/20">
                   <Plus className="h-4 w-4" />
                   Add Product
                 </Button>
