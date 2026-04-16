@@ -68,6 +68,7 @@ export default function CategoriesPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [deleteCategory, setDeleteCategory] = useState<Category | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedDetailItem, setSelectedDetailItem] = useState<Category | null>(null)
   const [formData, setFormData] = useState<FormData>({
@@ -244,22 +245,34 @@ export default function CategoriesPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteCategory) return
+    const target = deleteCategory
+    const previousCategories = categories
+
+    setDeleting(true)
+    setCategories((prev) => prev.filter((category) => category.id !== target.id))
+    setTotalCount((prev) => Math.max(0, prev - 1))
+    setDeleteCategory(null)
 
     try {
-      const response = await fetch(`/api/categories/${deleteCategory.id}`, {
+      const response = await fetch(`/api/categories/${target.id}`, {
         method: 'DELETE'
       })
 
       if (response.ok) {
         showToast('Category deleted successfully!', 'success')
-        setDeleteCategory(null)
         fetchCategories()
       } else {
         const errorData = await response.json()
+        setCategories(previousCategories)
+        setTotalCount((prev) => prev + 1)
         showToast(errorData.error || 'Failed to delete category', 'error')
       }
     } catch (error) {
+      setCategories(previousCategories)
+      setTotalCount((prev) => prev + 1)
       showToast('Error deleting category', 'error')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -406,7 +419,7 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 space-y-6">
+    <div className="admin-page">
       <TableFilters
         title="Categories"
         filters={filterConfigs}
@@ -561,6 +574,7 @@ export default function CategoriesPage() {
         variant={deleteConfirmation.variant}
         onConfirm={handleDeleteConfirm}
         icon={deleteConfirmation.icon}
+        loading={deleting}
       />
 
       <RowDetailsDialog

@@ -3,7 +3,8 @@ import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
-const CANCEL_OR_CLOSE_PATTERN = /\b(cancel|close)\b/i
+const DESTRUCTIVE_LABEL_PATTERN = /\b(delete|remove|trash|destroy|discard)\b/i
+const CALM_LABEL_PATTERN = /\b(cancel|close|dismiss|back)\b/i
 
 const extractNodeText = (node: React.ReactNode): string => {
   if (typeof node === "string" || typeof node === "number") {
@@ -67,7 +68,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const shouldHighlightAsDestructive =
       variant !== "destructive" &&
       variant !== "link" &&
-      CANCEL_OR_CLOSE_PATTERN.test(semanticLabel)
+      !CALM_LABEL_PATTERN.test(semanticLabel) &&
+      DESTRUCTIVE_LABEL_PATTERN.test(semanticLabel)
 
     return (
       <Comp

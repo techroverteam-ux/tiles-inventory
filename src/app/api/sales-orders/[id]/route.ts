@@ -167,21 +167,40 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const user = requireAuth(request)
     const { id } = await params
-    
-    // Delete sales items first
-    await prisma.salesItem.deleteMany({
-      where: { salesOrderId: id },
-    })
-    
-    // Delete sales order
-    await prisma.salesOrder.delete({
-      where: { id },
+
+    await prisma.$transaction(async (tx) => {
+      const salesItems = await tx.salesItem.findMany({
+        where: { salesOrderId: id },
+        select: { batchId: true, quantity: true },
+      })
+
+      for (const item of salesItems) {
+        await tx.batch.update({
+          where: { id: item.batchId },
+          data: {
+            quantity: { increment: item.quantity },
+            updatedById: user.userId,
+          } as any,
+        })
+      }
+
+      await tx.salesItem.deleteMany({
+        where: { salesOrderId: id },
+      })
+
+      await tx.salesOrder.delete({
+        where: { id },
+      })
     })
 
     return NextResponse.json({ success: true })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Sales order deletion error:', error)
+    if (error?.message === 'Authentication required') {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
     return NextResponse.json(
       { error: 'Failed to delete sales order' },
       { status: 500 }

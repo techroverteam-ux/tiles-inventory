@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { put } from '@vercel/blob'
 import { requireAuth } from '@/lib/auth'
+
+const createProductJsonSchema = z.object({
+  name: z.string().trim().min(1).max(150),
+  brandId: z.string().min(1),
+  categoryId: z.string().min(1),
+  sizeId: z.string().min(1).optional().nullable(),
+  imageUrl: z.string().url().max(2000).optional().nullable(),
+  sqftPerBox: z.coerce.number().positive().max(100000).optional(),
+  pcsPerBox: z.coerce.number().int().positive().max(100000).optional(),
+  code: z.string().trim().max(80).optional(),
+})
 
 async function uploadImageFile(image: File | null) {
   if (!image || image.size === 0) {
@@ -55,8 +67,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const hasExplicitPagination = searchParams.has('page') || searchParams.has('limit')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || (hasExplicitPagination ? '25' : '1000'))
+    const parsedPage = parseInt(searchParams.get('page') || '1', 10)
+    const parsedLimit = parseInt(searchParams.get('limit') || (hasExplicitPagination ? '25' : '1000'), 10)
+    const page = Number.isFinite(parsedPage) ? Math.max(1, parsedPage) : 1
+    const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 1000) : 25
     const search = searchParams.get('search') || ''
     const brandId = searchParams.get('brandId') || undefined
     const categoryId = searchParams.get('categoryId') || undefined
@@ -137,7 +151,17 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get('content-type') || ''
 
     if (contentType.includes('application/json')) {
-      const data = await request.json()
+      const body = await request.json()
+      const parsed = createProductJsonSchema.safeParse(body)
+
+      if (!parsed.success) {
+        return NextResponse.json({
+          error: 'Invalid request payload',
+          details: 'Please provide valid product fields'
+        }, { status: 400 })
+      }
+
+      const data = parsed.data
       const name = data.name?.trim()
       const brandId = data.brandId
       const categoryId = data.categoryId
@@ -145,13 +169,6 @@ export async function POST(request: NextRequest) {
       const imageUrl = data.imageUrl || null
       const sqftPerBox = Number(data.sqftPerBox) || 1
       const pcsPerBox = Number(data.pcsPerBox) || 1
-
-      if (!name || !brandId || !categoryId) {
-        return NextResponse.json({
-          error: 'Missing required fields',
-          details: 'Name, brand, and category are required'
-        }, { status: 400 })
-      }
 
       const user = requireAuth(request)
 

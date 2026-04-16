@@ -61,6 +61,7 @@ export default function PurchaseOrdersPage() {
   const [showLocationDialog, setShowLocationDialog] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null)
   const [deleteOrder, setDeleteOrder] = useState<PurchaseOrder | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedDetailItem, setSelectedDetailItem] = useState<PurchaseOrder | null>(null)
   const [selectedLocation, setSelectedLocation] = useState('')
@@ -208,17 +209,29 @@ export default function PurchaseOrdersPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteOrder) return
+    const target = deleteOrder
+    const previousOrders = orders
+
+    setDeleting(true)
+    setOrders((prev) => prev.filter((order) => order.id !== target.id))
+    setDeleteOrder(null)
 
     try {
-      const response = await fetch(`/api/purchase-orders/${deleteOrder.id}`, { method: 'DELETE' })
+      const response = await fetch(`/api/purchase-orders/${target.id}`, { method: 'DELETE' })
       if (response.ok) {
         showToast('Purchase order deleted successfully', 'success')
-        setDeleteOrder(null)
         fetchOrders()
+      } else {
+        const errorData = await response.json()
+        setOrders(previousOrders)
+        showToast(errorData.error || 'Failed to delete purchase order', 'error')
       }
     } catch (error) {
+      setOrders(previousOrders)
       console.error('Error deleting purchase order:', error)
       showToast('Error deleting purchase order', 'error')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -433,7 +446,7 @@ export default function PurchaseOrdersPage() {
   }), [orders, brands])
 
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 space-y-8 pb-10">
+    <div className="admin-page">
       <TableFilters
         title="Purchase Orders"
         actions={
@@ -619,6 +632,7 @@ export default function PurchaseOrdersPage() {
         onConfirm={handleDeleteConfirm}
         confirmText="Delete"
         variant="destructive"
+        loading={deleting}
       />
 
       <RowDetailsDialog

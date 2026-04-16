@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    requireAuth(request)
     const salesData = await prisma.salesOrder.groupBy({
       by: ['createdAt'],
       _sum: { totalAmount: true },
@@ -27,6 +29,9 @@ export async function GET() {
     return NextResponse.json(chartData)
   } catch (error) {
     console.error('Sales data error:', error)
+    if (error instanceof Error && error.message === 'Authentication required') {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
     return NextResponse.json([])
   }
 }

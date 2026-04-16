@@ -228,7 +228,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 space-y-8 pb-10">
+    <div className="admin-page">
       <div className="page-header">
         <div className="space-y-1">
           <h1 className="page-title">Settings</h1>

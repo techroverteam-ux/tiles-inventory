@@ -71,6 +71,7 @@ export default function SalesOrdersPage() {
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null)
   const [deleteOrder, setDeleteOrder] = useState<SalesOrder | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedDetailItem, setSelectedDetailItem] = useState<SalesOrder | null>(null)
 
@@ -134,17 +135,29 @@ export default function SalesOrdersPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteOrder) return
+    const target = deleteOrder
+    const previousOrders = orders
+
+    setDeleting(true)
+    setOrders((prev) => prev.filter((order) => order.id !== target.id))
+    setDeleteOrder(null)
 
     try {
-      const response = await fetch(`/api/sales-orders/${deleteOrder.id}`, { method: 'DELETE' })
+      const response = await fetch(`/api/sales-orders/${target.id}`, { method: 'DELETE' })
       if (response.ok) {
         showToast('Sales order deleted successfully', 'success')
-        setDeleteOrder(null)
         fetchOrders()
+      } else {
+        const errorData = await response.json()
+        setOrders(previousOrders)
+        showToast(errorData.error || 'Failed to delete sales order', 'error')
       }
     } catch (error) {
+      setOrders(previousOrders)
       console.error('Error deleting sales order:', error)
       showToast('Error deleting sales order', 'error')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -289,7 +302,7 @@ export default function SalesOrdersPage() {
   }), [orders, brands])
 
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 space-y-8 pb-10">
+    <div className="admin-page">
       <TableFilters
         title="Sales Orders"
         actions={
@@ -413,6 +426,7 @@ export default function SalesOrdersPage() {
         onConfirm={handleDeleteConfirm}
         confirmText="Delete"
         variant="destructive"
+        loading={deleting}
       />
 
       <RowDetailsDialog

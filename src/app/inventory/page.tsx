@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -39,6 +39,7 @@ import ImageUpload from '@/components/ui/image-upload'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { useResponsiveDefaultView } from '@/hooks/use-responsive-default-view'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 
 const formatDate = (dateString: string) => {
   const d = new Date(dateString)
@@ -95,6 +96,7 @@ export default function InventoryPage() {
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
   const [deleteItem, setDeleteItem] = useState<InventoryItem | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedDetailItem, setSelectedDetailItem] = useState<InventoryItem | null>(null)
   const [editFormData, setEditFormData] = useState({
@@ -124,6 +126,8 @@ export default function InventoryPage() {
     sortOrder: 'desc'
   })
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(search, 300)
+  const fetchAbortRef = useRef<AbortController | null>(null)
 
   const filterConfigs = useMemo(() => [
     {
@@ -174,7 +178,11 @@ export default function InventoryPage() {
     }
   ], [locations, brands, categories, sizes])
 
-  const fetchInventory = async () => {
+  const fetchInventory = useCallback(async () => {
+    fetchAbortRef.current?.abort()
+    const controller = new AbortController()
+    fetchAbortRef.current = controller
+
     setLoading(true)
     try {
       // Strip empty and 'none' values so they don't get sent as filter params
@@ -184,23 +192,30 @@ export default function InventoryPage() {
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
-        search: search || '',
+        search: debouncedSearch || '',
         ...cleanFilters
       })
       
-      const response = await fetch(`/api/inventory?${params}`)
+      const response = await fetch(`/api/inventory?${params}`, { signal: controller.signal })
       const data = await response.json()
       
       if (response.ok) {
         setInventory(data.inventory || [])
-        setPagination(data.pagination || pagination)
+        setPagination((prev) => ({
+          ...prev,
+          ...(data.pagination || {}),
+        }))
       }
-    } catch (error) {
-      console.error('Error fetching inventory:', error)
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') {
+        console.error('Error fetching inventory:', error)
+      }
     } finally {
-      setLoading(false)
+      if (!controller.signal.aborted) {
+        setLoading(false)
+      }
     }
-  }
+  }, [pagination.page, pagination.limit, filters, debouncedSearch])
 
   const fetchLocations = async () => {
     try {
@@ -244,7 +259,13 @@ export default function InventoryPage() {
 
   useEffect(() => {
     fetchInventory()
-  }, [pagination.page, pagination.limit, filters, search])
+  }, [fetchInventory])
+
+  useEffect(() => {
+    return () => {
+      fetchAbortRef.current?.abort()
+    }
+  }, [])
 
   useEffect(() => {
     fetchLocations()
@@ -321,22 +342,34 @@ export default function InventoryPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteItem) return
+    const target = deleteItem
+    const previousInventory = inventory
+
+    setDeleting(true)
+    setInventory((prev) => prev.filter((item) => item.id !== target.id))
+    setPagination((prev) => ({ ...prev, total: Math.max(0, prev.total - 1) }))
+    setDeleteItem(null)
 
     try {
-      const response = await fetch(`/api/inventory/${deleteItem.id}`, { method: 'DELETE' })
+      const response = await fetch(`/api/inventory/${target.id}`, { method: 'DELETE' })
       const data = await response.json()
 
       if (response.ok) {
         showToast('Batch deleted successfully', 'success')
-        setDeleteItem(null)
         fetchInventory()
       } else {
+        setInventory(previousInventory)
+        setPagination((prev) => ({ ...prev, total: prev.total + 1 }))
         showToast(`Failed to delete batch: ${data.error || 'Unknown error'}`, 'error')
         console.error('Delete error:', data)
       }
     } catch (error) {
+      setInventory(previousInventory)
+      setPagination((prev) => ({ ...prev, total: prev.total + 1 }))
       console.error('Error deleting batch:', error)
       showToast('Error deleting batch. Please try again.', 'error')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -517,7 +550,7 @@ export default function InventoryPage() {
   }), [inventory, brands, categories])
 
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 space-y-8 pb-10">
+    <div className="admin-page">
       {/* Header */}
       <TableFilters
         title="Inventory"
@@ -679,6 +712,7 @@ export default function InventoryPage() {
         onConfirm={() => handleDeleteConfirm()}
         confirmText="Delete"
         variant="destructive"
+        loading={deleting}
       />
 
       <RowDetailsDialog

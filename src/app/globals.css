@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer components {
+  .admin-page {
+    @apply w-full px-3 sm:px-4 md:px-6 lg:px-8 space-y-6 pb-6 md:pb-8;
+  }
+
   .page-container {
     @apply w-full px-1 sm:px-3 md:px-4 space-y-3;
   }
@@ -95,6 +99,7 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     overflow-x: hidden;
+    scrollbar-gutter: stable;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

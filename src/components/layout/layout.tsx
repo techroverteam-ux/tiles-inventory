@@ -17,8 +17,6 @@ import { ToastProvider } from '@/contexts/ToastContext'
 import { SessionProvider } from '@/contexts/SessionContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import ThemeToggle from '@/components/ThemeToggle'
-import { pageVariants } from '@/lib/motion'
-import { AnimatePresence, motion } from 'framer-motion'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -267,7 +265,7 @@ export default function Layout({ children }: LayoutProps) {
             <NotificationProvider>
         <div className="min-h-screen max-w-full overflow-x-hidden bg-background text-foreground flex flex-col bg-mesh">
           {/* Header */}
-          <header className="px-3 sm:px-4 md:px-6 h-16 sm:h-20 flex items-center justify-between fixed top-0 left-0 right-0 z-50 glass backdrop-blur-xl md:backdrop-blur-2xl border-b border-border/50 gap-2 sm:gap-4 optimize-gpu">
+          <header className="fixed top-0 left-0 right-0 z-50 grid h-16 sm:h-20 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-border/50 px-3 sm:px-4 md:px-6 lg:px-8 glass backdrop-blur-xl md:backdrop-blur-2xl optimize-gpu">
             <div className="flex items-center gap-3">
               {/* Mobile Hamburger Menu */}
               <Button
@@ -280,14 +278,16 @@ export default function Layout({ children }: LayoutProps) {
               </Button>
               
               {/* Desktop Hamburger Menu */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 hidden md:inline-flex hover:bg-primary/10 hover:text-primary transition-colors duration-300 active:scale-95"
-              >
-                <Menu className="h-5 w-5 text-muted-foreground" />
-              </Button>
+              <div className="hidden md:flex md:w-16 md:shrink-0 md:justify-center md:-ml-6 lg:-ml-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="hidden md:inline-flex h-10 w-10 hover:bg-primary/10 hover:text-primary transition-colors duration-300 active:scale-95"
+                >
+                  <Menu className="h-5 w-5 text-muted-foreground" />
+                </Button>
+              </div>
               
               {/* Logo */}
               <div className="flex items-center group cursor-pointer" onClick={() => router.push('/')}>
@@ -306,8 +306,8 @@ export default function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
-            <div ref={searchBoxRef} className="hidden lg:flex items-center gap-4 flex-1 max-w-xl mx-6">
-              <div className="relative flex-1 group">
+            <div ref={searchBoxRef} className="hidden min-w-0 lg:flex justify-center px-3 xl:px-4">
+              <div className="relative w-full max-w-lg group">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 transition-colors group-focus-within:text-primary" />
                 <Input
                   ref={desktopInputRef}
@@ -338,7 +338,7 @@ export default function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <div className="flex items-center justify-end gap-1.5 sm:gap-3 shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
@@ -440,28 +440,19 @@ export default function Layout({ children }: LayoutProps) {
             <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             {/* Main Content */}
-            <main className={`min-w-0 max-w-full flex-1 overflow-x-hidden transition-[margin] duration-300 ease-in-out ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'} flex flex-col will-change-[margin]`}>
-              <div className="min-w-0 max-w-full flex-1 overflow-x-hidden p-3 sm:p-4 md:p-6 pb-20 md:pb-6">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={pathname}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    variants={pageVariants}
-                    className="w-full h-full"
-                    onClick={() => {
-                      setShowSearchResults(false)
-                      setMobileSearchOpen(false)
-                    }}
-                  >
-                    {children}
-                  </motion.div>
-                </AnimatePresence>
+            <main className={`min-w-0 max-w-full flex-1 overflow-x-hidden flex flex-col transition-[margin] duration-300 ease-out ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'}`}>
+              <div
+                className="min-w-0 max-w-full flex-1 overflow-x-hidden pt-3 sm:pt-4 md:pt-6 pb-20 md:pb-8"
+                onClick={() => {
+                  setShowSearchResults(false)
+                  setMobileSearchOpen(false)
+                }}
+              >
+                {children}
               </div>
               
               {/* Footer - Sticky at bottom */}
-              <footer className="bg-card border-t border-border px-4 md:px-6 py-3 flex items-center justify-between text-xs text-muted-foreground mt-auto">
+              <footer className="bg-card border-t border-border px-3 sm:px-4 md:px-6 lg:px-8 py-3 flex items-center justify-between text-xs text-muted-foreground mt-auto">
                 <span>© 2026 Tiles Inventory Management System. All rights reserved.</span>
                 <span className="flex items-center gap-1">
                   Developed with <span className="text-destructive">♥</span> by <span className="font-bold text-primary">Tech Rover</span>

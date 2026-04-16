@@ -84,6 +84,7 @@ export default function SizesPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingSize, setEditingSize] = useState<Size | null>(null)
   const [deleteSize, setDeleteSize] = useState<Size | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedDetailItem, setSelectedDetailItem] = useState<Size | null>(null)
   const [formData, setFormData] = useState<FormData>({
@@ -278,22 +279,34 @@ export default function SizesPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteSize) return
+    const target = deleteSize
+    const previousSizes = sizes
+
+    setDeleting(true)
+    setSizes((prev) => prev.filter((size) => size.id !== target.id))
+    setTotalCount((prev) => Math.max(0, prev - 1))
+    setDeleteSize(null)
 
     try {
-      const response = await fetch(`/api/sizes/${deleteSize.id}`, {
+      const response = await fetch(`/api/sizes/${target.id}`, {
         method: 'DELETE'
       })
 
       if (response.ok) {
         showToast('Size deleted successfully!', 'success')
-        setDeleteSize(null)
         fetchSizes()
       } else {
         const errorData = await response.json()
+        setSizes(previousSizes)
+        setTotalCount((prev) => prev + 1)
         showToast(errorData.error || 'Failed to delete size', 'error')
       }
     } catch (error) {
+      setSizes(previousSizes)
+      setTotalCount((prev) => prev + 1)
       showToast('Error deleting size', 'error')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -456,7 +469,7 @@ export default function SizesPage() {
   }
 
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 space-y-6">
+    <div className="admin-page">
       {/* Filters */}
       <TableFilters
         title="Sizes"
@@ -661,6 +674,7 @@ export default function SizesPage() {
         variant={deleteConfirmation.variant}
         onConfirm={handleDeleteConfirm}
         icon={deleteConfirmation.icon}
+        loading={deleting}
       />
 
       <RowDetailsDialog

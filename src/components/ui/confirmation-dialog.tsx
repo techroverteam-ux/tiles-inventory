@@ -33,6 +33,11 @@ export function ConfirmationDialog({
   icon,
   loading = false
 }: ConfirmationDialogProps) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (loading) return
+    onOpenChange(nextOpen)
+  }
+
   const handleCancel = () => {
     if (onCancel) {
       onCancel()
@@ -62,13 +67,14 @@ export function ConfirmationDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[440px] glass-card border-border/50 rounded-[2rem] p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="absolute top-4 right-4 z-10">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleCancel}
+            disabled={loading}
             className="h-8 w-8 p-0 rounded-full hover:bg-muted/50 transition-colors"
           >
             <X className="h-4 w-4 opacity-50" />
@@ -94,7 +100,7 @@ export function ConfirmationDialog({
               variant="outline"
               onClick={handleCancel}
               disabled={loading}
-              className="flex-1 rounded-2xl h-12 font-bold border-border/50 hover:bg-muted/50 transition-all active:scale-95"
+              className="flex-1 rounded-2xl h-12 font-bold border-border/50 text-foreground hover:bg-muted/50 hover:text-foreground transition-all active:scale-95"
             >
               {cancelText}
             </Button>

@@ -48,7 +48,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 space-y-8 pb-10">
+    <div className="admin-page">
       <div className="page-header">
         <div className="flex items-center gap-4">
           <Link href="/">

@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    requireAuth(request)
     const [totalProducts, totalBrands, totalCategories, totalSizes, purchaseOrders, totalSalesOrders, lowStockItems, monthlySales] = await Promise.all([
       prisma.product.count({ where: { isActive: true } }),
       prisma.brand.count({ where: { isActive: true } }),
@@ -33,6 +35,9 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Dashboard stats error:', error)
+    if (error instanceof Error && error.message === 'Authentication required') {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
     return NextResponse.json({
       totalBrands: 0,
       totalCategories: 0,

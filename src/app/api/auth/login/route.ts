@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { checkRateLimit, getRateLimitKey } from '@/lib/rate-limit'
+
+const loginSchema = z.object({
+  email: z.string().trim().email().max(254),
+  password: z.string().min(1).max(128),
+})
 
 async function normalizeLegacyUserRoles() {
   try {
@@ -20,14 +27,25 @@ async function normalizeLegacyUserRoles() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
-
-    if (!email || !password) {
+    const rateLimit = checkRateLimit(`login:${getRateLimitKey(request)}`, 10, 15 * 60 * 1000)
+    if (!rateLimit.success) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: 'Too many login attempts. Please try again later.' },
+        { status: 429 }
+      )
+    }
+
+    const body = await request.json()
+    const parsed = loginSchema.safeParse(body)
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Valid email and password are required' },
         { status: 400 }
       )
     }
+
+    const { email, password } = parsed.data
 
     let user
     try {
@@ -77,9 +95,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const secret = process.env.JWT_SECRET
+    if (!secret) {
+      console.error('JWT_SECRET is not configured')
+      return NextResponse.json(
+        { error: 'Authentication is not configured' },
+        { status: 500 }
+      )
+    }
+
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'tiles-inventory-secret-2024',
+      secret,
       { expiresIn: '24h' }
     )
 
@@ -104,8 +131,6 @@ export async function POST(request: NextRequest) {
     }
     
     response.cookies.set('auth-token', token, cookieOptions)
-    
-    console.log('✅ Login successful')
 
     return response
   } catch (error) {

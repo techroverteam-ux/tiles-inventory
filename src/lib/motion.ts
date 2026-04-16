@@ -41,16 +41,15 @@ export const hoverVariants: Variants = {
 }
 
 export const pageVariants: Variants = {
-  initial: { opacity: 0, x: -10 },
-  animate: { 
-    opacity: 1, 
-    x: 0,
+  initial: { opacity: 0 },
+  animate: {
+    opacity: 1,
     transition: {
-      duration: 0.3,
-      ease: 'circOut'
-    }
+      duration: 0.2,
+      ease: 'easeOut',
+    },
   },
-  exit: { opacity: 0, x: 10 }
+  exit: { opacity: 0 }
 }
 
 export const organicButtonVariants: Variants = {

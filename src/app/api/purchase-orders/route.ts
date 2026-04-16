@@ -5,16 +5,21 @@ import { requireAuth } from '@/lib/auth'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
+    const parsedPage = parseInt(searchParams.get('page') || '1', 10)
+    const page = Number.isFinite(parsedPage) ? Math.max(1, parsedPage) : 1
     const limitParam = searchParams.get('limit')
-    const limit = limitParam ? parseInt(limitParam) : 1000 // Default to large number to get all
+    const parsedLimit = limitParam ? parseInt(limitParam, 10) : 1000
+    const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 1000) : 100
     const search = searchParams.get('search') || ''
     const brandId = searchParams.get('brandId') || ''
     const status = searchParams.get('status') || ''
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
     const sortBy = searchParams.get('sortBy') || 'createdAt'
-    const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
+
+    const allowedSortFields = new Set(['createdAt', 'updatedAt', 'orderDate', 'totalAmount', 'orderNumber'])
+    const safeSortBy = allowedSortFields.has(sortBy) ? sortBy : 'createdAt'
 
     const skip = (page - 1) * limit
 
@@ -54,7 +59,7 @@ export async function GET(request: NextRequest) {
           },
         } as any,
         orderBy: {
-          [sortBy]: sortOrder,
+          [safeSortBy]: sortOrder,
         },
         skip,
         take: limit,

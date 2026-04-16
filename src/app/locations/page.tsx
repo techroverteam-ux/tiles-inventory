@@ -51,6 +51,7 @@ export default function LocationsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingLocation, setEditingLocation] = useState<Location | null>(null)
   const [deleteLocation, setDeleteLocation] = useState<Location | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedDetailItem, setSelectedDetailItem] = useState<Location | null>(null)
   const [formData, setFormData] = useState<FormData>({ name: '', address: '', isActive: true })
@@ -132,11 +133,29 @@ export default function LocationsPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteLocation) return
+    const target = deleteLocation
+    const previousLocations = locations
+
+    setDeleting(true)
+    setLocations((prev) => prev.filter((location) => location.id !== target.id))
+    setTotalCount((prev) => Math.max(0, prev - 1))
+    setDeleteLocation(null)
+
     try {
-      const response = await fetch(`/api/locations/${deleteLocation.id}`, { method: 'DELETE' })
-      if (response.ok) { showToast('Location deleted!', 'success'); setDeleteLocation(null); fetchLocations() }
-      else { const err = await response.json(); showToast(err.error || 'Failed to delete', 'error') }
-    } catch { showToast('Error deleting location', 'error') }
+      const response = await fetch(`/api/locations/${target.id}`, { method: 'DELETE' })
+      if (response.ok) { showToast('Location deleted!', 'success'); fetchLocations() }
+      else {
+        const err = await response.json()
+        setLocations(previousLocations)
+        setTotalCount((prev) => prev + 1)
+        showToast(err.error || 'Failed to delete', 'error')
+      }
+    } catch {
+      setLocations(previousLocations)
+      setTotalCount((prev) => prev + 1)
+      showToast('Error deleting location', 'error')
+    }
+    finally { setDeleting(false) }
   }
 
   const renderGridItem = useCallback((location: Location) => (
@@ -254,7 +273,7 @@ export default function LocationsPage() {
   if (loading && locations.length === 0) return <LoadingPage view={view} title="Locations" />
 
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 space-y-6">
+    <div className="admin-page">
       <TableFilters
         title="Locations"
         actions={
@@ -338,6 +357,7 @@ export default function LocationsPage() {
         variant={deleteConfirmation.variant}
         onConfirm={handleDeleteConfirm}
         icon={deleteConfirmation.icon}
+        loading={deleting}
       />
 
       <RowDetailsDialog

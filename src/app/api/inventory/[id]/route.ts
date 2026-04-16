@@ -46,6 +46,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    requireAuth(request)
     const { id } = await params
     
     // Get batch details first
@@ -58,28 +59,30 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: 'Batch not found' }, { status: 404 })
     }
     
-    // Delete related sales items that reference this batch
-    await prisma.salesItem.deleteMany({
-      where: { batchId: id },
-    })
-    
-    // Delete related purchase items with matching product, location, and batch number
-    await prisma.purchaseItem.deleteMany({
-      where: { 
-        productId: batch.productId,
-        locationId: batch.locationId,
-        batchNumber: batch.batchNumber
-      },
-    })
-    
-    // Now delete the batch
-    await prisma.batch.delete({
-      where: { id },
+    await prisma.$transaction(async (tx) => {
+      await tx.salesItem.deleteMany({
+        where: { batchId: id },
+      })
+
+      await tx.purchaseItem.deleteMany({
+        where: {
+          productId: batch.productId,
+          locationId: batch.locationId,
+          batchNumber: batch.batchNumber,
+        },
+      })
+
+      await tx.batch.delete({
+        where: { id },
+      })
     })
 
     return NextResponse.json({ success: true })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Batch deletion error:', error)
+    if (error?.message === 'Authentication required') {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
     return NextResponse.json(
       { error: 'Failed to delete batch' },
       { status: 500 }

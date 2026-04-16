@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
+    requireAuth(request)
     const { searchParams } = new URL(request.url)
     const brandId = searchParams.get('brandId') || undefined
     const categoryId = searchParams.get('categoryId') || undefined
@@ -58,6 +60,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ brands: Object.values(brandMap), grandTotal })
   } catch (error) {
     console.error('Design stock report error:', error)
+    if (error instanceof Error && error.message === 'Authentication required') {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
     return NextResponse.json({ error: 'Failed to fetch design stock report' }, { status: 500 })
   }
 }

@@ -128,6 +128,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    requireAuth(request)
     const { id } = await params
     // Check if size exists
     const existingSize = await prisma.size.findUnique({
@@ -159,8 +160,11 @@ export async function DELETE(
     await prisma.size.delete({ where: { id } })
 
     return NextResponse.json({ message: 'Size deleted successfully' })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Size deletion error:', error)
+    if (error?.message === 'Authentication required') {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
     return NextResponse.json(
       { error: 'Failed to delete size' },
       { status: 500 }

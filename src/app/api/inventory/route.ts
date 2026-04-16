@@ -1,6 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
+
+const createBatchSchema = z.object({
+  productId: z.string().min(1),
+  locationId: z.string().min(1).optional(),
+  batchNumber: z.string().trim().max(100).optional(),
+  shade: z.string().trim().max(100).optional(),
+  quantity: z.coerce.number().int().positive().max(1000000),
+  purchasePrice: z.coerce.number().min(0).max(100000000).nullable().optional(),
+  sellingPrice: z.coerce.number().min(0).max(100000000).nullable().optional(),
+  receivedDate: z.string().trim().optional().nullable(),
+  expiryDate: z.string().trim().optional().nullable(),
+  imageUrl: z.string().url().max(2000).optional().nullable(),
+})
 
 async function getOrCreateDefaultLocation(userId: string): Promise<string> {
   let loc = await prisma.location.findFirst({ where: { name: 'Unassigned' } })
@@ -15,8 +29,10 @@ async function getOrCreateDefaultLocation(userId: string): Promise<string> {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const parsedPage = parseInt(searchParams.get('page') || '1', 10)
+    const parsedLimit = parseInt(searchParams.get('limit') || '10', 10)
+    const page = Number.isFinite(parsedPage) ? Math.max(1, parsedPage) : 1
+    const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 1000) : 10
     const search = searchParams.get('search') || ''
     const locationId = searchParams.get('locationId') || ''
     const brandId = searchParams.get('brandId') || ''
@@ -26,7 +42,10 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
     const sortBy = searchParams.get('sortBy') || 'createdAt'
-    const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
+
+    const allowedSortFields = new Set(['createdAt', 'updatedAt', 'quantity', 'batchNumber'])
+    const safeSortBy = allowedSortFields.has(sortBy) ? sortBy : 'createdAt'
 
     const skip = (page - 1) * limit
 
@@ -88,7 +107,7 @@ export async function GET(request: NextRequest) {
           updatedBy: { select: { name: true } },
         },
         orderBy: {
-          [sortBy]: sortOrder,
+          [safeSortBy]: sortOrder,
         },
         skip,
         take: limit,
@@ -129,9 +148,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json()
+    const body = await request.json()
+    const parsed = createBatchSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid batch payload' }, { status: 400 })
+    }
+
+    const data = parsed.data
     const user = requireAuth(request)
-    
+
     const batch = await prisma.batch.create({
       data: {
         productId: data.productId,

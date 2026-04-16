@@ -6,8 +6,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const hasExplicitPagination = searchParams.has('page') || searchParams.has('limit')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || (hasExplicitPagination ? '25' : '1000'))
+    const parsedPage = parseInt(searchParams.get('page') || '1', 10)
+    const parsedLimit = parseInt(searchParams.get('limit') || (hasExplicitPagination ? '25' : '1000'), 10)
+    const page = Number.isFinite(parsedPage) ? Math.max(1, parsedPage) : 1
+    const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 1000) : 25
     const search = searchParams.get('search') || ''
     const isActive = searchParams.get('isActive')
     const dateFrom = searchParams.get('dateFrom') || searchParams.get('createdAtFrom')

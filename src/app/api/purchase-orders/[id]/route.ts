@@ -28,21 +28,25 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    requireAuth(request)
     const { id } = await params
     
-    // Delete purchase order items first
-    await prisma.purchaseItem.deleteMany({
-      where: { purchaseOrderId: id }
+    await prisma.$transaction(async (tx) => {
+      await tx.purchaseItem.deleteMany({
+        where: { purchaseOrderId: id }
+      })
+
+      await tx.purchaseOrder.delete({
+        where: { id }
+      })
     })
-    
-    // Delete purchase order
-    await prisma.purchaseOrder.delete({
-      where: { id }
-    })
-    
+
     return NextResponse.json({ success: true })
   } catch (error: any) {
     console.error('Purchase order delete error:', error)
+    if (error?.message === 'Authentication required') {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
     return NextResponse.json({ error: 'Failed to delete purchase order' }, { status: 500 })
   }
 }

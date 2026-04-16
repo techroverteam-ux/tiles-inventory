@@ -79,14 +79,37 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    requireAuth(request)
     const { id } = await params
     const product = await prisma.product.findUnique({ where: { id } })
     if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 })
 
-    await prisma.product.delete({ where: { id } })
+    await prisma.$transaction(async (tx) => {
+      const batches = await tx.batch.findMany({
+        where: { productId: id },
+        select: { id: true },
+      })
+      const batchIds = batches.map((batch) => batch.id)
+
+      await tx.salesItem.deleteMany({
+        where: {
+          OR: [
+            { productId: id },
+            ...(batchIds.length > 0 ? [{ batchId: { in: batchIds } }] : []),
+          ],
+        },
+      })
+      await tx.purchaseItem.deleteMany({ where: { productId: id } })
+      await tx.batch.deleteMany({ where: { productId: id } })
+      await tx.product.delete({ where: { id } })
+    })
+
     return NextResponse.json({ success: true })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Product delete error:', error)
+    if (error?.message === 'Authentication required') {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
     return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 })
   }
 }

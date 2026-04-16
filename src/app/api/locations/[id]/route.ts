@@ -126,6 +126,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    requireAuth(request)
     const { id } = await params
     // Check if location exists
     const existingLocation = await prisma.location.findUnique({
@@ -139,15 +140,27 @@ export async function DELETE(
       )
     }
 
-    // Cascade-delete all batches and purchase items linked to this location, then delete
-    await prisma.purchaseItem.deleteMany({ where: { locationId: id } })
-    await prisma.batch.deleteMany({ where: { locationId: id } })
+    await prisma.$transaction(async (tx) => {
+      const batches = await tx.batch.findMany({
+        where: { locationId: id },
+        select: { id: true },
+      })
+      const batchIds = batches.map((batch) => batch.id)
 
-    await prisma.location.delete({ where: { id } })
+      if (batchIds.length > 0) {
+        await tx.salesItem.deleteMany({ where: { batchId: { in: batchIds } } })
+      }
+      await tx.purchaseItem.deleteMany({ where: { locationId: id } })
+      await tx.batch.deleteMany({ where: { locationId: id } })
+      await tx.location.delete({ where: { id } })
+    })
 
     return NextResponse.json({ message: 'Location deleted successfully' })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Location deletion error:', error)
+    if (error?.message === 'Authentication required') {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
     return NextResponse.json(
       { error: 'Failed to delete location' },
       { status: 500 }

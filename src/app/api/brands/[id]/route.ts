@@ -126,6 +126,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    requireAuth(request)
     const { id } = await params
     // Check if brand exists
     const existingBrand = await prisma.brand.findUnique({
@@ -157,8 +158,11 @@ export async function DELETE(
     await prisma.brand.delete({ where: { id } })
 
     return NextResponse.json({ message: 'Brand deleted successfully' })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Brand deletion error:', error)
+    if (error?.message === 'Authentication required') {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
     return NextResponse.json(
       { error: 'Failed to delete brand' },
       { status: 500 }

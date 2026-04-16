@@ -218,7 +218,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 space-y-8 pb-10">
+    <div className="admin-page">
       <motion.div 
         initial="hidden"
         animate="visible"

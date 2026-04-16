@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 const DEFAULT_LIMIT = 6
 
@@ -12,6 +13,7 @@ interface GlobalSearchResult {
 
 export async function GET(request: NextRequest) {
   try {
+    requireAuth(request)
     const { searchParams } = new URL(request.url)
     const query = (searchParams.get('q') || '').trim()
     const parsedLimit = parseInt(searchParams.get('limit') || `${DEFAULT_LIMIT}`, 10)
@@ -123,6 +125,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results })
   } catch (error) {
     console.error('Global search error:', error)
+    if (error instanceof Error && error.message === 'Authentication required') {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
     return NextResponse.json({ results: [] }, { status: 500 })
   }
 }

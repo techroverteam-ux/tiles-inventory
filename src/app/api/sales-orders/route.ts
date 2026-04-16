@@ -6,11 +6,15 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const limitParam = searchParams.get('limit')
-    const limit = limitParam ? parseInt(limitParam) : 1000
+    const parsedLimit = limitParam ? parseInt(limitParam, 10) : 1000
+    const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 1000) : 100
     const search = searchParams.get('search') || ''
     const brandId = searchParams.get('brandId') || ''
     const sortBy = searchParams.get('sortBy') || 'createdAt'
-    const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
+
+    const allowedSortFields = new Set(['createdAt', 'updatedAt', 'orderDate', 'totalAmount', 'orderNumber'])
+    const safeSortBy = allowedSortFields.has(sortBy) ? sortBy : 'createdAt'
 
     const where: any = {
       ...(search && {
@@ -43,7 +47,7 @@ export async function GET(request: NextRequest) {
         updatedBy: { select: { name: true } },
       } as any,
       orderBy: {
-        [sortBy]: sortOrder,
+        [safeSortBy]: sortOrder,
       },
       take: limit,
     })

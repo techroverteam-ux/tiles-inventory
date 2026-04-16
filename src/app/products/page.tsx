@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useToast } from '@/contexts/ToastContext'
 import { DataView } from '@/components/ui/data-view'
@@ -22,6 +22,7 @@ import { ImagePreview } from '@/components/ui/image-preview'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { cn } from '@/lib/utils'
 import { useResponsiveDefaultView } from '@/hooks/use-responsive-default-view'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 
 interface Product {
   id: string
@@ -89,6 +90,7 @@ export default function ProductsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedDetailItem, setSelectedDetailItem] = useState<Product | null>(null)
   const [formData, setFormData] = useState<FormData>({
@@ -125,6 +127,8 @@ export default function ProductsPage() {
     updateFilters,
     updateSearch
   } = useTableFilters()
+  const debouncedSearch = useDebouncedValue(search, 300)
+  const fetchAbortRef = useRef<AbortController | null>(null)
 
   // Filter configurations
   const filterConfigs: FilterConfig[] = useMemo(() => [
@@ -165,6 +169,10 @@ export default function ProductsPage() {
 
   // Fetch products with pagination and filters
   const fetchProducts = useCallback(async () => {
+    fetchAbortRef.current?.abort()
+    const controller = new AbortController()
+    fetchAbortRef.current = controller
+
     setLoading(true)
     try {
       const cleanFilters = Object.fromEntries(
@@ -173,11 +181,11 @@ export default function ProductsPage() {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: itemsPerPage.toString(),
-        search: search || '',
+        search: debouncedSearch || '',
         ...cleanFilters
       })
 
-      const response = await fetch(`/api/products?${params}`)
+      const response = await fetch(`/api/products?${params}`, { signal: controller.signal })
       if (response.ok) {
         const data: ApiResponse = await response.json()
         setProducts(data.products || [])
@@ -186,12 +194,16 @@ export default function ProductsPage() {
       } else {
         showToast('Failed to fetch products', 'error')
       }
-    } catch (error) {
-      showToast('Error fetching products', 'error')
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') {
+        showToast('Error fetching products', 'error')
+      }
     } finally {
-      setLoading(false)
+      if (!controller.signal.aborted) {
+        setLoading(false)
+      }
     }
-  }, [currentPage, itemsPerPage, search, filters, showToast])
+  }, [currentPage, itemsPerPage, debouncedSearch, filters, showToast])
 
   // Fetch dropdown data
   const fetchDropdownData = useCallback(async () => {
@@ -219,6 +231,12 @@ export default function ProductsPage() {
   useEffect(() => {
     fetchProducts()
   }, [fetchProducts])
+
+  useEffect(() => {
+    return () => {
+      fetchAbortRef.current?.abort()
+    }
+  }, [])
 
   useEffect(() => {
     fetchDropdownData()
@@ -369,22 +387,34 @@ export default function ProductsPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteProduct) return
+    const target = deleteProduct
+    const previousProducts = products
+
+    setDeleting(true)
+    setProducts((prev) => prev.filter((p) => p.id !== target.id))
+    setDeleteProduct(null)
+    setTotalCount((prev) => Math.max(0, prev - 1))
 
     try {
-      const response = await fetch(`/api/products/${deleteProduct.id}`, {
+      const response = await fetch(`/api/products/${target.id}`, {
         method: 'DELETE'
       })
 
       if (response.ok) {
         showToast('Product deleted successfully!', 'success')
-        setDeleteProduct(null)
         fetchProducts()
       } else {
         const errorData = await response.json()
+        setProducts(previousProducts)
+        setTotalCount((prev) => prev + 1)
         showToast(errorData.error || 'Failed to delete product', 'error')
       }
     } catch (error) {
+      setProducts(previousProducts)
+      setTotalCount((prev) => prev + 1)
       showToast('Error deleting product', 'error')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -660,7 +690,7 @@ export default function ProductsPage() {
     formData.categoryId !== ''
 
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 space-y-6">
+    <div className="admin-page">
       {/* Filters */}
       <TableFilters
         title="Products"
@@ -873,6 +903,7 @@ export default function ProductsPage() {
         onConfirm={handleDeleteConfirm}
         confirmText="Delete"
         variant="destructive"
+        loading={deleting}
       />
 
       <RowDetailsDialog

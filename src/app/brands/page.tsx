@@ -67,6 +67,7 @@ export default function BrandsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
   const [deleteBrand, setDeleteBrand] = useState<Brand | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedDetailItem, setSelectedDetailItem] = useState<Brand | null>(null)
   const [formData, setFormData] = useState<FormData>({
@@ -241,22 +242,34 @@ export default function BrandsPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteBrand) return
+    const target = deleteBrand
+    const previousBrands = brands
+
+    setDeleting(true)
+    setBrands((prev) => prev.filter((brand) => brand.id !== target.id))
+    setTotalCount((prev) => Math.max(0, prev - 1))
+    setDeleteBrand(null)
 
     try {
-      const response = await fetch(`/api/brands/${deleteBrand.id}`, {
+      const response = await fetch(`/api/brands/${target.id}`, {
         method: 'DELETE'
       })
 
       if (response.ok) {
         showToast('Brand deleted successfully!', 'success')
-        setDeleteBrand(null)
         fetchBrands()
       } else {
         const errorData = await response.json()
+        setBrands(previousBrands)
+        setTotalCount((prev) => prev + 1)
         showToast(errorData.error || 'Failed to delete brand', 'error')
       }
     } catch (error) {
+      setBrands(previousBrands)
+      setTotalCount((prev) => prev + 1)
       showToast('Error deleting brand', 'error')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -407,7 +420,7 @@ export default function BrandsPage() {
   }
 
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 space-y-6">
+    <div className="admin-page">
       {/* Filters */}
       <TableFilters
         title="Brands"
@@ -565,6 +578,7 @@ export default function BrandsPage() {
         variant={deleteConfirmation.variant}
         onConfirm={handleDeleteConfirm}
         icon={deleteConfirmation.icon}
+        loading={deleting}
       />
 
       {/* Row Details Dialog */}
