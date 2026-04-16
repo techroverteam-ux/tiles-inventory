@@ -108,9 +108,9 @@ export function DatePicker({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-[9999] w-72 rounded-3xl border border-border bg-popover shadow-2xl p-5 animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute left-0 top-full mt-1.5 z-[9999] w-[calc(100vw-1rem)] max-w-[20rem] sm:w-80 sm:max-w-none rounded-3xl border border-border bg-popover shadow-2xl p-4 sm:p-5 animate-in fade-in zoom-in-95 duration-200 overflow-hidden max-h-[calc(100vh-10rem)]">
           {/* Month/Year nav */}
-          <div className="flex items-center justify-between mb-4 gap-2">
+          <div className="flex items-center justify-between mb-3 sm:mb-4 gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
@@ -122,7 +122,7 @@ export function DatePicker({
             <select
               value={getMonth(currentMonth)}
               onChange={(e) => setCurrentMonth(setMonth(currentMonth, Number(e.target.value)))}
-              className="flex-1 text-sm font-bold text-foreground bg-popover border-none outline-none cursor-pointer text-center appearance-none hover:text-primary transition-colors"
+              className="flex-1 min-w-0 text-sm font-bold text-foreground bg-popover border-none outline-none cursor-pointer text-center appearance-none hover:text-primary transition-colors"
             >
               {MONTH_NAMES.map((m, i) => (
                 <option key={m} value={i} className="bg-popover text-foreground">{m}</option>
@@ -132,7 +132,7 @@ export function DatePicker({
             <select
               value={getYear(currentMonth)}
               onChange={(e) => setCurrentMonth(setYear(currentMonth, Number(e.target.value)))}
-              className="w-16 text-sm font-bold text-foreground bg-popover border-none outline-none cursor-pointer text-center appearance-none hover:text-primary transition-colors"
+              className="w-14 sm:w-16 text-sm font-bold text-foreground bg-popover border-none outline-none cursor-pointer text-center appearance-none hover:text-primary transition-colors"
             >
               {years.map((y) => (
                 <option key={y} value={y} className="bg-popover text-foreground">{y}</option>
@@ -149,16 +149,16 @@ export function DatePicker({
           </div>
 
           {/* Week headers */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-2">
             {weekDays.map((day) => (
-              <div key={day} className="text-[10px] font-bold text-muted-foreground text-center uppercase tracking-tighter opacity-70">
+              <div key={day} className="text-[9px] sm:text-[10px] font-bold text-muted-foreground text-center uppercase tracking-tighter opacity-70">
                 {day}
               </div>
             ))}
           </div>
 
           {/* Days */}
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 max-h-[15rem] overflow-y-auto pr-1">
             {days.map((day, idx) => {
               const isSelected = selectedDate && isSameDay(day, selectedDate)
               const isTodayDate = isToday(day)
@@ -169,7 +169,7 @@ export function DatePicker({
                   type="button"
                   onClick={() => { onChange(day); setOpen(false) }}
                   className={cn(
-                    'h-9 w-9 rounded-xl text-xs font-medium transition-all duration-150 relative flex items-center justify-center',
+                    'h-8 w-8 sm:h-9 sm:w-9 rounded-xl text-[11px] sm:text-xs font-medium transition-all duration-150 relative flex items-center justify-center',
                     !isCurrentMonth && 'text-muted-foreground/25 pointer-events-none',
                     isCurrentMonth && !isSelected && 'hover:bg-primary/10 hover:text-primary',
                     isSelected && 'bg-primary text-primary-foreground shadow-md scale-105 z-10',
@@ -183,7 +183,7 @@ export function DatePicker({
           </div>
 
           {/* Footer */}
-          <div className="mt-4 pt-4 border-t border-border/40 flex items-center gap-2">
+          <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border/40 flex items-center gap-2">
             <button
               type="button"
               onClick={() => { const t = new Date(); setCurrentMonth(t); onChange(t); setOpen(false) }}

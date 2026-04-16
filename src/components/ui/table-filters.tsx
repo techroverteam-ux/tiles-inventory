@@ -367,7 +367,7 @@ export function TableFilters({
           </Transition>
 
           {getActiveFiltersCount() > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 min-w-0 max-w-xs sm:max-w-md md:max-w-lg">
+            <div className="flex flex-wrap items-center gap-1.5 w-full">
               {showSearch && searchValue && (
                 <Badge variant="secondary" className="pl-2 pr-0.5 py-0 h-7 rounded-lg border-primary/20 bg-primary/5 text-primary gap-1 font-bold text-[10px] group hover:bg-primary/10 transition-colors">
                   <Search className="h-2.5 w-2.5 opacity-50" />
@@ -397,23 +397,10 @@ export function TableFilters({
                   </Badge>
                 )
               })}
-              <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-7 w-7 p-0 rounded-lg text-muted-foreground hover:text-destructive group">
+              <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-7 w-7 p-0 rounded-lg text-muted-foreground hover:text-destructive group ml-auto">
                 <RotateCcw className="h-3.5 w-3.5 group-hover:rotate-180 transition-transform duration-500" />
               </Button>
             </div>
-          )}
-
-          {getActiveFiltersCount() > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearAllFilters}
-              className="h-10 px-3 gap-2 whitespace-nowrap text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl"
-              disabled={loading}
-            >
-              <RotateCcw className="h-4 w-4" />
-              Clear
-            </Button>
           )}
         </div>
       </div>

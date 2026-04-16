@@ -22,6 +22,15 @@ export async function GET(request: NextRequest) {
           { orderNumber: { contains: search, mode: 'insensitive' } },
         ],
       }),
+      ...(brandId && {
+        items: {
+          some: {
+            product: {
+              brandId: brandId,
+            },
+          },
+        },
+      }),
     }
 
     const orders = await prisma.salesOrder.findMany({

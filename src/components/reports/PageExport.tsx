@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { FileDown, ImageDown, FileSpreadsheet, Loader2, Download, SlidersHorizontal, ChevronDown } from 'lucide-react'
 import { exportToExcel, ExportColumn } from '@/lib/excel-export'
 import { cn } from '@/lib/utils'
@@ -389,13 +389,13 @@ export function PageExportButton({ config, customFilters, disabled, className }:
       {/* Custom Export dialog */}
       {customFilters && (
         <Dialog open={showCustom} onOpenChange={setShowCustom}>
-          <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-sm w-[95vw] rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto no-scrollbar p-6">
+          <DialogContent className="glass backdrop-blur-xl border-border/50 w-[96vw] max-w-2xl lg:max-w-3xl rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto no-scrollbar p-4 sm:p-6">
             <DialogHeader>
-              <DialogTitle className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Custom Export {config.title}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Custom Export {config.title}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-3 pt-1">
+              <div className="space-y-4 sm:space-y-5 pt-1">
               {/* Filters */}
-              <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {customFilters.brands && customFilters.brands.length > 0 && (
                   <div className="space-y-1">
                     <label className="text-[11px] font-bold text-foreground/70 ml-0.5">Brand</label>
@@ -444,13 +444,23 @@ export function PageExportButton({ config, customFilters, disabled, className }:
                     </Select>
                   </div>
                 )}
-                <div className="space-y-1">
+                <div className="space-y-1 sm:col-span-1">
                   <label className="text-[11px] font-bold text-foreground/70 ml-0.5">Date From</label>
-                  <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="rounded-xl bg-muted/20 border-border/40 h-9 text-xs" />
+                  <DatePicker 
+                    date={dateFrom} 
+                    onChange={(d) => setDateFrom(d ? d.toISOString().split('T')[0] : '')} 
+                    placeholder="From Date"
+                    className="rounded-xl"
+                  />
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 sm:col-span-1">
                   <label className="text-[11px] font-bold text-foreground/70 ml-0.5">Date To</label>
-                  <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="rounded-xl bg-muted/20 border-border/40 h-9 text-xs" />
+                  <DatePicker 
+                    date={dateTo} 
+                    onChange={(d) => setDateTo(d ? d.toISOString().split('T')[0] : '')} 
+                    placeholder="To Date"
+                    className="rounded-xl"
+                  />
                 </div>
               </div>
               {customCfg && (

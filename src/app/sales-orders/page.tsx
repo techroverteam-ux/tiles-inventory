@@ -95,7 +95,16 @@ export default function SalesOrdersPage() {
   const fetchOrders = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/sales-orders')
+      const cleanFilters = Object.fromEntries(
+        Object.entries(tableFilters).filter(([_, v]) => v && v !== '' && v !== 'all')
+      )
+      const params = new URLSearchParams({
+        limit: '1000',
+        search: search || '',
+        ...cleanFilters,
+      })
+
+      const response = await fetch(`/api/sales-orders?${params}`)
       const data = await response.json()
 
       if (response.ok) {
@@ -120,6 +129,9 @@ export default function SalesOrdersPage() {
 
   useEffect(() => {
     fetchOrders()
+  }, [search, tableFilters])
+
+  useEffect(() => {
     fetchBrands()
   }, [])
 
