@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
+import { put } from '@vercel/blob'
+
+async function uploadImageFile(image: File | null) {
+  if (!image || image.size === 0) return null
+  if (!process.env.BLOB_READ_WRITE_TOKEN) throw new Error('BLOB_READ_WRITE_TOKEN is not configured')
+  const safeFileName = image.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+  const blob = await put(`locations/${Date.now()}-${safeFileName}`, image, {
+    access: 'public',
+    token: process.env.BLOB_READ_WRITE_TOKEN,
+  })
+  return blob.url
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,9 +84,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json()
-    
-    const { name, address, isActive = true } = data
+    const contentType = request.headers.get('content-type') || ''
+    const isMultipart = contentType.includes('multipart/form-data')
+    const data = isMultipart ? Object.fromEntries((await request.formData()).entries()) : await request.json()
+
+    const { name, address, isActive = true } = data as any
+    const image = isMultipart ? (data as any).image as File | null : null
+    const imageUrl = isMultipart ? await uploadImageFile(image) : (typeof (data as any).imageUrl === 'string' ? ((data as any).imageUrl || null) : null)
     
     if (!name || !name.trim()) {
       return NextResponse.json(
@@ -104,6 +120,7 @@ export async function POST(request: NextRequest) {
       data: {
         name: name.trim(),
         address: address?.trim() || null,
+        imageUrl,
         isActive: Boolean(isActive),
         createdById: user.userId,
         updatedById: user.userId,

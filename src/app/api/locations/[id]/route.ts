@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
+import { put } from '@vercel/blob'
+
+async function uploadImageFile(image: File | null) {
+  if (!image || image.size === 0) return null
+  if (!process.env.BLOB_READ_WRITE_TOKEN) throw new Error('BLOB_READ_WRITE_TOKEN is not configured')
+  const safeFileName = image.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+  const blob = await put(`locations/${Date.now()}-${safeFileName}`, image, {
+    access: 'public',
+    token: process.env.BLOB_READ_WRITE_TOKEN,
+  })
+  return blob.url
+}
 
 export async function GET(
   request: NextRequest,
@@ -44,8 +56,12 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const data = await request.json()
-    const { name, address, isActive } = data
+    const contentType = request.headers.get('content-type') || ''
+    const isMultipart = contentType.includes('multipart/form-data')
+    const data = isMultipart ? Object.fromEntries((await request.formData()).entries()) : await request.json()
+    const { name, address, isActive } = data as any
+    const image = isMultipart ? (data as any).image as File | null : null
+    const imageUrl = isMultipart ? await uploadImageFile(image) : (typeof (data as any).imageUrl === 'string' ? ((data as any).imageUrl || null) : undefined)
 
     // Validate required fields
     if (!name || !name.trim()) {
@@ -96,6 +112,7 @@ export async function PUT(
       data: {
         name: name.trim(),
         address: address?.trim() || null,
+        ...(typeof imageUrl !== 'undefined' ? { imageUrl } : {}),
         isActive: Boolean(isActive),
         updatedById: user.userId,
         updatedAt: new Date()
