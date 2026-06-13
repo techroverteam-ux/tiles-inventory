@@ -577,7 +577,7 @@ export default function InventoryPage() {
                   Add Stock
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl glass backdrop-blur-xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto no-scrollbar">
+              <DialogContent className="max-w-2xl glass backdrop-blur-xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Add Stock Batch</DialogTitle>
                 </DialogHeader>
@@ -629,7 +629,7 @@ export default function InventoryPage() {
 
     {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-md max-h-[90vh] overflow-y-auto no-scrollbar rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
+        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-md max-h-[90vh] overflow-y-auto rounded-3xl shadow-premium animate-in zoom-in-95 duration-200">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Edit Inventory Batch</DialogTitle>
           </DialogHeader>
@@ -721,16 +721,20 @@ export default function InventoryPage() {
         title="Inventory Batch Details"
         data={selectedDetailItem}
         fields={[
-          { label: 'Product', value: selectedDetailItem?.product?.name },
+          { label: 'Product Name', value: selectedDetailItem?.product?.name },
+          { label: 'Brand', value: selectedDetailItem?.product?.brand?.name },
+          { label: 'Category', value: selectedDetailItem?.product?.category?.name },
+          { label: 'Size', value: selectedDetailItem?.product?.size?.name ? formatSizeInches(selectedDetailItem.product.size.name) : undefined },
           { label: 'Batch Number', value: selectedDetailItem?.batchNumber },
           { label: 'Location', value: selectedDetailItem?.location?.name },
           { label: 'Quantity', value: selectedDetailItem?.quantity, variant: 'number' as const },
           { label: 'Purchase Price', value: selectedDetailItem?.purchasePrice ? `₹${selectedDetailItem.purchasePrice.toLocaleString()}` : undefined },
           { label: 'Selling Price', value: selectedDetailItem?.sellingPrice ? `₹${selectedDetailItem.sellingPrice.toLocaleString()}` : undefined },
-          { label: 'Brand', value: selectedDetailItem?.product?.brand?.name },
-          { label: 'Category', value: selectedDetailItem?.product?.category?.name },
-          { label: 'Size', value: selectedDetailItem?.product?.size?.name },
+          { label: 'Product Code', value: selectedDetailItem?.product?.code },
           { label: 'Created At', value: selectedDetailItem?.createdAt },
+          { label: 'Created By', value: selectedDetailItem?.createdBy?.name },
+          { label: 'Updated At', value: selectedDetailItem?.updatedAt !== selectedDetailItem?.createdAt ? selectedDetailItem?.updatedAt : undefined },
+          { label: 'Updated By', value: selectedDetailItem?.updatedBy?.name },
         ].filter(f => f.value !== undefined)}
         imageUrl={selectedDetailItem?.product?.imageUrl}
         locationImageUrl={selectedDetailItem?.imageUrl}
