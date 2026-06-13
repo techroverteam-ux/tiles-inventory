@@ -227,7 +227,7 @@ export function TableFilters({
     }
   }
 
-  const FilterContent = () => (
+  const filterContent = (
     <div className="flex flex-col h-full max-h-[80vh]">
       <div className="flex-1 py-2 pr-1 no-scrollbar space-y-6">
         {showSearch && (
@@ -358,7 +358,7 @@ export function TableFilters({
                           <X className="h-5 w-5" />
                         </Button>
                       </div>
-                      <FilterContent />
+                      {filterContent}
                     </DialogPanel>
                   </TransitionChild>
                 </div>

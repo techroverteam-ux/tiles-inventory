@@ -39,8 +39,6 @@ export function SearchableSelect({
         option.label.toLowerCase().includes(query.toLowerCase())
       )
 
-  const selectedOption = options.find((opt) => opt.value === value)
-
   return (
     <div className={cn("relative w-full", className)}>
       <Combobox
@@ -67,9 +65,7 @@ export function SearchableSelect({
           </ComboboxButton>
         </div>
         <ComboboxOptions
-          anchor={{ to: 'bottom start', gap: '4px' }}
-          portal={false}
-          className="z-[9999] min-w-[var(--input-width)] w-max max-h-60 overflow-auto rounded-2xl border border-border bg-popover/95 backdrop-blur-xl py-2 text-base shadow-[0_8px_30px_rgba(0,0,0,0.3)] ring-1 ring-black/5 focus:outline-none sm:text-sm no-scrollbar [--anchor-gap:4px] empty:hidden transition duration-100 ease-in data-[leave]:data-[closed]:opacity-0 pointer-events-auto"
+          className="absolute left-0 top-full mt-1 z-[9999] w-full max-h-60 overflow-y-auto rounded-2xl border border-border bg-popover/95 backdrop-blur-xl py-2 text-base shadow-[0_8px_30px_rgba(0,0,0,0.3)] ring-1 ring-black/5 focus:outline-none sm:text-sm empty:hidden transition duration-100 ease-in data-[leave]:data-[closed]:opacity-0"
         >
           {filteredOptions.length === 0 && query !== "" ? (
             <div className="relative cursor-default select-none py-3 px-4 text-muted-foreground font-medium italic">
@@ -93,11 +89,7 @@ export function SearchableSelect({
                       {option.label}
                     </span>
                     {selected ? (
-                      <span
-                        className={cn(
-                          "absolute inset-y-0 left-0 flex items-center pl-3 text-primary"
-                        )}
-                      >
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-primary">
                         <Check className="h-4 w-4" aria-hidden="true" />
                       </span>
                     ) : null}

@@ -9,7 +9,7 @@ const createProductJsonSchema = z.object({
   brandId: z.string().min(1),
   categoryId: z.string().min(1),
   sizeId: z.string().min(1).optional().nullable(),
-  imageUrl: z.string().url().max(2000).optional().nullable(),
+  imageUrl: z.string().max(2000).optional().nullable().transform(v => v === '' ? null : v),
   sqftPerBox: z.coerce.number().positive().max(100000).optional(),
   pcsPerBox: z.coerce.number().int().positive().max(100000).optional(),
   code: z.string().trim().max(80).optional(),
@@ -155,9 +155,10 @@ export async function POST(request: NextRequest) {
       const parsed = createProductJsonSchema.safeParse(body)
 
       if (!parsed.success) {
+        const fieldErrors = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`)
         return NextResponse.json({
-          error: 'Invalid request payload',
-          details: 'Please provide valid product fields'
+          error: `Missing or invalid fields: ${parsed.error.issues.map(i => i.path.join('.')).join(', ')}`,
+          details: fieldErrors.join('; ')
         }, { status: 400 })
       }
 
@@ -218,10 +219,14 @@ export async function POST(request: NextRequest) {
     const existingImageUrl = (formData.get('imageUrl') as string) || null
     const image = formData.get('image') as File | null
 
-    if (!name || !brandId || !categoryId || (!existingImageUrl && (!image || image.size === 0))) {
+    if (!name || !brandId || !categoryId) {
+      const missing: string[] = []
+      if (!name) missing.push('Name')
+      if (!brandId) missing.push('Brand')
+      if (!categoryId) missing.push('Category')
       return NextResponse.json({
-        error: 'Missing required fields',
-        details: 'Name, brand, category, and image are required'
+        error: `Missing required fields: ${missing.join(', ')}`,
+        details: `Please provide: ${missing.join(', ')}`
       }, { status: 400 })
     }
 

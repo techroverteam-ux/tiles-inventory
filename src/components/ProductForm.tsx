@@ -87,8 +87,17 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
     setLoading(true)
 
     try {
-      if (!formData.name.trim() || !formData.code.trim() || !formData.categoryId || !formData.brandId || !formData.stock || !formData.imageUrl || (!product && (!formData.locationId || !formData.batchName.trim()))) {
-        showToast('Please fill all mandatory fields including product image', 'error')
+      const missing: string[] = []
+      if (!formData.name.trim()) missing.push('Tile Name')
+      if (!formData.code.trim()) missing.push('Item Code')
+      if (!formData.brandId) missing.push('Brand')
+      if (!formData.categoryId) missing.push('Category')
+      if (!formData.stock) missing.push('Stock Quantity')
+      if (!product && !formData.locationId) missing.push('Location')
+      if (!product && !formData.batchName.trim()) missing.push('Batch Name')
+
+      if (missing.length > 0) {
+        showToast(`Please fill: ${missing.join(', ')}`, 'error')
         setLoading(false)
         return
       }
@@ -155,7 +164,6 @@ export default function ProductForm({ onSuccess, product }: ProductFormProps) {
     formData.categoryId !== '' &&
     formData.brandId !== '' &&
     formData.stock !== '' &&
-    formData.imageUrl !== '' &&
     (product ? true : (formData.locationId !== '' && formData.batchName.trim() !== ''))
 
   return (

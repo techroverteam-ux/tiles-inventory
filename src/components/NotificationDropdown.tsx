@@ -95,7 +95,7 @@ export default function NotificationDropdown() {
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0, opacity: 0 }}
-                className="absolute -top-1 -right-1 h-5 w-5 bg-destructive rounded-full text-[10px] font-bold text-white flex items-center justify-center border-2 border-background shadow-sm"
+                className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-destructive rounded-full text-[10px] font-bold text-white flex items-center justify-center border-2 border-background shadow-sm"
               >
                 {unreadCount > 99 ? '99+' : unreadCount}
               </motion.span>

@@ -327,7 +327,7 @@ export default function SalesOrdersPage() {
                   New Order
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl glass-card border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto no-scrollbar">
+              <DialogContent className="max-w-4xl glass-card border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Create Sales Order</DialogTitle>
                 </DialogHeader>
@@ -370,39 +370,74 @@ export default function SalesOrdersPage() {
 
       {/* View Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-lg max-h-[90vh] overflow-y-auto no-scrollbar rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 p-8">
+        <DialogContent className="glass backdrop-blur-xl border-border/50 max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 p-8">
           <DialogHeader className="mb-6">
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Sales Order Details</DialogTitle>
           </DialogHeader>
           {selectedOrder && (
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Order Number</span>
-                <div className="font-bold text-lg text-foreground bg-muted/30 p-3 rounded-2xl border border-border/30">
-                  {selectedOrder.orderNumber}
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Order Number</span>
+                  <div className="font-bold text-lg text-foreground bg-muted/30 p-3 rounded-2xl border border-border/30">
+                    {selectedOrder.orderNumber}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</span>
+                  <div className="bg-primary/10 text-primary p-3 rounded-2xl border border-primary/20 font-bold text-center">
+                    DELIVERED
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Brand</span>
+                  <div className="text-foreground font-medium">{selectedOrder.brand?.name}</div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Order Date</span>
+                  <div className="text-foreground font-medium">{formatDate(selectedOrder.orderDate)}</div>
                 </div>
               </div>
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</span>
-                <div className="bg-primary/10 text-primary p-3 rounded-2xl border border-primary/20 font-bold text-center">
-                  DELIVERED
-                </div>
+
+              {/* Tile Items Details */}
+              <div className="space-y-3">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Tiles Details</span>
+                {selectedOrder.items?.map((item: any, idx: number) => (
+                  <div key={idx} className="flex items-start gap-3 p-3 rounded-2xl bg-muted/20 border border-border/30">
+                    <div className="h-16 w-16 rounded-xl overflow-hidden bg-muted/30 border border-border/40 flex-shrink-0">
+                      {item.product?.imageUrl ? (
+                        <img src={item.product.imageUrl} alt={item.product.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center text-muted-foreground/30">
+                          <ShoppingCart className="h-6 w-6" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 text-sm space-y-1">
+                      <div className="font-bold text-foreground truncate">{item.product?.name || '—'}</div>
+                      <div className="text-xs text-muted-foreground space-y-0.5">
+                        {item.product?.category?.name && <div>Category: <span className="font-medium text-foreground">{item.product.category.name}</span></div>}
+                        {item.product?.size?.name && <div>Size: <span className="font-bold text-primary">{formatSizeInches(item.product.size.name)}</span></div>}
+                        {item.batch?.batchNumber && <div>Batch: <span className="font-medium text-foreground">{item.batch.batchNumber}</span></div>}
+                        {item.batch?.location?.name && <div>Location: <span className="font-medium text-foreground">{item.batch.location.name}</span></div>}
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="font-bold text-foreground">{item.quantity} units</div>
+                      <div className="text-xs text-muted-foreground">₹{item.unitPrice?.toLocaleString()} × {item.quantity}</div>
+                      <div className="text-sm font-bold text-primary">₹{item.totalPrice?.toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Brand</span>
-                <div className="text-foreground font-medium">{selectedOrder.brand?.name}</div>
-              </div>
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Order Date</span>
-                <div className="text-foreground font-medium">{formatDate(selectedOrder.orderDate)}</div>
-              </div>
-              <div className="col-span-2 mt-4 space-y-1">
+
+              <div className="space-y-1 pt-2 border-t border-border/30">
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Sale Price</span>
                 <div className="text-3xl font-extrabold text-primary">₹{selectedOrder.totalAmount.toLocaleString()}</div>
               </div>
             </div>
           )}
-          <div className="mt-8">
+          <div className="mt-6">
             <Button className="w-full rounded-2xl h-12 font-bold" onClick={() => setShowViewDialog(false)}>
               Close Details
             </Button>
@@ -412,7 +447,7 @@ export default function SalesOrdersPage() {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-4xl glass backdrop-blur-xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto no-scrollbar">
+        <DialogContent className="max-w-4xl glass backdrop-blur-xl border-border/50 rounded-3xl shadow-premium animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Edit Sales Order</DialogTitle>
           </DialogHeader>
@@ -449,14 +484,15 @@ export default function SalesOrdersPage() {
         fields={[
           { label: 'Order Number', value: selectedDetailItem?.orderNumber },
           { label: 'Brand', value: selectedDetailItem?.brand?.name },
+          { label: 'Product', value: selectedDetailItem?.items?.[0]?.product?.name },
+          { label: 'Category', value: selectedDetailItem?.items?.[0]?.product?.category?.name },
+          { label: 'Size', value: selectedDetailItem?.items?.[0]?.product?.size?.name ? formatSizeInches(selectedDetailItem.items[0].product.size.name) : undefined },
           { label: 'Total Amount', value: selectedDetailItem?.totalAmount ? `₹${selectedDetailItem.totalAmount.toLocaleString()}` : undefined },
           { label: 'Status', value: 'SOLD', variant: 'badge' as const },
           { label: 'Order Date', value: selectedDetailItem?.orderDate },
           { label: 'Total Quantity', value: selectedDetailItem?.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0), variant: 'number' as const },
-          { label: 'First Item Batch', value: selectedDetailItem?.items?.[0]?.batch?.batchNumber },
+          { label: 'Batch', value: selectedDetailItem?.items?.[0]?.batch?.batchNumber },
           { label: 'Location', value: selectedDetailItem?.items?.[0]?.batch?.location?.name },
-          { label: 'Category', value: selectedDetailItem?.items?.[0]?.product?.category?.name },
-          { label: 'Size', value: selectedDetailItem?.items?.[0]?.product?.size?.name },
           { label: 'Created At', value: selectedDetailItem?.createdAt },
           { label: 'Created By', value: selectedDetailItem?.createdBy?.name },
           { label: 'Updated At', value: selectedDetailItem?.updatedAt !== selectedDetailItem?.createdAt ? selectedDetailItem?.updatedAt : undefined },
