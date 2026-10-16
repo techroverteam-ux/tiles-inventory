@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { checkRateLimit, getRateLimitKey } from '@/lib/rate-limit'
+import { isBlockedForOverdue, OVERDUE_MESSAGE, PAYMENT_OVERDUE_CODE } from '@/lib/payment-block'
 
 const loginSchema = z.object({
   email: z.string().trim().email().max(254),
@@ -92,6 +93,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
+      )
+    }
+
+    // Block accounts with overdue payment (only after correct credentials)
+    if (isBlockedForOverdue(user.email)) {
+      return NextResponse.json(
+        { error: OVERDUE_MESSAGE, code: PAYMENT_OVERDUE_CODE },
+        { status: 402 }
       )
     }
 

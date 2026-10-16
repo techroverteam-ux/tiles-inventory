@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
+import { OVERDUE_MESSAGE } from '@/lib/payment-block'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -15,14 +17,26 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const { login, isLoading } = useSession()
 
+  // Session was cut off because of overdue payment
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('reason') === 'overdue') {
+      localStorage.removeItem('user')
+      localStorage.removeItem('lastActivity')
+      setError(OVERDUE_MESSAGE)
+      toast.error(OVERDUE_MESSAGE, { id: 'payment-overdue', duration: 10000, position: 'top-center' })
+    }
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
     try {
-      const success = await login(email, password)
-      if (success) {
+      const result = await login(email, password)
+      if (result.success) {
         window.location.href = '/dashboard'
+      } else if (result.code === 'PAYMENT_OVERDUE') {
+        setError(result.error || OVERDUE_MESSAGE)
       } else {
         setError('Invalid credentials. Please try again.')
       }

@@ -1,5 +1,17 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { isBlockedForOverdue } from '@/lib/payment-block'
+
+// Read the email from the JWT payload (signature is verified by the API routes)
+function getEmailFromToken(token: string): string | null {
+  try {
+    const payload = token.split('.')[1]
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    return JSON.parse(json).email ?? null
+  } catch {
+    return null
+  }
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -42,6 +54,13 @@ export function middleware(request: NextRequest) {
 
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // Kick out sessions belonging to accounts blocked for overdue payment
+  if (isBlockedForOverdue(getEmailFromToken(token))) {
+    const res = NextResponse.redirect(new URL('/login?reason=overdue', request.url))
+    res.cookies.delete('auth-token')
+    return res
   }
 
   return NextResponse.next()

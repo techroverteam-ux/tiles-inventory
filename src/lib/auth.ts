@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { NextRequest } from 'next/server'
+import { isBlockedForOverdue } from '@/lib/payment-block'
 
 export interface AuthUser {
   userId: string
@@ -16,6 +17,7 @@ export function verifyToken(token: string): AuthUser | null {
     }
 
     const decoded = jwt.verify(token, secret) as AuthUser
+    if (isBlockedForOverdue(decoded.email)) return null
     return decoded
   } catch (error) {
     console.error('Token verification failed:', error)
@@ -59,6 +61,7 @@ export function getCustomerAuthUser(request: NextRequest): CustomerAuthUser | nu
     const secret = process.env.JWT_SECRET
     if (!secret) return null
     const decoded = jwt.verify(token, secret) as CustomerAuthUser
+    if (isBlockedForOverdue(decoded.email)) return null
     if (decoded.role !== 'CUSTOMER' && decoded.scope !== 'customer') return null
     return decoded
   } catch {
@@ -73,6 +76,7 @@ export function getAdminAuthUser(request: NextRequest): AuthUser | null {
     const secret = process.env.JWT_SECRET
     if (!secret) return null
     const decoded = jwt.verify(token, secret) as AuthUser
+    if (isBlockedForOverdue(decoded.email)) return null
     if (decoded.role !== 'ADMIN') return null
     return decoded
   } catch {

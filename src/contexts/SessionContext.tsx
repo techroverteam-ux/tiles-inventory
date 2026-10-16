@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/contexts/ToastContext'
+import toast from 'react-hot-toast'
 
 interface User {
   id: string
@@ -15,7 +16,7 @@ interface SessionContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; code?: string }>
   logout: () => Promise<void>
   refreshSession: () => Promise<void>
   resetIdleTimer: () => void
@@ -98,7 +99,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated, showIdleWarning, resetIdleTimer])
 
   // Login function
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string; code?: string }> => {
     try {
       console.log('🔄 SessionContext: Starting login...')
       
@@ -140,21 +141,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (showToast) {
           showToast('Login successful!', 'success')
         }
-        return true
+        return { success: true }
       } else {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         console.log('❌ SessionContext: Login failed:', errorData)
-        if (showToast) {
+        if (errorData.code === 'PAYMENT_OVERDUE') {
+          toast.error(errorData.error, { id: 'payment-overdue', duration: 10000, position: 'top-center' })
+        } else if (showToast) {
           showToast(errorData.error || 'Login failed', 'error')
         }
-        return false
+        return { success: false, error: errorData.error, code: errorData.code }
       }
     } catch (error) {
       console.error('💥 SessionContext: Login error:', error)
       if (showToast) {
         showToast('Login failed. Please try again.', 'error')
       }
-      return false
+      return { success: false, error: 'Login failed. Please try again.' }
     } finally {
       setIsLoading(false)
       console.log('🏁 SessionContext: Login process completed')
